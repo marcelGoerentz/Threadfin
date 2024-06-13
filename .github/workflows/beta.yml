@@ -24,3 +24,12 @@ jobs:
         run: |
           go mod tidy && go mod vendor
           bash ${GITHUB_WORKSPACE}/Utility/create_binaries.sh beta
+
+      - name: Release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest-beta"
+          prerelease: true
+          title: "Development Build"
+          files: dist/*
