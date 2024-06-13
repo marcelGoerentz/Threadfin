@@ -199,7 +199,7 @@ func getGuideNumberPMS(channelName string) (pmsID string, err error) {
 
 	}
 
-	var getNewID = func(channelName string) (id string) {
+	var getNewID = func() (id string) {
 
 		var i int
 
@@ -226,7 +226,7 @@ func getGuideNumberPMS(channelName string) (pmsID string, err error) {
 
 	} else {
 
-		pmsID = getNewID(channelName)
+		pmsID = getNewID()
 		Data.Cache.PMS[channelName] = pmsID
 		saveMapToJSONFile(System.File.PMS, Data.Cache.PMS)
 
