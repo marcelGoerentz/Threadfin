@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
         with:
           ref: beta
 
       - name: Set up and Build
-        uses: actions/setup-go@v5.0.1
+        uses: actions/setup-go@v5
         with:
           go-version: 1.22
         id: go
@@ -27,18 +27,9 @@ jobs:
 
       
       - name: Create a Release
-        uses: softprops/action-gh-release@v2.0.5
+        uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
           name: Development Build
           tag_name: latest-beta
-
-      #- name: Release
-      #  uses: "marvinpinto/action-automatic-releases@latest"
-      #  with:
-      #    repo_token: "${{ secrets.GITHUB_TOKEN }}"
-      #    automatic_release_tag: "latest-beta"
-      #    prerelease: true
-      #    title: "Development Build"
-      #    files: dist/*
