@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@latest
         with:
           ref: beta
 
       - name: Set up and Build
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@latest
         with:
           go-version: 1.22
         id: go
