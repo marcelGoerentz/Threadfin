@@ -27,11 +27,12 @@ jobs:
 
       
       - name: Create a Release
-        uses: elgohr/Github-Release-Action@v5
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          title: Development Build
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          name: Development Build
+          tag_name: latest-beta
 
       #- name: Release
       #  uses: "marvinpinto/action-automatic-releases@latest"
