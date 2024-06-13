@@ -18,9 +18,6 @@ jobs:
       - name: Set up and Build
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.22
         id: go
-      - run: |
-         go mod tidy && go mod vendor
-         echo "Building Linux"
-         env GOOS=linux GOARCH=amd64 go build -o dist/Threadfin_linux_amd64
+      - run: bash ${GITHUB_WORKSPACE}/Utility/create_binaries.sh beta

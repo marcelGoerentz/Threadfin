@@ -19,22 +19,10 @@ jobs:
       - name: Set up and Build
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.22
         id: go
       - name: Build Binaries
-        run: |
-         go mod tidy && go mod vendor
-         echo "Building Linux"
-         env GOOS=linux GOARCH=arm64 go build -o dist/Threadfin_linux_arm64
-         env GOOS=linux GOARCH=amd64 go build -o dist/Threadfin_linux_amd64
-         echo "Building FreeBSD"
-         env GOOS=freebsd GOARCH=amd64 go build -o dist/Threadfin_freebsd_amd64
-         env GOOS=freebsd GOARCH=arm go build -o dist/Threadfin_freebsd_arm
-         echo "Building Macos"
-         env GOOS=darwin GOARCH=arm64 go build -o dist/Threadfin_darwin_arm64
-         env GOOS=darwin GOARCH=amd64 go build -o dist/Threadfin_darwin_amd64
-         echo "Building Windows"
-         env GOOS=windows GOARCH=amd64 go build -o dist/Threadfin_windows_amd64.exe
+        run: bash ${GITHUB_WORKSPACE}/Utility/create_binaries.sh
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
