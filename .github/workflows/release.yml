@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: main
 
       - name: Set up and Build
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: 1.22
         id: go
@@ -44,7 +44,7 @@ jobs:
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
-          tags: fyb3roptik/threadfin:latest,fyb3roptik/threadfin:${{  github.ref_name }}
+          tags: mgoerentz/threadfin:latest,mgoerentz/threadfin:${{  github.ref_name }}
 
       - name: Docker Nvidia Build and Push
         uses: docker/build-push-action@v4
@@ -54,7 +54,7 @@ jobs:
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
-          tags: fyb3roptik/threadfin:latest-nvidia,fyb3roptik/threadfin:${{  github.ref_name }}-nvidia
+          tags: mgoerentz/threadfin:latest-nvidia,mgoerentz/threadfin:${{  github.ref_name }}-nvidia
 
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
