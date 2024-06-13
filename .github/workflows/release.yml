@@ -3,7 +3,8 @@ on:
   push:
     branches:
       - main
-    tags: "v*"
+    tags: 
+      - 'v*'
 permissions:
   contents: write
 jobs:
@@ -60,3 +61,4 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           files: dist/*
+          make_latest: true
