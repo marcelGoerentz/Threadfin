@@ -72,26 +72,22 @@ func ThreadfinAutoBackup() (err error) {
 	}
 
 	// Backup erstellen
+	target = System.Folder.Backup + archiv
+
+	for _, i := range SystemFiles {
+		sourceFiles = append(sourceFiles, System.Folder.Config+i)
+	}
+
+	sourceFiles = append(sourceFiles, System.Folder.ImagesUpload)
+
+	err = zipFiles(sourceFiles, target)
+
 	if err == nil {
 
-		target = System.Folder.Backup + archiv
+		debug = fmt.Sprintf("Create backup file:%s", target)
+		showDebug(debug, 1)
 
-		for _, i := range SystemFiles {
-			sourceFiles = append(sourceFiles, System.Folder.Config+i)
-		}
-
-		sourceFiles = append(sourceFiles, System.Folder.ImagesUpload)
-
-		err = zipFiles(sourceFiles, target)
-
-		if err == nil {
-
-			debug = fmt.Sprintf("Create backup file:%s", target)
-			showDebug(debug, 1)
-
-			showInfo("Backup file:" + target)
-
-		}
+		showInfo("Backup file:" + target)
 
 	}
 
@@ -172,10 +168,6 @@ func ThreadfinRestore(archive string) (newWebURL string, err error) {
 	oldPort = Settings.Port
 
 	if newPort == oldPort {
-
-		if err != nil {
-			ShowError(err, 0)
-		}
 
 		loadSettings()
 

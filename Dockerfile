@@ -1,6 +1,6 @@
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
-FROM golang:1.18 AS builder
+FROM golang:1.22 AS builder
 
 # Download the source code
 RUN apt-get update && apt-get install -y git
@@ -53,6 +53,10 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$THREADFIN
 # Set working directory
 WORKDIR $THREADFIN_HOME
 
+RUN rm /var/lib/dpkg/info/libc-bin.*
+RUN apt-get clean
+RUN apt-get update
+RUN apt-get install libc-bin
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y ca-certificates curl ffmpeg vlc
 

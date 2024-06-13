@@ -13,10 +13,10 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
+	//"net/url"
 	"os"
 	"os/exec"
-	"path"
+	//"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -328,55 +328,51 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 						}
 						defer file.Close()
 
+						l, err := file.Stat()
 						if err == nil {
 
-							l, err := file.Stat()
+							debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
+							showDebug(debug, 2)
+
+							var buffer = make([]byte, int(l.Size()))
+							_, err = file.Read(buffer)
+
 							if err == nil {
 
-								debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
-								showDebug(debug, 2)
+								file.Seek(0, 0)
 
-								var buffer = make([]byte, int(l.Size()))
-								_, err = file.Read(buffer)
+								if !streaming {
 
-								if err == nil {
-
-									file.Seek(0, 0)
-
-									if !streaming {
-
-										contentType := http.DetectContentType(buffer)
-										_ = contentType
-										//w.Header().Set("Content-type", "video/mpeg")
-										w.Header().Set("Content-type", contentType)
-										w.Header().Set("Content-Length", "0")
-										w.Header().Set("Connection", "close")
-
-									}
-
-									/*
-									   // HDHR Header
-									   w.Header().Set("Cache-Control", "no-cache")
-									   w.Header().Set("Pragma", "no-cache")
-									   w.Header().Set("transferMode.dlna.org", "Streaming")
-									*/
-
-									_, err := w.Write(buffer)
-
-									if err != nil {
-										file.Close()
-										killClientConnection(streamID, playlistID, false)
-										return
-									}
-
-									file.Close()
-									streaming = true
+									contentType := http.DetectContentType(buffer)
+									_ = contentType
+									//w.Header().Set("Content-type", "video/mpeg")
+									w.Header().Set("Content-type", contentType)
+									w.Header().Set("Content-Length", "0")
+									w.Header().Set("Connection", "close")
 
 								}
 
+								/*
+									// HDHR Header
+									w.Header().Set("Cache-Control", "no-cache")
+									w.Header().Set("Pragma", "no-cache")
+									w.Header().Set("transferMode.dlna.org", "Streaming")
+								*/
+
+								_, err := w.Write(buffer)
+
+								if err != nil {
+									file.Close()
+									killClientConnection(streamID, playlistID, false)
+									return
+								}
+
 								file.Close()
+								streaming = true
 
 							}
+
+							file.Close()
 
 							var n = indexOfString(f, oldSegments)
 
@@ -551,6 +547,7 @@ func clientConnection(stream ThisStream) (status bool) {
 	return
 }
 
+/*
 func parseM3U8(stream *ThisStream) (err error) {
 
 	var debug string
@@ -808,7 +805,9 @@ func parseM3U8(stream *ThisStream) (err error) {
 
 	return
 }
+*/
 
+/*
 func switchBandwidth(stream *ThisStream) (err error) {
 
 	var bandwidth []int
@@ -859,6 +858,7 @@ func switchBandwidth(stream *ThisStream) (err error) {
 
 	return
 }
+*/
 
 // Buffer mit FFMPEG
 func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNumber int) {
@@ -923,11 +923,9 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 			if !useBackup || (useBackup && backupNumber >= 0 && backupNumber <= 3) {
 				backupNumber = backupNumber + 1
-				log.Println("BACKUP NUMBER: ", backupNumber)
-				log.Println("STREAM ID:", streamID)
-				log.Println("PLAYLIST ID: ", playlistID)
-				thirdPartyBuffer(streamID, playlistID, true, backupNumber)
-				return
+				if playlist.Streams[streamID].BackupChannel1URL != "" || playlist.Streams[streamID].BackupChannel2URL != "" || playlist.Streams[streamID].BackupChannel3URL != "" {
+					thirdPartyBuffer(streamID, playlistID, true, backupNumber)
+				}
 			}
 
 			var stream = playlist.Streams[streamID]
@@ -1221,6 +1219,7 @@ func initBufferVFS(virtual bool) {
 
 }
 
+/*
 func debugRequest(req *http.Request) {
 
 	var debugLevel = 3
@@ -1301,6 +1300,7 @@ func debugResponse(resp *http.Response) {
 	debug = "Pesponse:* * * * * * END RESPONSE * * * * * * "
 	showDebug(debug, debugLevel)
 }
+*/
 
 func terminateProcessGracefully(cmd *exec.Cmd) {
 	if cmd.Process != nil {

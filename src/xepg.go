@@ -157,6 +157,7 @@ func buildXEPG(background bool) {
 
 }
 
+/*
 // XEPG Daten aktualisieren
 func updateXEPG(background bool) {
 
@@ -201,6 +202,7 @@ func updateXEPG(background bool) {
 	//Data.Cache.XMLTV = nil //make(map[string]XMLTV)
 	//Data.Cache.XMLTV = make(map[string]XMLTV)
 }
+*/
 
 // Mapping Menü für die XMLTV Dateien erstellen
 func createXEPGMapping() {

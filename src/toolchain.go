@@ -175,11 +175,13 @@ func getFilenameFromPath(path string) (file string) {
 	return filepath.Base(path)
 }
 
+/*
 // Nicht mehr verwendete Systemdaten löschen
 func removeOldSystemData() {
 	// Temporären Ordner löschen
 	os.RemoveAll(System.Folder.Temp)
 }
+*/
 
 // Sucht eine Datei im OS
 func searchFileInOS(file string) (path string) {
@@ -247,6 +249,7 @@ func jsonToMap(content string) map[string]interface{} {
 	return (tmpMap)
 }
 
+/*
 func jsonToMapInt64(content string) map[int64]interface{} {
 
 	var tmpMap = make(map[int64]interface{})
@@ -254,6 +257,7 @@ func jsonToMapInt64(content string) map[int64]interface{} {
 
 	return (tmpMap)
 }
+*/
 
 func jsonToInterface(content string) (tmpMap interface{}, err error) {
 
@@ -436,6 +440,7 @@ func indexOfFloat64(element float64, data []float64) int {
 	return -1
 }
 
+/*
 func indexOfInt(element int, data []int) int {
 
 	for k, v := range data {
@@ -446,6 +451,7 @@ func indexOfInt(element int, data []int) int {
 
 	return -1
 }
+*/
 
 func getMD5(str string) string {
 
