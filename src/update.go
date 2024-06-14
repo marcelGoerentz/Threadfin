@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	up2date "threadfin/src/internal/up2date/client"
@@ -36,7 +35,7 @@ func BinaryUpdate() (err error) {
 
 	up2date.Init()
 
-	log.Println("BRANCH: ", System.Branch)
+	showInfo("BRANCH:" + System.Branch)
 	switch System.Branch {
 
 	// Update von GitHub
@@ -77,7 +76,7 @@ func BinaryUpdate() (err error) {
 				if !release.Prerelease {
 					updater.Response.Version = release.TagName
 					latest = release.TagName
-					log.Println("TAG LATEST: ", release.TagName)
+					showInfo("TAG LATEST:" + release.TagName)
 					break
 				}
 			}
@@ -88,7 +87,7 @@ func BinaryUpdate() (err error) {
 		updater.Response.Status = true
 		updater.Response.UpdateBIN = File
 
-		log.Println("FILE: ", updater.Response.UpdateBIN)
+		showInfo("FILE:" + updater.Response.UpdateBIN)
 
 	// Update vom eigenen Server
 	default:
