@@ -4,7 +4,5 @@ vendor/
 .DS_Store
 threadfin.exe
 binaries/
-create_binaries.bat
 *.js.map
 .vscode/
-vendor/
