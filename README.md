@@ -77,7 +77,7 @@ You can follow the old xTeVe documentation for now until I update it for Threadf
 version: "2.3"
 services:
   threadfin:
-    image: fyb3roptik/threadfin
+    image: mgoerentz/threadfin
     container_name: threadfin
     ports:
       - 34400:34400
