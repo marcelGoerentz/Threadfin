@@ -12,8 +12,6 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-
-	"github.com/kardianos/osext"
 )
 
 // DoUpdate : Update binary
@@ -50,7 +48,7 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 		}
 
 		// Change binary filename to .filename
-		binary, err := osext.Executable()
+		binary, err := os.Executable()
 		var filename = getFilenameFromPath(binary)
 		var path = getPlatformPath(binary)
 		var oldBinary = path + "_old_" + filename
@@ -150,7 +148,7 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 		} else {
 
 			// Restart binary (Linux and UNIX)
-			file, _ := osext.Executable()
+			file, _ := os.Executable()
 			os.RemoveAll(oldBinary)
 			err = syscall.Exec(file, os.Args, os.Environ())
 			if err != nil {
