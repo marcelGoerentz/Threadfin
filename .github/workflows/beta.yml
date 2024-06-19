@@ -33,3 +33,4 @@ jobs:
           prerelease: true
           name: Development Build
           tag_name: latest-beta
+          files: dist/*
