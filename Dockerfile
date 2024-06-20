@@ -1,3 +1,5 @@
+ARG IMAGE="ubuntu:22.04"
+
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
 FROM golang:1.22 AS builder
@@ -16,8 +18,7 @@ RUN go build threadfin.go
 
 # Second stage. Creating an image
 # -----------------------------------------------------------------------------
-ARG USE_NVIDIA=0
-FROM ${USE_NVIDIA:+nvidia/cuda:12.1.1-base-ubuntu22.04}${USE_NVIDIA:-ubuntu:22.04}
+FROM $IMAGE
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -56,9 +57,13 @@ WORKDIR $THREADFIN_HOME
 
 RUN rm /var/lib/dpkg/info/libc-bin.*
 RUN apt-get clean
-RUN apt-get update
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y libc-bin ca-certificates curl ffmpeg vlc
+RUN apt-get install -y \
+      libc-bin \
+      ca-certificates \
+      curl \
+      ffmpeg \
+      vlc
 
 RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apt-get -y install tzdata
 

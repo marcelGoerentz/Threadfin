@@ -66,7 +66,7 @@ jobs:
         with:
           context: .
           build-args: |
-            "NVIDIA=1"
+            "IMAGE=nvidia/cuda:12.5.0-base-ubuntu22.04"
             "BRANCH=beta"
           push: true
           no-cache: true

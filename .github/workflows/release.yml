@@ -31,7 +31,7 @@ jobs:
       - name: Create a Release
         uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
           files: dist/*
           make_latest: true
 
@@ -62,7 +62,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          build-args: NVIDIA=1
+          build-args: IMAGE=nvidia/cuda:12.5.0-base-ubuntu22.04
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
