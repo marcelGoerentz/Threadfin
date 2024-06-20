@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"strings"
 	"time"
 )
+
+var onlyOnce = false
 
 // Entwicklerinfos anzeigen
 func showDevInfo() {
@@ -244,7 +245,7 @@ func saveSettings(settings SettingsStruct) (err error) {
 	Settings = settings
 
 	if System.Dev {
-		Settings.UUID = "2019-01-DEV-Threadfin!"
+		Settings.UUID = "2024-06-DEV-Threadfin!"
 	}
 
 	setDeviceID()
@@ -278,10 +279,11 @@ func setGlobalDomain(domain string) {
 		System.Addresses.XML = System.ServerProtocol.XML + "://" + System.Domain + "/xmltv/threadfin.xml"
 	}
 
-	if Settings.EpgSource != "XEPG" {
-		log.Println("SOURCE: ", Settings.EpgSource)
+	if Settings.EpgSource != "XEPG" && !onlyOnce {
+		showInfo("SOURCE:" + Settings.EpgSource)
 		System.Addresses.M3U = getErrMsg(2106)
 		System.Addresses.XML = getErrMsg(2106)
+		onlyOnce = true
 	}
 }
 
