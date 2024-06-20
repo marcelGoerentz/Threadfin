@@ -33,6 +33,7 @@ jobs:
           prerelease: true
           name: Development Build
           tag_name: latest-beta
+          files: dist/*
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

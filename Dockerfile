@@ -56,9 +56,8 @@ WORKDIR $THREADFIN_HOME
 RUN rm /var/lib/dpkg/info/libc-bin.*
 RUN apt-get clean
 RUN apt-get update
-RUN apt-get install libc-bin
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y ca-certificates curl ffmpeg vlc
+RUN apt-get install -y libc-bin ca-certificates curl ffmpeg vlc
 
 RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apt-get -y install tzdata
 
