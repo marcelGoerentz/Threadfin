@@ -6,3 +6,4 @@ threadfin.exe
 binaries/
 *.js.map
 .vscode/
+dist/
