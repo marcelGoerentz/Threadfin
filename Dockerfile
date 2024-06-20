@@ -8,7 +8,8 @@ RUN git clone https://github.com/Threadfin/Threadfin.git /src
 
 WORKDIR /src
 
-RUN git checkout main
+ARG BRANCH="main"
+RUN git checkout ${BRANCH}
 RUN git pull
 RUN go mod tidy && go mod vendor
 RUN go build threadfin.go

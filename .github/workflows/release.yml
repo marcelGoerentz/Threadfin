@@ -7,8 +7,8 @@ on:
 permissions:
   contents: write
 jobs:
-  build:
-    name: Build
+  buildBinaries:
+    name: Build and release binaries
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
@@ -35,6 +35,11 @@ jobs:
           files: dist/*
           make_latest: true
 
+  buildDockerImages:
+    name: Build and push Docker Images
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
