@@ -1,10 +1,10 @@
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
-FROM golang:1.22 AS builder
+FROM golang:alpine AS builder
 
 # Download the source code
-RUN apt-get update && apt-get install -y git
-RUN git clone https://github.com/Threadfin/Threadfin.git /src
+RUN apk update && apk add git
+RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
 
 WORKDIR /src
 
@@ -16,7 +16,7 @@ RUN go build threadfin.go
 
 # Second stage. Creating an image
 # -----------------------------------------------------------------------------
-FROM ubuntu:22.04
+FROM alpine:3.20
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -53,17 +53,14 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$THREADFIN
 # Set working directory
 WORKDIR $THREADFIN_HOME
 
-RUN rm /var/lib/dpkg/info/libc-bin.*
-RUN apt-get clean
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y \
-      libc-bin \
-      ca-certificates \
-      curl \
-      ffmpeg \
-      vlc
+RUN apk update && apk upgrade
+RUN apk add ca-certificates\
+ curl\
+ ffmpeg\
+ vlc
 
-RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apt-get -y install tzdata
+#RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apt-get -y install tzdata
+RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apk add tzdata
 
 RUN mkdir -p $THREADFIN_BIN
 
