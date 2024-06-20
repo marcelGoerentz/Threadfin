@@ -1,5 +1,3 @@
-ARG IMAGE="ubuntu:22.04"
-
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
 FROM golang:1.22 AS builder
@@ -18,7 +16,7 @@ RUN go build threadfin.go
 
 # Second stage. Creating an image
 # -----------------------------------------------------------------------------
-FROM $IMAGE
+FROM ubuntu:22.04
 
 ARG BUILD_DATE
 ARG VCS_REF
