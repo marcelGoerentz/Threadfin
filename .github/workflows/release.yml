@@ -1,14 +1,13 @@
 name: Threadfin Build
 on:
   push:
-    branches:
-      - main
+    tags: 
+      - 'v*'
 
 permissions:
   contents: write
 jobs:
   buildBinaries:
-    if: ${{ contains(github.ref, 'refs/tags/v') }}
     name: Build and release binaries
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +35,6 @@ jobs:
           make_latest: true
 
   buildDockerImages:
-    if: ${{ contains(github.ref, 'refs/tags/v') }}
     name: Build and push Docker Images
     runs-on: ubuntu-latest
     steps:
