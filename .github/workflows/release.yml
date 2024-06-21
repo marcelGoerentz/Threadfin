@@ -8,6 +8,7 @@ permissions:
   contents: write
 jobs:
   buildBinaries:
+    if: ${{ github.ref == 'refs/heads/main' }}
     name: Build and release binaries
     runs-on: ubuntu-latest
     steps:
@@ -35,6 +36,7 @@ jobs:
           make_latest: true
 
   buildDockerImages:
+    if: ${{ github.ref == 'refs/heads/main' }}
     name: Build and push Docker Images
     runs-on: ubuntu-latest
     steps:

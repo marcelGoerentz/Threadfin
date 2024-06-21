@@ -3,11 +3,12 @@ on:
   push:
     branches:
       - beta
+    paths: 
+      - 'threadfin.go'
 permissions:
   contents: write
 jobs:
   buildBinaries:
-    if: ${{ github.ref == 'refs/heads/main' }}
     name: Build and release binaries
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +38,6 @@ jobs:
           files: dist/*
   
   buildDockerImages:
-    if: ${{ github.ref == 'refs/heads/main' }}
     name: Build and push Docker images
     runs-on: ubuntu-latest
     steps:
