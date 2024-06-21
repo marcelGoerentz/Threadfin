@@ -1,21 +1,14 @@
 name: Threadfin Build
 on:
   push:
-    tags: 
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
 jobs:
-  Test:
-    name: Test github.ref
-    runs-on: ubuntu-latest
-    steps:
-      - name: ECHO github.ref
-        run: echo ${{ github.ref }}
-
   buildBinaries:
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ contains(github.ref, 'refs/tags/v') }}
     name: Build and release binaries
     runs-on: ubuntu-latest
     steps:
@@ -43,7 +36,7 @@ jobs:
           make_latest: true
 
   buildDockerImages:
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ contains(github.ref, 'refs/tags/v') }}
     name: Build and push Docker Images
     runs-on: ubuntu-latest
     steps:
