@@ -7,6 +7,13 @@ on:
 permissions:
   contents: write
 jobs:
+  Test:
+    name: Test github.ref
+    runs-on: ubuntu-latest
+    steps:
+      - name: ECHO github.ref
+        run: echo ${{ github.ref }}
+
   buildBinaries:
     if: ${{ github.ref == 'refs/heads/main' }}
     name: Build and release binaries
