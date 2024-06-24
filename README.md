@@ -132,7 +132,6 @@ When the branch is changed, an update is only performed if there is a new versio
 #### Dependencies
 * [go-ssdp](https://github.com/koron/go-ssdp)
 * [websocket](https://github.com/gorilla/websocket)
-* [osext](https://github.com/kardianos/osext)
 * [avfs](github.com/avfs/avfs)
 
 #### Build
