@@ -436,6 +436,11 @@
       "title": "Store buffer in RAM",
       "description": "If checked, write buffer to RAM instead of writing to disk"
     },
+    "m3uWithoutPorts":
+    {
+      "title": "Urls in m3u file without ports",
+      "description": "By activating this checkbox the m3u file will not contain ports in the url"
+    },
     "listeningIp" :
     {
       "title": "Listening IPs",

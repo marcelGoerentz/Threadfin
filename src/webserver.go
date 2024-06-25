@@ -101,12 +101,6 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if Settings.HttpThreadfinDomain != "" {
-		setGlobalDomain(fmt.Sprintf("%s:%s", Settings.HttpThreadfinDomain, Settings.Port))
-	} else {
-		setGlobalDomain(r.Host)
-	}
-
 	debug = fmt.Sprintf("Web Server Request:Path: %s", path)
 	showDebug(debug, 2)
 
@@ -314,12 +308,6 @@ func Threadfin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if Settings.HttpThreadfinDomain != "" {
-		setGlobalDomain(fmt.Sprintf("%s:%s", Settings.HttpThreadfinDomain, Settings.Port))
-	} else {
-		setGlobalDomain(r.Host)
-	}
-
 	// XMLTV Datei
 	if strings.Contains(path, "xmltv/") {
 
@@ -464,12 +452,6 @@ func WS(w http.ResponseWriter, r *http.Request) {
 		ShowError(err, 0)
 		http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
 		return
-	}
-
-	if Settings.HttpThreadfinDomain != "" {
-		setGlobalDomain(fmt.Sprintf("%s:%s", Settings.HttpThreadfinDomain, Settings.Port))
-	} else {
-		setGlobalDomain(r.Host)
 	}
 
 	for {
@@ -741,12 +723,6 @@ func Web(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if Settings.HttpThreadfinDomain != "" {
-		setGlobalDomain(fmt.Sprintf("%s:%s", Settings.HttpThreadfinDomain, Settings.Port))
-	} else {
-		setGlobalDomain(r.Host)
-	}
-
 	if System.Dev {
 
 		lang, err = loadJSONFileToMap(fmt.Sprintf("html/lang/%s.json", Settings.Language))
@@ -967,11 +943,6 @@ func API(w http.ResponseWriter, r *http.Request) {
 			}
 	*/
 
-	if Settings.HttpThreadfinDomain != "" {
-		setGlobalDomain(fmt.Sprintf("%s:%s", Settings.HttpThreadfinDomain, Settings.Port))
-	} else {
-		setGlobalDomain(r.Host)
-	}
 	var request APIRequestStruct
 	var response APIResponseStruct
 

@@ -149,6 +149,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["port"] = "34400"
 	defaults["ssdp"] = true
 	defaults["storeBufferInRAM"] = true
+	defaults["m3uWithoutPorts"] = false
 	defaults["listeningIp"]= ""
 	defaults["forceHttps"] = false
 	defaults["httpsPort"] = 443

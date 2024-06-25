@@ -145,19 +145,19 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-        case "listeningIp":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.listeningIp.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "listeningIp", data)
-          input.setAttribute("placeholder", "{{.settings.listeningIp.placeholder}}")
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
+      case "listeningIp":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.listeningIp.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createInput("text", "listeningIp", data)
+        input.setAttribute("placeholder", "{{.settings.listeningIp.placeholder}}")
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
 
       // Checkboxen
       case "authentication.web":
@@ -294,6 +294,20 @@ class SettingsCategory {
         var input = content.createCheckbox(settingsKey)
         input.checked = data
         input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
+
+      case "m3uWithoutPorts":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.m3uWithoutPorts.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createCheckbox(settingsKey)
+        input.checked = data
+        input.setAttribute("oncahnge", "javascript: this.className = 'changed'")
         tdRight.appendChild(input)
 
         setting.appendChild(tdLeft)
@@ -650,6 +664,10 @@ class SettingsCategory {
 
       case "storeBufferInRAM":
         text = "{{.settings.storeBufferInRAM.description}}"
+        break
+
+      case "m3uWithoutPorts":
+        text = "{{.settings.m3uWithoutPorts.description}}"
         break
 
       case "forceHttps":

@@ -238,6 +238,17 @@ class SettingsCategory {
                 setting.appendChild(tdLeft);
                 setting.appendChild(tdRight);
                 break;
+            case "m3uWithoutPorts":
+                var tdLeft = document.createElement("TD");
+                tdLeft.innerHTML = "{{.settings.m3uWithoutPorts.title}}" + ":";
+                var tdRight = document.createElement("TD");
+                var input = content.createCheckbox(settingsKey);
+                input.checked = data;
+                input.setAttribute("oncahnge", "javascript: this.className = 'changed'");
+                tdRight.appendChild(input);
+                setting.appendChild(tdLeft);
+                setting.appendChild(tdRight);
+                break;
             case "forceHttps":
                 var tdLeft = document.createElement("TD");
                 tdLeft.innerHTML = "{{.settings.forceHttps.title}}" + ":";
@@ -505,6 +516,9 @@ class SettingsCategory {
                 break;
             case "storeBufferInRAM":
                 text = "{{.settings.storeBufferInRAM.description}}";
+                break;
+            case "m3uWithoutPorts":
+                text = "{{.settings.m3uWithoutPorts.description}}";
                 break;
             case "forceHttps":
                 text = "{{.settings.forceHttps.description}}";

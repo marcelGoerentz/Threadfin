@@ -242,13 +242,33 @@ func buildM3U(groups []string) (m3u string, err error) {
 				if len(host_split) > 0 {
 					u.Host = host_split[0]
 				}
-				channel.URL = fmt.Sprintf("https://%s:%d%s", u.Host, Settings.HttpsPort, u.Path)
+				if Settings.M3UWithoutPorts {
+					channel.URL = fmt.Sprintf("https://%s%s", u.Host, u.Path)
+				} else {
+					channel.URL = fmt.Sprintf("https://%s:%d%s", u.Host, Settings.HttpsPort, u.Path)
+				}
+			}
+		} else {
+			if Settings.HttpThreadfinDomain != "" {
+				u, err := url.Parse(channel.URL)
+				if err == nil {
+					u.Scheme = "http"
+					host_split := strings.Split(u.Host, ":")
+					if len(host_split) > 0 {
+						u.Host = host_split[0]
+					}
+					if Settings.M3UWithoutPorts {
+						channel.URL = fmt.Sprintf("http://%s%s", u.Host, u.Path)
+					} else {
+						channel.URL = fmt.Sprintf("https://%s:%s%s", u.Host, Settings.Port, u.Path)
+					}
+				}
 			}
 		}
 
 		logo := ""
 		if channel.TvgLogo != "" {
-			logo = imgc.Image.GetURL(channel.TvgLogo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain)
+			logo = imgc.Image.GetURL(channel.TvgLogo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)
 		}
 		var parameter = fmt.Sprintf(`#EXTINF:0 channelID="%s" tvg-chno="%s" tvg-name="%s" tvg-id="%s" tvg-logo="%s" group-title="%s",%s`+"\n", channel.XEPG, channel.XChannelID, channel.XName, channel.XChannelID, logo, group, channel.XName)
 		var stream, err = createStreamingURL("M3U", channel.FileM3UID, channel.XChannelID, channel.XName, channel.URL, channel.BackupChannel1URL, channel.BackupChannel2URL, channel.BackupChannel3URL)
