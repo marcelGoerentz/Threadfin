@@ -48,11 +48,6 @@ func Init() (err error) {
 	System.AppName = strings.ToLower(System.Name)
 	System.ARCH = runtime.GOARCH
 	System.OS = runtime.GOOS
-	System.ServerProtocol.API = "http"
-	System.ServerProtocol.DVR = "http"
-	System.ServerProtocol.M3U = "http"
-	System.ServerProtocol.WEB = "http"
-	System.ServerProtocol.XML = "http"
 	System.PlexChannelLimit = 480
 	System.UnfilteredChannelLimit = 480
 	System.Compatibility = "0.1.0"
@@ -200,30 +195,7 @@ func Init() (err error) {
 	showInfo(fmt.Sprintf("GitHub:https://github.com/%s", System.GitHub.User))
 	showInfo(fmt.Sprintf("Git Branch:%s [%s]", System.Branch, System.GitHub.User))
 
-	// Domainnamen setzen
-	var domain = ""
-	var port = ""
-	if Settings.HttpThreadfinDomain != "" || Settings.HttpsThreadfinDomain != "" {
-		
-		if Settings.ForceHttps {
-			domain = Settings.HttpsThreadfinDomain
-			port = fmt.Sprintf("%d", Settings.HttpsPort)
-		} else {
-			domain = Settings.HttpThreadfinDomain
-			port = Settings.Port
-		}
-		
-	} else {
-		domain = System.IPAddress
-		port = Settings.Port
-	}
-	if Settings.M3UWithoutPorts {
-		setGlobalDomain(domain)
-	} else {
-		setGlobalDomain(fmt.Sprintf("%s:%s", domain, port))
-	}
-
-	System.URLBase = fmt.Sprintf("%s://%s:%s", System.ServerProtocol.WEB, System.IPAddress, Settings.Port)
+	System.URLBase = fmt.Sprintf("%s://%s:%s", System.ServerProtocol, System.IPAddress, Settings.Port)
 
 	// HTML Dateien erstellen, mit dev == true werden die lokalen HTML Dateien verwendet
 	if System.Dev {

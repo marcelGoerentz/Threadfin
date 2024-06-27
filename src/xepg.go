@@ -51,7 +51,7 @@ func buildXEPG(background bool) {
 
 	var err error
 
-	Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s://%s/images/", System.ServerProtocol.WEB, System.Domain), Settings.CacheImages)
+	Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s://%s/images/", System.ServerProtocol, System.Domain), Settings.CacheImages)
 	if err != nil {
 		ShowError(err, 0)
 	}
@@ -258,7 +258,7 @@ func createXEPGMapping() {
 
 					channel["id"] = c.ID
 					channel["display-name"] = friendlyDisplayName(*c)
-					channel["icon"] = imgc.Image.GetURL(c.Icon.Src, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)
+					channel["icon"] = imgc.Image.GetURL(c.Icon.Src, System.Domain, Settings.Port, Settings.ForceHttpsToUpstream, Settings.HttpsPort)
 					channel["active"] = c.Active
 
 					xmltvMap[c.ID] = channel
@@ -493,7 +493,7 @@ func createXEPGDatabase() (err error) {
 			// Kanallogo aktualisieren. Wird bei vorhandenem Logo in der XMLTV Datei wieder überschrieben
 			if xepgChannel.XUpdateChannelIcon {
 				var imgc = Data.Cache.Images
-				xepgChannel.TvgLogo = imgc.Image.GetURL(m3uChannel.TvgLogo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)
+				xepgChannel.TvgLogo = imgc.Image.GetURL(m3uChannel.TvgLogo, Settings.ThreadfinDomain, Settings.Port, Settings.ForceHttpsToUpstream, Settings.HttpsPort)
 			}
 
 			Data.XEPG.Channels[currentXEPGID] = xepgChannel
@@ -717,7 +717,7 @@ func mapping() (err error) {
 
 							if xepgChannel.XUpdateChannelIcon && len(logo) > 0 {
 								var imgc = Data.Cache.Images
-								xepgChannel.TvgLogo = imgc.Image.GetURL(logo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)
+								xepgChannel.TvgLogo = imgc.Image.GetURL(logo, Settings.ThreadfinDomain, Settings.Port, Settings.ForceHttpsToUpstream, Settings.HttpsPort)
 							}
 
 						}
@@ -825,7 +825,7 @@ func createXMLTVFile() (err error) {
 					// Kanäle
 					var channel Channel
 					channel.ID = xepgChannel.XChannelID
-					channel.Icon = Icon{Src: imgc.Image.GetURL(xepgChannel.TvgLogo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)}
+					channel.Icon = Icon{Src: imgc.Image.GetURL(xepgChannel.TvgLogo, Settings.ThreadfinDomain, Settings.Port, Settings.ForceHttpsToUpstream, Settings.HttpsPort)}
 					channel.DisplayName = append(channel.DisplayName, DisplayName{Value: xepgChannel.XName})
 					channel.Active = xepgChannel.XActive
 					channel.Live = true
@@ -924,7 +924,7 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			program.Country = xmltvProgram.Country
 
 			// Program icon (Poster / Cover)
-			getPoster(program, xmltvProgram, xepgChannel, Settings.ForceHttps)
+			getPoster(program, xmltvProgram, xepgChannel, Settings.ForceHttpsToUpstream)
 
 			// Language (Sprache)
 			program.Language = xmltvProgram.Language
@@ -1073,7 +1073,7 @@ func createDummyProgram(xepgChannel XEPGChannelStruct) (dummyXMLTV XMLTV) {
 			}
 
 			if Settings.XepgReplaceMissingImages {
-				poster.Src = imgc.Image.GetURL(xepgChannel.TvgLogo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)
+				poster.Src = imgc.Image.GetURL(xepgChannel.TvgLogo, Settings.ThreadfinDomain, Settings.Port, Settings.ForceHttpsToUpstream, Settings.HttpsPort)
 				epg.Poster = append(epg.Poster, poster)
 			}
 
@@ -1121,7 +1121,7 @@ func getPoster(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelS
 	var imgc = Data.Cache.Images
 
 	for _, poster := range xmltvProgram.Poster {
-		poster.Src = imgc.Image.GetURL(poster.Src, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)
+		poster.Src = imgc.Image.GetURL(poster.Src, Settings.ThreadfinDomain, Settings.Port, Settings.ForceHttpsToUpstream, Settings.HttpsPort)
 		program.Poster = append(program.Poster, poster)
 	}
 
@@ -1129,7 +1129,7 @@ func getPoster(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelS
 
 		if len(xmltvProgram.Poster) == 0 {
 			var poster Poster
-			poster.Src = imgc.Image.GetURL(xepgChannel.TvgLogo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain, Settings.M3UWithoutPorts)
+			poster.Src = imgc.Image.GetURL(xepgChannel.TvgLogo, Settings.ThreadfinDomain, Settings.Port, Settings.ForceHttpsToUpstream, Settings.HttpsPort)
 			program.Poster = append(program.Poster, poster)
 		}
 

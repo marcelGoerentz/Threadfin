@@ -24,7 +24,7 @@ type Cache struct {
 }
 
 type imageFunc struct {
-	GetURL  func(string, string, string, bool, int, string, bool) string
+	GetURL  func(string, string, string, bool, string) string
 	Caching func()
 	Remove  func()
 }
@@ -43,7 +43,7 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 
 	var queue []string
 
-	c.Image.GetURL = func(src string, http_domain string, http_port string, force_https bool, https_port int, https_domain string, m3uWithoutPort bool) (cacheURL string) {
+	c.Image.GetURL = func(src string, domain string, http_port string, force_https bool, https_port string) (cacheURL string) {
 
 		c.Lock()
 		defer c.Unlock()
@@ -67,20 +67,15 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 			if c.caching {
 				u, err := url.Parse(cacheURL)
 				if err == nil {
+					var concateUrl = "http"
 					if force_https {
-						var concateUrl = fmt.Sprintf("https://%s", https_domain)
-						if !m3uWithoutPort {
-							concateUrl += fmt.Sprintf(":%d", https_port)
-						}
-						cacheURL = fmt.Sprintf("%s%s", concateUrl, u.Path)
-					} else if http_domain != "" {
-						var concateUrl = fmt.Sprintf("http://%s", http_domain)
-						if !m3uWithoutPort {
-							concateUrl += fmt.Sprintf(":%s", http_port)
-						}
-						cacheURL = fmt.Sprintf("%s%s", concateUrl , u.Path)
+						concateUrl += "s"
 					}
+					concateUrl += fmt.Sprintf("://%s", domain)
+					cacheURL = fmt.Sprintf("%s%s", concateUrl , u.Path)
 				}
+			} else {
+				cacheURL = src
 			}
 			return cacheURL
 		}

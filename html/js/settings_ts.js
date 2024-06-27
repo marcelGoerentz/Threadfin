@@ -238,13 +238,13 @@ class SettingsCategory {
                 setting.appendChild(tdLeft);
                 setting.appendChild(tdRight);
                 break;
-            case "m3uWithoutPorts":
+            case "omitPorts":
                 var tdLeft = document.createElement("TD");
-                tdLeft.innerHTML = "{{.settings.m3uWithoutPorts.title}}" + ":";
+                tdLeft.innerHTML = "{{.settings.omitPorts.title}}" + ":";
                 var tdRight = document.createElement("TD");
                 var input = content.createCheckbox(settingsKey);
                 input.checked = data;
-                input.setAttribute("oncahnge", "javascript: this.className = 'changed'");
+                input.setAttribute("onchange", "javascript: this.className = 'changed'");
                 tdRight.appendChild(input);
                 setting.appendChild(tdLeft);
                 setting.appendChild(tdRight);
@@ -252,6 +252,17 @@ class SettingsCategory {
             case "forceHttps":
                 var tdLeft = document.createElement("TD");
                 tdLeft.innerHTML = "{{.settings.forceHttps.title}}" + ":";
+                var tdRight = document.createElement("TD");
+                var input = content.createCheckbox(settingsKey);
+                input.checked = data;
+                input.setAttribute("onchange", "javascript: this.className = 'changed'");
+                tdRight.appendChild(input);
+                setting.appendChild(tdLeft);
+                setting.appendChild(tdRight);
+                break;
+            case "useHttps":
+                var tdLeft = document.createElement("TD");
+                tdLeft.innerHTML = "{{.settings.useHttps.title}}" + ":";
                 var tdRight = document.createElement("TD");
                 var input = content.createCheckbox(settingsKey);
                 input.checked = data;
@@ -271,23 +282,23 @@ class SettingsCategory {
                 setting.appendChild(tdLeft);
                 setting.appendChild(tdRight);
                 break;
-            case "httpsThreadfinDomain":
+            case "threadfinDomain":
                 var tdLeft = document.createElement("TD");
-                tdLeft.innerHTML = "{{.settings.httpsThreadfinDomain.title}}" + ":";
+                tdLeft.innerHTML = "{{.settings.threadfinDomain.title}}" + ":";
                 var tdRight = document.createElement("TD");
-                var input = content.createInput("text", "httpsThreadfinDomain", data.toString());
-                input.setAttribute("placeholder", "{{.settings.httpsThreadfinDomain.placeholder}}");
+                var input = content.createInput("text", "threadfinDomain", data.toString());
+                input.setAttribute("placeholder", "{{.settings.threadfinDomain.placeholder}}");
                 input.setAttribute("onchange", "javascript: this.className = 'changed'");
                 tdRight.appendChild(input);
                 setting.appendChild(tdLeft);
                 setting.appendChild(tdRight);
                 break;
-            case "httpThreadfinDomain":
+            case "domainUseHttps":
                 var tdLeft = document.createElement("TD");
-                tdLeft.innerHTML = "{{.settings.httpThreadfinDomain.title}}" + ":";
+                tdLeft.innerHTML = "{{.settings.domainUseHttps.title}}" + ":";
                 var tdRight = document.createElement("TD");
-                var input = content.createInput("text", "httpThreadfinDomain", data.toString());
-                input.setAttribute("placeholder", "{{.settings.httpThreadfinDomain.placeholder}}");
+                var input = content.createCheckbox(settingsKey);
+                input.checked = data;
                 input.setAttribute("onchange", "javascript: this.className = 'changed'");
                 tdRight.appendChild(input);
                 setting.appendChild(tdLeft);
@@ -517,20 +528,20 @@ class SettingsCategory {
             case "storeBufferInRAM":
                 text = "{{.settings.storeBufferInRAM.description}}";
                 break;
-            case "m3uWithoutPorts":
-                text = "{{.settings.m3uWithoutPorts.description}}";
+            case "omitPorts":
+                text = "{{.settings.omitPorts.description}}";
                 break;
             case "forceHttps":
                 text = "{{.settings.forceHttps.description}}";
                 break;
+            case "useHttps":
+                text = "{{.settings.useHttps.description}}";
+                break;
             case "httpsPort":
                 text = "{{.settings.httpsPort.description}}";
                 break;
-            case "httpsThreadfinDomain":
-                text = "{{.settings.httpsThreadfinDomain.description}}";
-                break;
-            case "httpThreadfinDomain":
-                text = "{{.settings.httpThreadfinDomain.description}}";
+            case "threadfinDomain":
+                text = "{{.settings.threadfinDomain.description}}";
                 break;
             case "enableNonAscii":
                 text = "{{.settings.enableNonAscii.description}}";

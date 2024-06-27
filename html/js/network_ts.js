@@ -3,9 +3,9 @@ class Server {
         this.cmd = cmd;
     }
     request(data) {
-        if (SERVER_CONNECTION == true) {
-            return;
-        }
+        //if (SERVER_CONNECTION == true) {
+        //  return
+        //}
         SERVER_CONNECTION = true;
         console.log(data);
         if (this.cmd != "updateLog") {
@@ -20,7 +20,7 @@ class Server {
                 this.protocol = "wss://";
                 break;
         }
-        var url = this.protocol + window.location.hostname + ":" + window.location.port + "/data/" + "?Token=" + getCookie("Token");
+        var url = this.protocol + window.location.hostname + ":" + window.location.port + "/ws/" + "?Token=" + getCookie("Token");
         data["cmd"] = this.cmd;
         var ws = new WebSocket(url);
         ws.onopen = function () {

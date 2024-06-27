@@ -149,12 +149,12 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["port"] = "34400"
 	defaults["ssdp"] = true
 	defaults["storeBufferInRAM"] = true
-	defaults["m3uWithoutPorts"] = false
+	defaults["omitPorts"] = false
 	defaults["listeningIp"]= ""
 	defaults["forceHttps"] = false
+	defaults["useHttps"] = false
 	defaults["httpsPort"] = 443
-	defaults["httpsThreadfinDomain"] = ""
-	defaults["httpThreadfinDomain"] = ""
+	defaults["threadfinDomain"] = ""
 	defaults["enableNonAscii"] = false
 	defaults["epgCategories"] = "Kids:kids|News:news|Movie:movie|Series:series|Sports:sports"
 	defaults["epgCategoriesColors"] = "kids:mediumpurple|news:tomato|movie:royalblue|series:gold|sports:yellowgreen"
@@ -185,6 +185,8 @@ func loadSettings() (settings SettingsStruct, err error) {
 	if len(System.Flag.Port) > 0 {
 		settings.Port = System.Flag.Port
 	}
+
+	settings.UseHttps = System.Flag.UseHttps
 
 	if len(System.Flag.Branch) > 0 {
 		settings.Branch = System.Flag.Branch
@@ -217,6 +219,37 @@ func loadSettings() (settings SettingsStruct, err error) {
 	if len(Settings.VLCPath) == 0 && Settings.Buffer == "vlc" {
 		showWarning(2021)
 	}
+
+	// Setzen der globalen Domain
+	// Domainnamen setzen
+	var domain = ""
+	var port = ""
+	if settings.UseHttps {
+		System.ServerProtocol = "https"	
+	} else {
+		System.ServerProtocol = "http"
+	}
+	if Settings.ThreadfinDomain != "" {
+		domain = Settings.ThreadfinDomain
+		if Settings.UseHttps {
+			port = Settings.HttpsPort
+			if port == "" {
+				port = "443"
+			}
+		} else {
+			port = Settings.Port
+		}
+		
+	} else {
+		domain = System.IPAddress
+		port = Settings.Port
+	}
+	if Settings.OmitPorts {
+		System.Domain = domain
+	} else {
+		System.Domain = fmt.Sprintf("%s:%s", domain, port)
+	}
+	setBaseURL()
 
 	return settings, nil
 }
@@ -255,9 +288,9 @@ func saveSettings(settings SettingsStruct) (err error) {
 }
 
 // Zugriff über die Domain ermöglichen
-func setGlobalDomain(domain string) {
+func setBaseURL() {
 
-	System.Domain = domain
+	System.BaseURL = fmt.Sprintf("%s://%s", System.ServerProtocol, System.Domain)
 
 	switch Settings.AuthenticationPMS {
 	case true:
@@ -268,16 +301,16 @@ func setGlobalDomain(domain string) {
 
 	switch Settings.AuthenticationM3U {
 	case true:
-		System.Addresses.M3U = System.ServerProtocol.M3U + "://" + System.Domain + "/m3u/threadfin.m3u?username=xxx&password=yyy"
+		System.Addresses.M3U = System.BaseURL + "/m3u/threadfin.m3u?username=xxx&password=yyy"
 	case false:
-		System.Addresses.M3U = System.ServerProtocol.M3U + "://" + System.Domain + "/m3u/threadfin.m3u"
+		System.Addresses.M3U = System.BaseURL + "/m3u/threadfin.m3u"
 	}
 
 	switch Settings.AuthenticationXML {
 	case true:
-		System.Addresses.XML = System.ServerProtocol.XML + "://" + System.Domain + "/xmltv/threadfin.xml?username=xxx&password=yyy"
+		System.Addresses.XML = System.BaseURL + "/xmltv/threadfin.xml?username=xxx&password=yyy"
 	case false:
-		System.Addresses.XML = System.ServerProtocol.XML + "://" + System.Domain + "/xmltv/threadfin.xml"
+		System.Addresses.XML = System.BaseURL + "/xmltv/threadfin.xml"
 	}
 
 	if Settings.EpgSource != "XEPG" && !onlyOnce {
@@ -309,10 +342,9 @@ func setDeviceID() {
 }
 
 // Provider Streaming-URL zu Threadfin Streaming-URL konvertieren
-func createStreamingURL(streamingType, playlistID, channelNumber, channelName, url string, backup_url_1 string, backup_url_2 string, backup_url_3 string) (streamingURL string, err error) {
+func createStreamingURL(playlistID, channelNumber, channelName, url string, backup_url_1 string, backup_url_2 string, backup_url_3 string) (streamingURL string, err error) {
 
 	var streamInfo StreamInfo
-	var serverProtocol string
 
 	if len(Data.Cache.StreamingURLS) == 0 {
 		Data.Cache.StreamingURLS = make(map[string]StreamInfo)
@@ -337,24 +369,7 @@ func createStreamingURL(streamingType, playlistID, channelNumber, channelName, u
 
 	}
 
-	switch streamingType {
-
-	case "DVR":
-		serverProtocol = System.ServerProtocol.DVR
-
-	case "M3U":
-		serverProtocol = System.ServerProtocol.M3U
-
-	}
-
-	if Settings.ForceHttps {
-		if Settings.HttpsThreadfinDomain != "" {
-			serverProtocol = "https"
-			System.Domain = Settings.HttpsThreadfinDomain
-		}
-	}
-
-	streamingURL = fmt.Sprintf("%s://%s/stream/%s", serverProtocol, System.Domain, streamInfo.URLid)
+	streamingURL = fmt.Sprintf("%s://%s/stream/%s", System.ServerProtocol, System.Domain, streamInfo.URLid)
 	return
 }
 

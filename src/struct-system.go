@@ -50,12 +50,13 @@ type SystemStruct struct {
 	}
 
 	Flag struct {
-		Branch  string
-		Debug   int
-		Info    bool
-		Port    string
-		Restore string
-		SSDP    bool
+		Branch    string
+		Debug     int
+		Info      bool
+		Port      string
+		UseHttps  bool
+		Restore   string
+		SSDP      bool
 	}
 
 	Folder struct {
@@ -68,6 +69,8 @@ type SystemStruct struct {
 		Temp         string
 	}
 
+	BaseURL                string
+	ServerProtocol         string
 	Hostname               string
 	ImageCachingInProgress int
 	IPAddress              string
@@ -80,14 +83,6 @@ type SystemStruct struct {
 	TimeForAutoUpdate      string
 
 	Notification map[string]Notification
-
-	ServerProtocol struct {
-		API string
-		DVR string
-		M3U string
-		WEB string
-		XML string
-	}
 
 	GitHub struct {
 		Branch  string
@@ -325,12 +320,12 @@ type SettingsStruct struct {
 	XepgReplaceChannelTitle   bool                  `json:"xepg.replace.channel.title"`
 	ThreadfinAutoUpdate       bool                  `json:"ThreadfinAutoUpdate"`
 	StoreBufferInRAM          bool                  `json:"storeBufferInRAM"`
-	M3UWithoutPorts           bool                  `json:"m3uWithoutPorts"`
+	OmitPorts                 bool                  `json:"omitPorts"`
 	ListeningIp               string                `json:"listeningIp"`
-	ForceHttps                bool                  `json:"forceHttps"`
-	HttpsPort                 int                   `json:"httpsPort"`
-	HttpsThreadfinDomain      string                `json:"httpsThreadfinDomain"`
-	HttpThreadfinDomain       string                `json:"httpThreadfinDomain"`
+	ForceHttpsToUpstream      bool                  `json:"forceHttps"`
+	UseHttps                  bool                  `json:"useHttps"`
+	HttpsPort                 string                `json:"httpsPort"`
+	ThreadfinDomain           string                `json:"threadfinDomain"`
 	EnableNonAscii            bool                  `json:"enableNonAscii"`
 	EpgCategories             string                `json:"epgCategories"`
 	EpgCategoriesColors       string                `json:"epgCategoriesColors"`

@@ -6,9 +6,29 @@
             "name": "Launch Package",
             "type": "go",
             "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}",
-            "args": ["-dev"]
+            "mode": "debug",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}\\threadfin.go",
+            "args": [
+                "-port=34443",
+                "-useHttps",
+                "-dev",
+                "-debug=3"
+                ]
+        },
+        {
+            "type": "msedge",
+            "name": "Launch Edge against localhost",
+            "request": "launch",
+            "url": "http://localhost:34400/web",
+            "webRoot": "${workspaceFolder}/html"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "processId": 0
         }
     ]
 }

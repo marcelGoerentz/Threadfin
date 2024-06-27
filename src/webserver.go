@@ -27,7 +27,7 @@ func StartWebserver() (err error) {
 	http.HandleFunc("/stream/", Stream)
 	http.HandleFunc("/xmltv/", Threadfin)
 	http.HandleFunc("/m3u/", Threadfin)
-	http.HandleFunc("/data/", WS)
+	http.HandleFunc("/ws/", WS)
 	http.HandleFunc("/web/", Web)
 	http.HandleFunc("/download/", Download)
 	http.HandleFunc("/api/", API)
@@ -55,22 +55,38 @@ func StartWebserver() (err error) {
 	if customIps != nil {
 		showHighlight("Webserver is restricted to listen to this address(es):")
 		for _, ip := range customIps {
-			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol.WEB, ip, Settings.Port))
+			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 	} else {
 		for _, ip := range System.IPAddressesV4 {
-			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol.WEB, ip, Settings.Port))
+			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 
 		for _, ip := range System.IPAddressesV6 {
-			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol.WEB, ip, Settings.Port))
+			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 	}
-	if err = http.ListenAndServe(":"+port, nil); err != nil {
-		ShowError(err, 1001)
-		return
+
+	go func () {
+		if err = http.ListenAndServe(":"+port, nil); err != nil {
+			ShowError(err, 1001)
+			return
+		}	
+	}()
+
+	if Settings.UseHttps {
+		go func () {
+			if Settings.HttpsPort == "" {
+				Settings.HttpsPort = "443"
+			}
+			if err = http.ListenAndServeTLS(":" + Settings.HttpsPort, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", nil); err != nil {
+				ShowError(err, 1001)
+				return
+			}
+		} ()
 	}
-	return
+	
+	select {}
 }
 
 func checkForRestriction(w http.ResponseWriter, r *http.Request) error{
@@ -199,15 +215,22 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if Settings.ForceHttps {
+	if Settings.ForceHttpsToUpstream {
 		u, err := url.Parse(streamInfo.URL)
 		if err == nil {
-			u.Scheme = "https"
+			var streamURL = "https"
 			host_split := strings.Split(u.Host, ":")
 			if len(host_split) > 0 {
-				u.Host = host_split[0]
+				streamURL += "://" + host_split[0]				
 			}
-			streamInfo.URL = fmt.Sprintf("https://%s:%d%s", u.Host, Settings.HttpsPort, u.Path)
+			if len(host_split) > 1 {
+				streamURL += ":" + host_split[1]
+			}
+			if u.RawQuery != ""{
+				streamInfo.URL = fmt.Sprintf("%s%s?%s", streamURL, u.Path, u.RawQuery)
+			} else {
+				streamInfo.URL = streamURL + u.Path
+			}
 		}
 	}
 
@@ -424,6 +447,11 @@ func DataImages(w http.ResponseWriter, r *http.Request) {
 	w.Write(content)
 }
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
 // WS : Web Sockets /ws/
 func WS(w http.ResponseWriter, r *http.Request) {
 
@@ -440,14 +468,8 @@ func WS(w http.ResponseWriter, r *http.Request) {
 
 	var newToken string
 
-	/*
-		if r.Header.Get("Origin") != "http://"+r.Host {
-			httpStatusError(w, r, 403)
-			return
-		}
-	*/
-
-	conn, err := websocket.Upgrade(w, r, w.Header(), 1024, 1024)
+	// Upgrade connection to websocket connection
+	conn, err := upgrader.Upgrade(w, r, w.Header())
 	if err != nil {
 		ShowError(err, 0)
 		http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
@@ -456,10 +478,17 @@ func WS(w http.ResponseWriter, r *http.Request) {
 
 	for {
 
-		err = conn.ReadJSON(&request)
+		_, msgBytes, err := conn.ReadMessage()
+		if err != nil {
+			ShowError(err, 11103)
+			break
+		}
+
+		err = json.Unmarshal(msgBytes, &request)
 
 		if err != nil {
-			return
+			ShowError(err, 1120)
+			break
 		}
 
 		if !System.ConfigurationWizard {
@@ -519,6 +548,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 
 		// Daten schreiben
 		case "saveSettings":
+			showInfo("WEB:Saving settings")
 			var authenticationUpdate = Settings.AuthenticationWEB
 			var previousStoreBufferInRAM = Settings.StoreBufferInRAM
 			response.Settings, err = updateServerSettings(request)
@@ -610,7 +640,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 			file, errNew := ThreadfinBackup()
 			err = errNew
 			if err == nil {
-				response.OpenLink = fmt.Sprintf("%s://%s/download/%s", System.ServerProtocol.WEB, System.Domain, file)
+				response.OpenLink = fmt.Sprintf("%s://%s/download/%s", System.ServerProtocol, System.Domain, file)
 			}
 
 		case "ThreadfinRestore":
@@ -1034,8 +1064,8 @@ func API(w http.ResponseWriter, r *http.Request) {
 		response.StreamsXepg = int64(Data.XEPG.XEPGCount)
 		response.EpgSource = Settings.EpgSource
 		response.URLDvr = System.Domain
-		response.URLM3U = System.ServerProtocol.M3U + "://" + System.Domain + "/m3u/threadfin.m3u"
-		response.URLXepg = System.ServerProtocol.XML + "://" + System.Domain + "/xmltv/threadfin.xml"
+		response.URLM3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
+		response.URLXepg = System.ServerProtocol + "://" + System.Domain + "/xmltv/threadfin.xml"
 
 	case "update.m3u":
 		err = getProviderData("m3u", "")

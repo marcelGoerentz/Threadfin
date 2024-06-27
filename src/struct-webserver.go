@@ -47,12 +47,12 @@ type RequestStruct struct {
 		SchemeM3U                *string   `json:"scheme.m3u,omitempty"`
 		SchemeXML                *string   `json:"scheme.xml,omitempty"`
 		StoreBufferInRAM         *bool     `json:"storeBufferInRAM,omitempty"`
-		M3UWithoutPorts          *bool     `json:"m3uWithoutPorts.omitempty"`
+		OmitPorts                *bool     `json:"omitPorts,omitempty"`
 		ListeningIp              *string   `json:"listeningIp,omitempty"`
-		ForceHttps               *bool     `json:"forceHttps,omitempty"`
-		HttpsPort                *int      `json:"httpsPort,omitempty"`
-		HttpsThreadfinDomain     *string   `json:"httpsThreadfinDomain,omitempty"`
-		HttpThreadfinDomain      *string   `json:"httpThreadfinDomain,omitempty"`
+		ForceHttpsToUpstream     *bool     `json:"forceHttps,omitempty"`
+		UseHttps                 *bool     `json:"useHttps,omitempty"` 
+		HttpsPort                *string   `json:"httpsPort,omitempty"`
+		ThreadfinDomain          *string   `json:"threadfinDomain,omitempty"`
 		EnableNonAscii           *bool     `json:"enableNonAscii,omitempty"`
 		EpgCategories            *string   `json:"epgCategories,omitempty"`
 		EpgCategoriesColors      *string   `json:"epgCategoriesColors,omitempty"`

@@ -42,7 +42,7 @@ func getCapability() (xmlContent []byte, err error) {
 	var buffer bytes.Buffer
 
 	capability.Xmlns = "urn:schemas-upnp-org:device-1-0"
-	capability.URLBase = System.ServerProtocol.WEB + "://" + System.Domain
+	capability.URLBase = System.ServerProtocol + "://" + System.Domain
 
 	capability.SpecVersion.Major = 1
 	capability.SpecVersion.Minor = 0
@@ -71,14 +71,14 @@ func getDiscover() (jsonContent []byte, err error) {
 
 	var discover Discover
 
-	discover.BaseURL = System.ServerProtocol.WEB + "://" + System.Domain
+	discover.BaseURL = System.ServerProtocol + "://" + System.Domain
 	discover.DeviceAuth = System.AppName
 	discover.DeviceID = System.DeviceID
 	discover.FirmwareName = "bin_" + System.Version
 	discover.FirmwareVersion = System.Version
 	discover.FriendlyName = System.Name
 
-	discover.LineupURL = fmt.Sprintf("%s://%s/lineup.json", System.ServerProtocol.DVR, System.Domain)
+	discover.LineupURL = fmt.Sprintf("%s://%s/lineup.json", System.ServerProtocol, System.Domain)
 	discover.Manufacturer = "Golang"
 	discover.ModelNumber = System.Version
 	discover.TunerCount = Settings.Tuner
@@ -136,7 +136,7 @@ func getLineup() (jsonContent []byte, err error) {
 
 			}
 
-			stream.URL, err = createStreamingURL("DVR", m3uChannel.FileM3UID, stream.GuideNumber, m3uChannel.Name, m3uChannel.URL, "", "", "")
+			stream.URL, err = createStreamingURL(m3uChannel.FileM3UID, stream.GuideNumber, m3uChannel.Name, m3uChannel.URL, "", "", "")
 			if err == nil {
 				lineup = append(lineup, stream)
 			} else {
@@ -159,7 +159,7 @@ func getLineup() (jsonContent []byte, err error) {
 				stream.GuideName = xepgChannel.XName
 				stream.GuideNumber = xepgChannel.XChannelID
 				//stream.URL = fmt.Sprintf("%s://%s/stream/%s-%s", System.ServerProtocol.DVR, System.Domain, xepgChannel.FileM3UID, base64.StdEncoding.EncodeToString([]byte(xepgChannel.URL)))
-				stream.URL, err = createStreamingURL("DVR", xepgChannel.FileM3UID, xepgChannel.XChannelID, xepgChannel.XName, xepgChannel.URL, xepgChannel.BackupChannel1URL, xepgChannel.BackupChannel2URL, xepgChannel.BackupChannel3URL)
+				stream.URL, err = createStreamingURL(xepgChannel.FileM3UID, xepgChannel.XChannelID, xepgChannel.XName, xepgChannel.URL, xepgChannel.BackupChannel1URL, xepgChannel.BackupChannel2URL, xepgChannel.BackupChannel3URL)
 				if err == nil {
 					lineup = append(lineup, stream)
 				} else {
