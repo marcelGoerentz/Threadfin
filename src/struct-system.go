@@ -324,7 +324,6 @@ type SettingsStruct struct {
 	ListeningIp               string                `json:"listeningIp"`
 	ForceHttpsToUpstream      bool                  `json:"forceHttps"`
 	UseHttps                  bool                  `json:"useHttps"`
-	HttpsPort                 string                `json:"httpsPort"`
 	ThreadfinDomain           string                `json:"threadfinDomain"`
 	EnableNonAscii            bool                  `json:"enableNonAscii"`
 	EpgCategories             string                `json:"epgCategories"`

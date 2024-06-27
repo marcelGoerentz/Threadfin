@@ -342,20 +342,6 @@ class SettingsCategory {
           setting.appendChild(tdRight)
           break
 
-      case "httpsPort":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.httpsPort.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "httpsPort", data.toString())
-          input.setAttribute("placeholder", "{{.settings.httpsPort.placeholder}}")
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
-
       case "threadfinDomain":
           var tdLeft = document.createElement("TD")
           tdLeft.innerHTML = "{{.settings.threadfinDomain.title}}" + ":"
@@ -691,10 +677,6 @@ class SettingsCategory {
         case "useHttps":
           text = "{{.settings.useHttps.description}}"
           break
-
-      case "httpsPort":
-        text = "{{.settings.httpsPort.description}}"
-        break
 
       case "threadfinDomain":
           text = "{{.settings.threadfinDomain.description}}"

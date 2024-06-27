@@ -24,7 +24,7 @@ type Cache struct {
 }
 
 type imageFunc struct {
-	GetURL  func(string, string, string, bool, string) string
+	GetURL  func(string, string, string, bool) string
 	Caching func()
 	Remove  func()
 }
@@ -43,7 +43,7 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 
 	var queue []string
 
-	c.Image.GetURL = func(src string, domain string, http_port string, force_https bool, https_port string) (cacheURL string) {
+	c.Image.GetURL = func(src string, domain string, http_port string, force_https bool) (cacheURL string) {
 
 		c.Lock()
 		defer c.Unlock()

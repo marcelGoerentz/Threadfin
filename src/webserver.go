@@ -67,23 +67,22 @@ func StartWebserver() (err error) {
 		}
 	}
 
-	go func () {
-		if err = http.ListenAndServe(":"+port, nil); err != nil {
-			ShowError(err, 1001)
-			return
-		}	
-	}()
+	
 
 	if Settings.UseHttps {
 		go func () {
-			if Settings.HttpsPort == "" {
-				Settings.HttpsPort = "443"
-			}
-			if err = http.ListenAndServeTLS(":" + Settings.HttpsPort, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", nil); err != nil {
+			if err = http.ListenAndServeTLS(":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", nil); err != nil {
 				ShowError(err, 1001)
 				return
 			}
 		} ()
+	} else {
+		go func () {
+			if err = http.ListenAndServe(":" + port, nil); err != nil {
+				ShowError(err, 1001)
+				return
+			}	
+		}()
 	}
 	
 	select {}

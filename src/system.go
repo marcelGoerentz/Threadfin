@@ -153,7 +153,6 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["listeningIp"]= ""
 	defaults["forceHttps"] = false
 	defaults["useHttps"] = false
-	defaults["httpsPort"] = 443
 	defaults["threadfinDomain"] = ""
 	defaults["enableNonAscii"] = false
 	defaults["epgCategories"] = "Kids:kids|News:news|Movie:movie|Series:series|Sports:sports"
@@ -232,9 +231,9 @@ func loadSettings() (settings SettingsStruct, err error) {
 	if Settings.ThreadfinDomain != "" {
 		domain = Settings.ThreadfinDomain
 		if Settings.UseHttps {
-			port = Settings.HttpsPort
+			port = Settings.Port
 			if port == "" {
-				port = "443"
+				port = "34400"
 			}
 		} else {
 			port = Settings.Port

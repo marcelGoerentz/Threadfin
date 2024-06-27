@@ -456,11 +456,6 @@
       "title": "Use HTTPS",
       "description": "Enable HTTPS protocol for Threadfin, HTTPS Port needs to be set, otherwise the 443 will be used!"
     },
-    "httpsPort":
-    {
-      "title": "HTTPS Port",
-      "description": "With image caching enabled and Force HTTPS enabled, port to use for forcing Threadfin to use https protocol. If empty 443 will be used"
-    },
     "threadfinDomain":
     {
       "title": "Threadfin Domain",

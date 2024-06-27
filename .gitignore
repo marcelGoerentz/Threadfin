@@ -8,3 +8,4 @@ binaries/
 dist/
 node_modules/
 *.exe
+*.js
