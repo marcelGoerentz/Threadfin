@@ -236,7 +236,7 @@ func buildM3U(groups []string) (m3u string, err error) {
 
 		logo := ""
 		if channel.TvgLogo != "" {
-			logo = imgc.Image.GetURL(channel.TvgLogo, System.BaseURL, Settings.Port, Settings.ForceHttpsToUpstream)
+			logo = imgc.Image.GetURL(channel.TvgLogo, System.BaseURL, Settings.Port, Settings.OmitPorts, Settings.ForceHttpsToUpstream)
 		}
 		var parameter = fmt.Sprintf(`#EXTINF:0 channelID="%s" tvg-chno="%s" tvg-name="%s" tvg-id="%s" tvg-logo="%s" group-title="%s",%s`+"\n", channel.XEPG, channel.XChannelID, channel.XName, channel.XChannelID, logo, group, channel.XName)
 		var stream = ""

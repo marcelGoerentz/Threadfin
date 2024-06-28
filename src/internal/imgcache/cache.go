@@ -24,12 +24,12 @@ type Cache struct {
 }
 
 type imageFunc struct {
-	GetURL  func(string, string, string, bool) string
+	GetURL  func(string, string, string, bool, bool) string
 	Caching func()
 	Remove  func()
 }
 
-// New : New cahce
+// New : New cache
 func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 
 	c = &Cache{}
@@ -43,7 +43,7 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 
 	var queue []string
 
-	c.Image.GetURL = func(src string, domain string, http_port string, force_https bool) (cacheURL string) {
+	c.Image.GetURL = func(src string, domain string, http_port string, omitPorts bool, force_https bool) (cacheURL string) {
 
 		c.Lock()
 		defer c.Unlock()
@@ -67,12 +67,14 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 			if c.caching {
 				u, err := url.Parse(cacheURL)
 				if err == nil {
-					var concateUrl = "http"
-					if force_https {
-						concateUrl += "s"
+					cacheURL = domain
+					if !omitPorts {
+						cacheURL += fmt.Sprintf(":%s", http_port)
 					}
-					concateUrl += fmt.Sprintf("://%s", domain)
-					cacheURL = fmt.Sprintf("%s%s", concateUrl , u.Path)
+					cacheURL += u.Path
+					if len(u.RawQuery) > 0 {
+						cacheURL += fmt.Sprintf("?%s", u.RawQuery)
+					}
 				}
 			} else {
 				cacheURL = src
