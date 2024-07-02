@@ -328,19 +328,33 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-        case "useHttps":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.useHttps.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createCheckbox(settingsKey)
-          input.checked = data
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
+      case "useHttps":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.useHttps.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createCheckbox(settingsKey)
+        input.checked = data
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
+
+      case "forceClientHttps":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.forceClientHttps.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createCheckbox(settingsKey)
+        input.checked = data
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
 
       case "threadfinDomain":
           var tdLeft = document.createElement("TD")
@@ -674,9 +688,13 @@ class SettingsCategory {
         text = "{{.settings.forceHttps.description}}"
         break
 
-        case "useHttps":
-          text = "{{.settings.useHttps.description}}"
-          break
+      case "useHttps":
+        text = "{{.settings.useHttps.description}}"
+        break
+
+      case "forceClientHttps":
+        text = "{{.settings.forceClientHttps.description}}"
+        break
 
       case "threadfinDomain":
           text = "{{.settings.threadfinDomain.description}}"

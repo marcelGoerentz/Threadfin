@@ -71,7 +71,7 @@ func getDiscover() (jsonContent []byte, err error) {
 
 	var discover Discover
 
-	discover.BaseURL = System.ServerProtocol + "://" + System.Domain
+	discover.BaseURL = System.BaseURL
 	discover.DeviceAuth = System.AppName
 	discover.DeviceID = System.DeviceID
 	discover.FirmwareName = "bin_" + System.Version

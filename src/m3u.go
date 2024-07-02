@@ -218,12 +218,7 @@ func buildM3U(groups []string) (m3u string, err error) {
 	// M3U Inhalt erstellen
 	sort.Float64s(channelNumbers)
   
-	var xmltvURL = "http"
-	if Settings.UseHttps {
-		xmltvURL += "s"
-	}
-	xmltvURL += "://" + System.Domain
-	m3u = fmt.Sprintf(`#EXTM3U url-tvg="%s" x-tvg-url="%s"`+"\n", xmltvURL, xmltvURL)
+	m3u = fmt.Sprintf(`#EXTM3U url-tvg="%s" x-tvg-url="%s"`+"\n", System.BaseURL, System.BaseURL)
 
 	for _, channelNumber := range channelNumbers {
 
@@ -236,7 +231,7 @@ func buildM3U(groups []string) (m3u string, err error) {
 
 		logo := ""
 		if channel.TvgLogo != "" {
-			logo = imgc.Image.GetURL(channel.TvgLogo, System.BaseURL, Settings.Port, Settings.OmitPorts, Settings.ForceHttpsToUpstream)
+			logo = imgc.Image.GetURL(channel.TvgLogo, System.BaseURL, Settings.Port, Settings.OmitPorts)
 		}
 		var parameter = fmt.Sprintf(`#EXTINF:0 channelID="%s" tvg-chno="%s" tvg-name="%s" tvg-id="%s" tvg-logo="%s" group-title="%s",%s`+"\n", channel.XEPG, channel.XChannelID, channel.XName, channel.XChannelID, logo, group, channel.XName)
 		var stream = ""

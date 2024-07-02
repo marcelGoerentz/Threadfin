@@ -456,10 +456,15 @@
       "title": "Use HTTPS",
       "description": "Enable HTTPS protocol for Threadfin, HTTPS Port needs to be set, otherwise the 443 will be used!"
     },
+    "forceClientHttps":
+    {
+      "title": "Force client to use https",
+      "description": "All URLs to this threadfin instance will be starting with https"
+    },
     "threadfinDomain":
     {
       "title": "Threadfin Domain",
-      "description": "When not empty, this will rewrite the URLs in the new m3u to a FQDN.<br>Do NOT include http (ex: somedomain.com)<br>"
+      "description": "When not empty, this will rewrite the URLs in the new m3u to a FQDN.<br>Do NOT include http (ex: somedomain.com)</br>"
     },
     "enableNonAscii":
     {

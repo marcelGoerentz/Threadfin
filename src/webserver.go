@@ -558,7 +558,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				if Settings.AuthenticationWEB && !authenticationUpdate {
 					response.Reload = true
 				}
-
+				
 				if Settings.StoreBufferInRAM != previousStoreBufferInRAM {
 					initBufferVFS(Settings.StoreBufferInRAM)
 				}

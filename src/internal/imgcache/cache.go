@@ -24,7 +24,7 @@ type Cache struct {
 }
 
 type imageFunc struct {
-	GetURL  func(string, string, string, bool, bool) string
+	GetURL  func(string, string, string, bool) string
 	Caching func()
 	Remove  func()
 }
@@ -43,55 +43,56 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 
 	var queue []string
 
-	c.Image.GetURL = func(src string, domain string, http_port string, omitPorts bool, force_https bool) (cacheURL string) {
+	c.Image.GetURL = func(src string, domain string, http_port string, omitPorts bool) (cacheURL string) {
 
-		c.Lock()
-		defer c.Unlock()
+		var is_locked = c.TryLock()
+		if is_locked {
+			defer c.Unlock()
 
-		src = strings.Trim(src, "\r\n")
+			src = strings.Trim(src, "\r\n")
 
-		if !c.caching {
-			return src
-		}
+			if !c.caching {
+				return src
+			}
 
-		u, err := url.Parse(src)
+			u, err := url.Parse(src)
 
-		if err != nil || len(filepath.Ext(u.Path)) == 0 {
-			return src
-		}
+			if err != nil || len(filepath.Ext(u.Path)) == 0 {
+				return src
+			}
 
-		src_filtered := strings.Split(src, "?")
-		var filename = fmt.Sprintf("%s%s", strToMD5(src_filtered[0]), filepath.Ext(u.Path))
+			src_filtered := strings.Split(src, "?")
+			var filename = fmt.Sprintf("%s%s", strToMD5(src_filtered[0]), filepath.Ext(u.Path))
 
-		if cacheURL, ok := c.images[filename]; ok {
-			if c.caching {
-				u, err := url.Parse(cacheURL)
-				if err == nil {
-					cacheURL = domain
-					if !omitPorts {
-						cacheURL += fmt.Sprintf(":%s", http_port)
+			if cacheURL, ok := c.images[filename]; ok {
+				if c.caching {
+					u, err := url.Parse(cacheURL)
+					if err == nil {
+						cacheURL = domain
+						if !omitPorts {
+							cacheURL += fmt.Sprintf(":%s", http_port)
+						}
+						cacheURL += u.Path
+						if len(u.RawQuery) > 0 {
+							cacheURL += fmt.Sprintf("?%s", u.RawQuery)
+						}
 					}
-					cacheURL += u.Path
-					if len(u.RawQuery) > 0 {
-						cacheURL += fmt.Sprintf("?%s", u.RawQuery)
-					}
+				} else {
+					cacheURL = src
 				}
+				return cacheURL
+			}
+
+			if indexOfString(filename, c.Cache) == -1 {
+				if indexOfString(src, c.Queue) == -1 {
+					c.Queue = append(c.Queue, src)
+				}
+
 			} else {
-				cacheURL = src
+				c.images[filename] = c.cacheURL + filename
+				src = c.cacheURL + filename
 			}
-			return cacheURL
 		}
-
-		if indexOfString(filename, c.Cache) == -1 {
-			if indexOfString(src, c.Queue) == -1 {
-				c.Queue = append(c.Queue, src)
-			}
-
-		} else {
-			c.images[filename] = c.cacheURL + filename
-			src = c.cacheURL + filename
-		}
-
 		return src
 	}
 
@@ -141,7 +142,6 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 		for _, q := range queue {
 			c.Queue = removeStringFromSlice(q, c.Queue)
 		}
-
 	}
 
 	c.Image.Remove = func() {
@@ -168,7 +168,6 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 			}
 
 		}
-
 	}
 
 	files, err := os.ReadDir(c.path)
@@ -179,6 +178,5 @@ func New(path, cacheURL string, caching bool) (c *Cache, err error) {
 	for _, file := range files {
 		c.Cache = append(c.Cache, file.Name())
 	}
-
 	return
 }

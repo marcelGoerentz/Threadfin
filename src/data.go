@@ -23,6 +23,8 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 	var reloadData = false
 	var cacheImages = false
 	var createXEPGFiles = false
+	var omitPortsChanged = false
+	var serverProtocolChanged = false
 	var debug string
 
 	// -vvv [URL] --sout '#transcode{vcodec=mp4v, acodec=mpga} :standard{access=http, mux=ogg}'
@@ -113,9 +115,14 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 
 				}
 
-			case "scheme.m3u", "scheme.xml":
+			case "scheme.m3u", "scheme.xml", "omitPorts", "forceClientHttps", "forceHttps", "threadfinDomain":
 				createXEPGFiles = true
-
+				if key == "omitPorts" {
+					omitPortsChanged = true
+				}
+				if key == "forceClientHttps" {
+					serverProtocolChanged = true
+				}
 			}
 
 			oldSettings[key] = value
@@ -187,6 +194,19 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 
 	}
 
+	if serverProtocolChanged || omitPortsChanged {
+		if Settings.ForceClientHttps {
+			System.ServerProtocol = "https"
+		} else {
+			System.ServerProtocol = "http"
+		}
+		System.Domain = Settings.ThreadfinDomain
+		if !Settings.OmitPorts {
+			System.Domain += ":" + System.Flag.Port
+		}
+		System.BaseURL = System.ServerProtocol + "://" + System.Domain
+	}
+
 	err = saveSettings(Settings)
 	if err == nil {
 
@@ -206,8 +226,12 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 		if cacheImages {
 
 			if Settings.EpgSource == "XEPG" && System.ImageCachingInProgress == 0 {
-
-				Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s://%s/images/", System.ServerProtocol, System.Domain), Settings.CacheImages)
+				
+				if !settings.OmitPorts {
+					Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s/images/", System.BaseURL), Settings.CacheImages)
+				} else {
+					Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s:%s/images/", System.BaseURL, settings.Port), Settings.CacheImages)
+				}
 				if err != nil {
 					ShowError(err, 0)
 				}
@@ -215,8 +239,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 				switch Settings.CacheImages {
 
 				case false:
-					createXMLTVFile()
-					createM3UFile()
+					createXEPGFiles = true
 
 				case true:
 					go func() {

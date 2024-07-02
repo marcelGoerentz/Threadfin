@@ -51,6 +51,7 @@ type RequestStruct struct {
 		ListeningIp              *string   `json:"listeningIp,omitempty"`
 		ForceHttpsToUpstream     *bool     `json:"forceHttps,omitempty"`
 		UseHttps                 *bool     `json:"useHttps,omitempty"`
+		ForceClientHttps         *bool     `json:"forceClientHttps"`
 		ThreadfinDomain          *string   `json:"threadfinDomain,omitempty"`
 		EnableNonAscii           *bool     `json:"enableNonAscii,omitempty"`
 		EpgCategories            *string   `json:"epgCategories,omitempty"`

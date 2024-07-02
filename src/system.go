@@ -223,7 +223,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	// Domainnamen setzen
 	var domain = ""
 	var port = ""
-	if settings.UseHttps {
+	if settings.UseHttps || settings.ForceClientHttps {
 		System.ServerProtocol = "https"	
 	} else {
 		System.ServerProtocol = "http"
@@ -353,7 +353,6 @@ func createStreamingURL(playlistID, channelNumber, channelName, url string, back
 
 	if s, ok := Data.Cache.StreamingURLS[urlID]; ok {
 		streamInfo = s
-
 	} else {
 		streamInfo.URL = url
 		streamInfo.BackupChannel1URL = backup_url_1
@@ -368,7 +367,7 @@ func createStreamingURL(playlistID, channelNumber, channelName, url string, back
 
 	}
 
-	streamingURL = fmt.Sprintf("%s://%s/stream/%s", System.ServerProtocol, System.Domain, streamInfo.URLid)
+	streamingURL = System.BaseURL + "/stream/" + streamInfo.URLid
 	return
 }
 
