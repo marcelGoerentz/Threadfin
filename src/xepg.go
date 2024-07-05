@@ -50,7 +50,7 @@ func buildXEPG(background bool) {
 
 	var err error
 
-	Data.Cache.Images = imgcache.NewImageCache(Settings.CacheImages, System.Folder.Cache, System.BaseURL)
+	Data.Cache.Images = imgcache.NewImageCache(Settings.CacheImages, System.Folder.ImagesCache, System.BaseURL)
 	if err != nil {
 		ShowError(err, 0)
 	}
