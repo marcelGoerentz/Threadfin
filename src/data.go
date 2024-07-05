@@ -207,7 +207,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 			System.Domain += ":" + System.Flag.Port
 		}
 		System.BaseURL = System.ServerProtocol + "://" + System.Domain
-		Data.Cache.NewImages.UpdateBaseURL(System.BaseURL)
+		Data.Cache.Images.UpdateBaseURL(System.BaseURL)
 	}
 
 	err = saveSettings(Settings)
@@ -229,17 +229,6 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 		if cacheImages {
 
 			if Settings.EpgSource == "XEPG" && System.ImageCachingInProgress == 0 {
-				
-				/*
-				if !settings.OmitPorts {
-					Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s/images/", System.BaseURL), Settings.CacheImages)
-				} else {
-					Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s:%s/images/", System.BaseURL, settings.Port), Settings.CacheImages)
-				}
-				if err != nil {
-					ShowError(err, 0)
-				}
-				*/
 
 				switch Settings.CacheImages {
 
@@ -249,7 +238,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 				case true:
 					go func() {
 
-						Data.Cache.NewImages.DeleteCache()
+						Data.Cache.Images.DeleteCache()
 						createXMLTVFile()
 						createM3UFile()
 
@@ -257,7 +246,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 						showInfo("Image Caching:Images are cached")
 
 						//Data.Cache.Images.Image.Caching()
-						Data.Cache.NewImages.WaitForDownloads()
+						Data.Cache.Images.WaitForDownloads()
 						showInfo("Image Caching:Done")
 
 						System.ImageCachingInProgress = 0
@@ -275,7 +264,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 		if createXEPGFiles {
 
 			go func() {
-				Data.Cache.NewImages.DeleteCache()
+				Data.Cache.Images.DeleteCache()
 				createXMLTVFile()
 				createM3UFile()
 			}()
@@ -539,19 +528,6 @@ func saveFilter(request RequestStruct) (settings SettingsStruct, err error) {
 func saveXEpgMapping(request RequestStruct) (err error) {
 
 	var tmp = Data.XEPG
-
-	Data.Cache.StreamingURLS = make(map[string]StreamInfo)
-
-	/*
-	if !Settings.OmitPorts {
-		Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s/images/", System.BaseURL), Settings.CacheImages)
-	} else {
-		Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s:%s/images/", System.BaseURL, Settings.Port), Settings.CacheImages)
-	}
-	if err != nil {
-		ShowError(err, 0)
-	}
-	*/
 
 	err = json.Unmarshal([]byte(mapToJSON(request.EpgMapping)), &tmp)
 	if err != nil {

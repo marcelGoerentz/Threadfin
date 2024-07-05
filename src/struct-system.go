@@ -120,11 +120,7 @@ type GithubReleaseInfo struct {
 // DataStruct : Alle Daten werden hier abgelegt. (Lineup, XMLTV)
 type DataStruct struct {
 	Cache struct {
-		NewImages   *imgcache.ImageCache
-		Images      *imgcache.Cache
-		ImagesCache []string
-		ImagesFiles []string
-		ImagesURLS  []string
+		Images   *imgcache.ImageCache
 		PMS         map[string]string
 
 		StreamingURLS map[string]StreamInfo

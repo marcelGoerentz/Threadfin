@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"path"
 	"regexp"
 	"runtime"
@@ -51,8 +50,7 @@ func buildXEPG(background bool) {
 
 	var err error
 
-	Data.Cache.NewImages = imgcache.NewImageCache(Settings.CacheImages, System.Folder.Cache, System.BaseURL)
-	//Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s://%s/images/", System.ServerProtocol, System.Domain), Settings.CacheImages)
+	Data.Cache.Images = imgcache.NewImageCache(Settings.CacheImages, System.Folder.Cache, System.BaseURL)
 	if err != nil {
 		ShowError(err, 0)
 	}
@@ -65,7 +63,7 @@ func buildXEPG(background bool) {
 
 			go func() {
 
-				Data.Cache.NewImages.DeleteCache()
+				Data.Cache.Images.DeleteCache()
 				createXEPGMapping()
 				createXEPGDatabase()
 				mapping()
@@ -80,8 +78,8 @@ func buildXEPG(background bool) {
 					go func() {
 
 						System.ImageCachingInProgress = 1
-						Data.Cache.NewImages.WaitForDownloads()
-						showInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.NewImages.GetNumCachedImages()))
+						Data.Cache.Images.WaitForDownloads()
+						showInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.Images.GetNumCachedImages()))
 
 						//Data.Cache.Images.Image.Caching()
 						//Data.Cache.Images.Image.Remove()
@@ -110,7 +108,7 @@ func buildXEPG(background bool) {
 
 		case false:
 
-			Data.Cache.NewImages.DeleteCache()
+			Data.Cache.Images.DeleteCache()
 			createXEPGMapping()
 			createXEPGDatabase()
 			mapping()
@@ -125,8 +123,8 @@ func buildXEPG(background bool) {
 					go func() {
 
 						System.ImageCachingInProgress = 1
-						Data.Cache.NewImages.WaitForDownloads()
-						showInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.NewImages.GetNumCachedImages()))
+						Data.Cache.Images.WaitForDownloads()
+						showInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.Images.GetNumCachedImages()))
 
 						//Data.Cache.Images.Image.Caching()
 						//Data.Cache.Images.Image.Remove()
@@ -264,8 +262,7 @@ func createXEPGMapping() {
 
 					channel["id"] = c.ID
 					channel["display-name"] = friendlyDisplayName(*c)
-					channel["icon"] = Data.Cache.NewImages.GetImageURL(c.Icon.Src)
-					//channel["icon"] = imgc.Image.GetURL(c.Icon.Src, System.BaseURL, Settings.Port, Settings.OmitPorts)
+					channel["icon"] = Data.Cache.Images.GetImageURL(c.Icon.Src)
 					channel["active"] = c.Active
 
 					xmltvMap[c.ID] = channel
@@ -500,8 +497,7 @@ func createXEPGDatabase() (err error) {
 			// Kanallogo aktualisieren. Wird bei vorhandenem Logo in der XMLTV Datei wieder überschrieben
 			if xepgChannel.XUpdateChannelIcon {
 				//var imgc = Data.Cache.Images
-				xepgChannel.TvgLogo = Data.Cache.NewImages.GetImageURL(m3uChannel.TvgLogo)
-				//xepgChannel.TvgLogo = imgc.Image.GetURL(m3uChannel.TvgLogo, System.BaseURL, Settings.Port, Settings.OmitPorts)
+				xepgChannel.TvgLogo = Data.Cache.Images.GetImageURL(m3uChannel.TvgLogo)
 			}
 
 			Data.XEPG.Channels[currentXEPGID] = xepgChannel
@@ -725,8 +721,7 @@ func mapping() (err error) {
 
 							if xepgChannel.XUpdateChannelIcon && len(logo) > 0 {
 								//var imgc = Data.Cache.Images
-								xepgChannel.TvgLogo = Data.Cache.NewImages.GetImageURL(logo)
-								//xepgChannel.TvgLogo = imgc.Image.GetURL(logo, System.BaseURL, Settings.Port, Settings.OmitPorts)
+								xepgChannel.TvgLogo = Data.Cache.Images.GetImageURL(logo)
 							}
 
 						}
@@ -780,24 +775,6 @@ func createXMLTVFile() (err error) {
 
 	// Image Cache
 	// 4edd81ab7c368208cc6448b615051b37.jpg
-	//var imgc = Data.Cache.Images
-
-	Data.Cache.ImagesFiles = []string{}
-	Data.Cache.ImagesURLS = []string{}
-	Data.Cache.ImagesCache = []string{}
-
-	files, err := os.ReadDir(System.Folder.ImagesCache)
-	if err == nil {
-
-		for _, file := range files {
-
-			if indexOfString(file.Name(), Data.Cache.ImagesCache) == -1 {
-				Data.Cache.ImagesCache = append(Data.Cache.ImagesCache, file.Name())
-			}
-
-		}
-
-	}
 
 	if len(Data.XMLTV.Files) == 0 && len(Data.Streams.Active) == 0 {
 		Data.XEPG.Channels = make(map[string]interface{})
@@ -834,8 +811,7 @@ func createXMLTVFile() (err error) {
 					// Kanäle
 					var channel Channel
 					channel.ID = xepgChannel.XChannelID
-					channel.Icon = Icon{Src: Data.Cache.NewImages.GetImageURL(xepgChannel.TvgLogo)}
-					//channel.Icon = Icon{Src: imgc.Image.GetURL(xepgChannel.TvgLogo, System.BaseURL, Settings.Port, Settings.OmitPorts)}
+					channel.Icon = Icon{Src: Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)}
 					channel.DisplayName = append(channel.DisplayName, DisplayName{Value: xepgChannel.XName})
 					channel.Active = xepgChannel.XActive
 					channel.Live = true
@@ -1083,8 +1059,7 @@ func createDummyProgram(xepgChannel XEPGChannelStruct) (dummyXMLTV XMLTV) {
 			}
 
 			if Settings.XepgReplaceMissingImages {
-				poster.Src = Data.Cache.NewImages.GetImageURL(xepgChannel.TvgLogo)
-				//poster.Src = imgc.Image.GetURL(xepgChannel.TvgLogo, System.BaseURL, Settings.Port, Settings.OmitPorts)
+				poster.Src = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
 				epg.Poster = append(epg.Poster, poster)
 			}
 
@@ -1132,8 +1107,7 @@ func getPoster(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelS
 	//var imgc = Data.Cache.Images
 
 	for _, poster := range xmltvProgram.Poster {
-		poster.Src = Data.Cache.NewImages.GetImageURL(poster.Src)
-		//poster.Src = imgc.Image.GetURL(poster.Src, System.BaseURL, Settings.Port, Settings.OmitPorts)
+		poster.Src = Data.Cache.Images.GetImageURL(poster.Src)
 		program.Poster = append(program.Poster, poster)
 	}
 
@@ -1141,8 +1115,7 @@ func getPoster(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelS
 
 		if len(xmltvProgram.Poster) == 0 {
 			var poster Poster
-			poster.Src = Data.Cache.NewImages.GetImageURL(xepgChannel.TvgLogo)
-			//poster.Src = imgc.Image.GetURL(xepgChannel.TvgLogo, System.BaseURL, Settings.Port, Settings.OmitPorts)
+			poster.Src = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
 			program.Poster = append(program.Poster, poster)
 		}
 
@@ -1241,8 +1214,6 @@ func createM3UFile() {
 	} else {
 		showInfo("XEPG:Created M3U file")
 	}
-
-	saveMapToJSONFile(System.File.URLS, Data.Cache.StreamingURLS)
 }
 
 // XEPG Datenbank bereinigen
