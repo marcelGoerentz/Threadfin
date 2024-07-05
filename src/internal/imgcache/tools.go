@@ -1,8 +1,9 @@
 package imgcache
 
 import (
-  "crypto/md5"
-  "encoding/hex"
+	"crypto/md5"
+	"encoding/hex"
+	"io"
 )
 
 func strToMD5(str string) string {
@@ -31,4 +32,12 @@ func removeStringFromSlice(str string, slice []string) []string {
   }
 
   return slice
+}
+
+// createIndexFromUrl will calculate the URLs md5 and will pick then only the digits within the string too create a key
+func createKeyFromUrl(url string) (string) {
+  // Berechne den MD5-Hash der URL
+  hasher := md5.New()
+  io.WriteString(hasher, url)
+  return hex.EncodeToString(hasher.Sum(nil))
 }

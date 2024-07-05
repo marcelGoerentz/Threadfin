@@ -8,9 +8,9 @@ class Server {
 
   request(data: Object): any {
 
-    if (SERVER_CONNECTION == true) {
-      return
-    }
+    //if (SERVER_CONNECTION == true) {
+    //  return
+    //}
 
     SERVER_CONNECTION = true
 
@@ -29,7 +29,7 @@ class Server {
         break
     }
 
-    var url = this.protocol + window.location.hostname + ":" + window.location.port + "/data/" + "?Token=" + getCookie("Token")
+    var url = this.protocol + window.location.hostname + ":" + window.location.port + "/ws/" + "?Token=" + getCookie("Token")
 
     data["cmd"] = this.cmd
     var ws = new WebSocket(url)

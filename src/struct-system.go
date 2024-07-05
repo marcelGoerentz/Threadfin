@@ -50,12 +50,13 @@ type SystemStruct struct {
 	}
 
 	Flag struct {
-		Branch  string
-		Debug   int
-		Info    bool
-		Port    string
-		Restore string
-		SSDP    bool
+		Branch    string
+		Debug     int
+		Info      bool
+		Port      string
+		UseHttps  bool
+		Restore   string
+		SSDP      bool
 	}
 
 	Folder struct {
@@ -68,6 +69,8 @@ type SystemStruct struct {
 		Temp         string
 	}
 
+	BaseURL                string
+	ServerProtocol         string
 	Hostname               string
 	ImageCachingInProgress int
 	IPAddress              string
@@ -80,14 +83,6 @@ type SystemStruct struct {
 	TimeForAutoUpdate      string
 
 	Notification map[string]Notification
-
-	ServerProtocol struct {
-		API string
-		DVR string
-		M3U string
-		WEB string
-		XML string
-	}
 
 	GitHub struct {
 		Branch  string
@@ -125,10 +120,7 @@ type GithubReleaseInfo struct {
 // DataStruct : Alle Daten werden hier abgelegt. (Lineup, XMLTV)
 type DataStruct struct {
 	Cache struct {
-		Images      *imgcache.Cache
-		ImagesCache []string
-		ImagesFiles []string
-		ImagesURLS  []string
+		Images   *imgcache.ImageCache
 		PMS         map[string]string
 
 		StreamingURLS map[string]StreamInfo
@@ -219,19 +211,19 @@ type XEPGChannelStruct struct {
 
 // M3UChannelStructXEPG : M3U Struktur für XEPG
 type M3UChannelStructXEPG struct {
-	FileM3UID   string `json:"_file.m3u.id,required"`
-	FileM3UName string `json:"_file.m3u.name,required"`
-	FileM3UPath string `json:"_file.m3u.path,required"`
-	GroupTitle  string `json:"group-title,required"`
-	Name        string `json:"name,required"`
-	TvgID       string `json:"tvg-id,required"`
-	TvgLogo     string `json:"tvg-logo,required"`
+	FileM3UID   string `json:"_file.m3u.id"`
+	FileM3UName string `json:"_file.m3u.name"`
+	FileM3UPath string `json:"_file.m3u.path"`
+	GroupTitle  string `json:"group-title"`
+	Name        string `json:"name"`
+	TvgID       string `json:"tvg-id"`
+	TvgLogo     string `json:"tvg-logo"`
 	TvgChno     string `json:"tvg-chno"`
-	TvgName     string `json:"tvg-name,required"`
-	URL         string `json:"url,required"`
-	UUIDKey     string `json:"_uuid.key,required"`
-	UUIDValue   string `json:"_uuid.value,required"`
-	Values      string `json:"_values,required"`
+	TvgName     string `json:"tvg-name"`
+	URL         string `json:"url"`
+	UUIDKey     string `json:"_uuid.key"`
+	UUIDValue   string `json:"_uuid.value"`
+	Values      string `json:"_values"`
 }
 
 // FilterStruct : Filter Struktur
@@ -251,28 +243,28 @@ type FilterStruct struct {
 
 // StreamingURLS : Informationen zu allen streaming URL's
 type StreamingURLS struct {
-	Streams map[string]StreamInfo `json:"channels,required"`
+	Streams map[string]StreamInfo `json:"channels"`
 }
 
 // StreamInfo : Informationen zum Kanal für die streaming URL
 type StreamInfo struct {
-	ChannelNumber     string `json:"channelNumber,required"`
-	Name              string `json:"name,required"`
-	PlaylistID        string `json:"playlistID,required"`
-	URL               string `json:"url,required"`
-	BackupChannel1URL string `json:"backup_channel_1_url,required"`
-	BackupChannel2URL string `json:"backup_channel_2_url,required"`
-	BackupChannel3URL string `json:"backup_channel_3_url,required"`
-	URLid             string `json:"urlID,required"`
+	ChannelNumber     string `json:"channelNumber"`
+	Name              string `json:"name"`
+	PlaylistID        string `json:"playlistID"`
+	URL               string `json:"url"`
+	BackupChannel1URL string `json:"backup_channel_1_url"`
+	BackupChannel2URL string `json:"backup_channel_2_url"`
+	BackupChannel3URL string `json:"backup_channel_3_url"`
+	URLid             string `json:"urlID"`
 }
 
 // Notification : Notifikationen im Webinterface
 type Notification struct {
-	Headline string `json:"headline,required"`
-	Message  string `json:"message,required"`
-	New      bool   `json:"new,required"`
-	Time     string `json:"time,required"`
-	Type     string `json:"type,required"`
+	Headline string `json:"headline"`
+	Message  string `json:"message"`
+	New      bool   `json:"new"`
+	Time     string `json:"time"`
+	Type     string `json:"type"`
 }
 
 // SettingsStruct : Inhalt der settings.json
@@ -325,11 +317,12 @@ type SettingsStruct struct {
 	XepgReplaceChannelTitle   bool                  `json:"xepg.replace.channel.title"`
 	ThreadfinAutoUpdate       bool                  `json:"ThreadfinAutoUpdate"`
 	StoreBufferInRAM          bool                  `json:"storeBufferInRAM"`
+	OmitPorts                 bool                  `json:"omitPorts"`
 	ListeningIp               string                `json:"listeningIp"`
-	ForceHttps                bool                  `json:"forceHttps"`
-	HttpsPort                 int                   `json:"httpsPort"`
-	HttpsThreadfinDomain      string                `json:"httpsThreadfinDomain"`
-	HttpThreadfinDomain       string                `json:"httpThreadfinDomain"`
+	ForceHttpsToUpstream      bool                  `json:"forceHttps"`
+	UseHttps                  bool                  `json:"useHttps"`
+	ForceClientHttps          bool                  `json:"forceClientHttps"`
+	ThreadfinDomain           string                `json:"threadfinDomain"`
 	EnableNonAscii            bool                  `json:"enableNonAscii"`
 	EpgCategories             string                `json:"epgCategories"`
 	EpgCategoriesColors       string                `json:"epgCategoriesColors"`
