@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"threadfin/src/internal/authentication"
-	"threadfin/src/internal/imgcache"
 )
 
 // Einstellungen ändern (WebUI)
@@ -23,6 +22,8 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 	var reloadData = false
 	var cacheImages = false
 	var createXEPGFiles = false
+	var omitPortsChanged = false
+	var serverProtocolChanged = false
 	var debug string
 
 	// -vvv [URL] --sout '#transcode{vcodec=mp4v, acodec=mpga} :standard{access=http, mux=ogg}'
@@ -113,9 +114,14 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 
 				}
 
-			case "scheme.m3u", "scheme.xml":
+			case "scheme.m3u", "scheme.xml", "omitPorts", "forceClientHttps", "forceHttps", "threadfinDomain":
 				createXEPGFiles = true
-
+				if key == "omitPorts" {
+					omitPortsChanged = true
+				}
+				if key == "forceClientHttps" {
+					serverProtocolChanged = true
+				}
 			}
 
 			oldSettings[key] = value
@@ -146,7 +152,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 
 	// Einstellungen aktualisieren
 	err = json.Unmarshal([]byte(mapToJSON(oldSettings)), &Settings)
-	if err != nil {
+ 	if err != nil {
 		return
 	}
 
@@ -187,6 +193,23 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 
 	}
 
+	if serverProtocolChanged || omitPortsChanged {
+		System.Domain = strings.Split(System.Domain, ":")[0]
+		if Settings.ForceClientHttps {
+			System.ServerProtocol = "https"
+		} else {
+			System.ServerProtocol = "http"
+		}
+		if Settings.ThreadfinDomain != "" {
+			System.Domain = Settings.ThreadfinDomain
+		}
+		if !Settings.OmitPorts {
+			System.Domain += ":" + System.Flag.Port
+		}
+		System.BaseURL = System.ServerProtocol + "://" + System.Domain
+		Data.Cache.Images.UpdateBaseURL(System.BaseURL)
+	}
+
 	err = saveSettings(Settings)
 	if err == nil {
 
@@ -207,27 +230,23 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 
 			if Settings.EpgSource == "XEPG" && System.ImageCachingInProgress == 0 {
 
-				Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s://%s/images/", System.ServerProtocol.WEB, System.Domain), Settings.CacheImages)
-				if err != nil {
-					ShowError(err, 0)
-				}
-
 				switch Settings.CacheImages {
 
 				case false:
-					createXMLTVFile()
-					createM3UFile()
+					createXEPGFiles = true
 
 				case true:
 					go func() {
 
+						Data.Cache.Images.DeleteCache()
 						createXMLTVFile()
 						createM3UFile()
 
 						System.ImageCachingInProgress = 1
 						showInfo("Image Caching:Images are cached")
 
-						Data.Cache.Images.Image.Caching()
+						//Data.Cache.Images.Image.Caching()
+						Data.Cache.Images.WaitForDownloads()
 						showInfo("Image Caching:Done")
 
 						System.ImageCachingInProgress = 0
@@ -245,6 +264,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 		if createXEPGFiles {
 
 			go func() {
+				Data.Cache.Images.DeleteCache()
 				createXMLTVFile()
 				createM3UFile()
 			}()
@@ -508,13 +528,6 @@ func saveFilter(request RequestStruct) (settings SettingsStruct, err error) {
 func saveXEpgMapping(request RequestStruct) (err error) {
 
 	var tmp = Data.XEPG
-
-	Data.Cache.StreamingURLS = make(map[string]StreamInfo)
-
-	Data.Cache.Images, err = imgcache.New(System.Folder.ImagesCache, fmt.Sprintf("%s://%s/images/", System.ServerProtocol.WEB, System.Domain), Settings.CacheImages)
-	if err != nil {
-		ShowError(err, 0)
-	}
 
 	err = json.Unmarshal([]byte(mapToJSON(request.EpgMapping)), &tmp)
 	if err != nil {

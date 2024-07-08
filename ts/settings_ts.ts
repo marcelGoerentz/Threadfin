@@ -145,19 +145,19 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-        case "listeningIp":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.listeningIp.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "listeningIp", data)
-          input.setAttribute("placeholder", "{{.settings.listeningIp.placeholder}}")
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
+      case "listeningIp":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.listeningIp.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createInput("text", "listeningIp", data)
+        input.setAttribute("placeholder", "{{.settings.listeningIp.placeholder}}")
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
 
       // Checkboxen
       case "authentication.web":
@@ -300,6 +300,20 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
+      case "omitPorts":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.omitPorts.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createCheckbox(settingsKey)
+        input.checked = data
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
+
       case "forceHttps":
         var tdLeft = document.createElement("TD")
         tdLeft.innerHTML = "{{.settings.forceHttps.title}}" + ":"
@@ -314,44 +328,58 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-      case "httpsPort":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.httpsPort.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "httpsPort", data.toString())
-          input.setAttribute("placeholder", "{{.settings.httpsPort.placeholder}}")
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
+      case "useHttps":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.useHttps.title}}" + ":"
 
-      case "httpsThreadfinDomain":
+        var tdRight = document.createElement("TD")
+        var input = content.createCheckbox(settingsKey)
+        input.checked = data
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
+
+      case "forceClientHttps":
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.forceClientHttps.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createCheckbox(settingsKey)
+        input.checked = data
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
+
+      case "threadfinDomain":
           var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.httpsThreadfinDomain.title}}" + ":"
+          tdLeft.innerHTML = "{{.settings.threadfinDomain.title}}" + ":"
   
           var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "httpsThreadfinDomain", data.toString())
-          input.setAttribute("placeholder", "{{.settings.httpsThreadfinDomain.placeholder}}")
+          var input = content.createInput("text", "threadfinDomain", data.toString())
+          input.setAttribute("placeholder", "{{.settings.threadfinDomain.placeholder}}")
           input.setAttribute("onchange", "javascript: this.className = 'changed'")
           tdRight.appendChild(input)
           
           setting.appendChild(tdLeft)
           setting.appendChild(tdRight)
           break
-
-      case "httpThreadfinDomain":
+      
+      case "domainUseHttps":
           var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.httpThreadfinDomain.title}}" + ":"
+          tdLeft.innerHTML = "{{.settings.domainUseHttps.title}}" + ":"
   
           var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "httpThreadfinDomain", data.toString())
-          input.setAttribute("placeholder", "{{.settings.httpThreadfinDomain.placeholder}}")
+          var input = content.createCheckbox(settingsKey)
+          input.checked = data
           input.setAttribute("onchange", "javascript: this.className = 'changed'")
           tdRight.appendChild(input)
-          
+  
           setting.appendChild(tdLeft)
           setting.appendChild(tdRight)
           break
@@ -652,20 +680,24 @@ class SettingsCategory {
         text = "{{.settings.storeBufferInRAM.description}}"
         break
 
+      case "omitPorts":
+        text = "{{.settings.omitPorts.description}}"
+        break
+
       case "forceHttps":
         text = "{{.settings.forceHttps.description}}"
         break
 
-      case "httpsPort":
-        text = "{{.settings.httpsPort.description}}"
+      case "useHttps":
+        text = "{{.settings.useHttps.description}}"
         break
 
-      case "httpsThreadfinDomain":
-          text = "{{.settings.httpsThreadfinDomain.description}}"
-          break
+      case "forceClientHttps":
+        text = "{{.settings.forceClientHttps.description}}"
+        break
 
-      case "httpThreadfinDomain":
-          text = "{{.settings.httpThreadfinDomain.description}}"
+      case "threadfinDomain":
+          text = "{{.settings.threadfinDomain.description}}"
           break
 
       case "enableNonAscii":
@@ -865,12 +897,11 @@ function saveSettings() {
 
               case "buffer.timeout":
                 value = parseFloat(value)
-
             }
 
             newSettings[name] = value
             break
-        }
+          }
 
         break
 

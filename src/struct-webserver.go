@@ -3,7 +3,7 @@ package src
 // RequestStruct : Anfragen über die Websocket Schnittstelle
 type RequestStruct struct {
 	// Befehle an Threadfin
-	Cmd string `json:"cmd,required"`
+	Cmd string `json:"cmd"`
 
 	// Benutzer
 	DeleteUser bool                   `json:"deleteUser,omitempty"`
@@ -47,11 +47,12 @@ type RequestStruct struct {
 		SchemeM3U                *string   `json:"scheme.m3u,omitempty"`
 		SchemeXML                *string   `json:"scheme.xml,omitempty"`
 		StoreBufferInRAM         *bool     `json:"storeBufferInRAM,omitempty"`
+		OmitPorts                *bool     `json:"omitPorts,omitempty"`
 		ListeningIp              *string   `json:"listeningIp,omitempty"`
-		ForceHttps               *bool     `json:"forceHttps,omitempty"`
-		HttpsPort                *int      `json:"httpsPort,omitempty"`
-		HttpsThreadfinDomain     *string   `json:"httpsThreadfinDomain,omitempty"`
-		HttpThreadfinDomain      *string   `json:"httpThreadfinDomain,omitempty"`
+		ForceHttpsToUpstream     *bool     `json:"forceHttps,omitempty"`
+		UseHttps                 *bool     `json:"useHttps,omitempty"`
+		ForceClientHttps         *bool     `json:"forceClientHttps"`
+		ThreadfinDomain          *string   `json:"threadfinDomain,omitempty"`
 		EnableNonAscii           *bool     `json:"enableNonAscii,omitempty"`
 		EpgCategories            *string   `json:"epgCategories,omitempty"`
 		EpgCategoriesColors      *string   `json:"epgCategoriesColors,omitempty"`
@@ -90,46 +91,46 @@ type ResponseStruct struct {
 		DVR       string `json:"DVR"`
 		EpgSource string `json:"epgSource"`
 		Errors    int    `json:"errors"`
-		M3U       string `json:"m3u-url,required"`
+		M3U       string `json:"m3u-url"`
 		OS        string `json:"os"`
 		Streams   string `json:"streams"`
 		UUID      string `json:"uuid"`
 		Version   string `json:"version"`
 		Warnings  int    `json:"warnings"`
 		XEPGCount int64  `json:"xepg"`
-		XML       string `json:"xepg-url,required"`
+		XML       string `json:"xepg-url"`
 	} `json:"clientInfo,omitempty"`
 
 	Data struct {
 		Playlist struct {
 			M3U struct {
 				Groups struct {
-					Text  []string `json:"text,required"`
-					Value []string `json:"value,required"`
-				} `json:"groups,required"`
-			} `json:"m3u,required"`
-		} `json:"playlist,required"`
+					Text  []string `json:"text"`
+					Value []string `json:"value"`
+				} `json:"groups"`
+			} `json:"m3u"`
+		} `json:"playlist"`
 
 		StreamPreviewUI struct {
-			Active   []string `json:"activeStreams,required"`
-			Inactive []string `json:"inactiveStreams,required"`
+			Active   []string `json:"activeStreams"`
+			Inactive []string `json:"inactiveStreams"`
 		}
-	} `json:"data,required"`
+	} `json:"data"`
 
 	Alert               string                 `json:"alert,omitempty"`
-	ConfigurationWizard bool                   `json:"configurationWizard,required"`
+	ConfigurationWizard bool                   `json:"configurationWizard"`
 	Error               string                 `json:"err,omitempty"`
-	Log                 WebScreenLogStruct     `json:"log,required"`
+	Log                 WebScreenLogStruct     `json:"log"`
 	LogoURL             string                 `json:"logoURL,omitempty"`
 	OpenLink            string                 `json:"openLink,omitempty"`
 	OpenMenu            string                 `json:"openMenu,omitempty"`
 	Reload              bool                   `json:"reload,omitempty"`
-	Settings            SettingsStruct         `json:"settings,required"`
-	Status              bool                   `json:"status,required"`
+	Settings            SettingsStruct         `json:"settings"`
+	Status              bool                   `json:"status"`
 	Token               string                 `json:"token,omitempty"`
 	Users               map[string]interface{} `json:"users,omitempty"`
 	Wizard              int                    `json:"wizard,omitempty"`
-	XEPG                map[string]interface{} `json:"xepg,required"`
+	XEPG                map[string]interface{} `json:"xepg"`
 
 	Notification map[string]Notification `json:"notification,omitempty"`
 }
@@ -146,7 +147,7 @@ type APIRequestStruct struct {
 type APIResponseStruct struct {
 	EpgSource        string `json:"epg.source,omitempty"`
 	Error            string `json:"err,omitempty"`
-	Status           bool   `json:"status,required"`
+	Status           bool   `json:"status"`
 	StreamsActive    int64  `json:"streams.active,omitempty"`
 	StreamsAll       int64  `json:"streams.all,omitempty"`
 	StreamsXepg      int64  `json:"streams.xepg,omitempty"`
@@ -160,7 +161,7 @@ type APIResponseStruct struct {
 
 // WebScreenLogStruct : Logs werden im RAM gespeichert und für das Webinterface bereitgestellt
 type WebScreenLogStruct struct {
-	Errors   int      `json:"errors,required"`
-	Log      []string `json:"log,required"`
-	Warnings int      `json:"warnings,required"`
+	Errors   int      `json:"errors"`
+	Log      []string `json:"log"`
+	Warnings int      `json:"warnings"`
 }

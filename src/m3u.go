@@ -3,7 +3,6 @@ package src
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"path"
 	"regexp"
 	"sort"
@@ -182,7 +181,7 @@ func checkConditions(streamValues, conditions, coType string) (status bool) {
 // Threadfin M3U Datei erstellen
 func buildM3U(groups []string) (m3u string, err error) {
 
-	var imgc = Data.Cache.Images
+	//var imgc = Data.Cache.Images
 	var m3uChannels = make(map[float64]XEPGChannelStruct)
 	var channelNumbers []float64
 
@@ -218,12 +217,8 @@ func buildM3U(groups []string) (m3u string, err error) {
 
 	// M3U Inhalt erstellen
 	sort.Float64s(channelNumbers)
-
-	var xmltvURL = fmt.Sprintf("%s://%s/xmltv/threadfin.xml", System.ServerProtocol.XML, System.Domain)
-	if Settings.ForceHttps && Settings.HttpsThreadfinDomain != "" {
-		xmltvURL = fmt.Sprintf("https://%s/xmltv/threadfin.xml", Settings.HttpsThreadfinDomain)
-	}
-	m3u = fmt.Sprintf(`#EXTM3U url-tvg="%s" x-tvg-url="%s"`+"\n", xmltvURL, xmltvURL)
+  
+	m3u = fmt.Sprintf(`#EXTM3U url-tvg="%s" x-tvg-url="%s"`+"\n", System.BaseURL, System.BaseURL)
 
 	for _, channelNumber := range channelNumbers {
 
@@ -234,24 +229,13 @@ func buildM3U(groups []string) (m3u string, err error) {
 			group = channel.XCategory
 		}
 
-		if Settings.ForceHttps && Settings.HttpsThreadfinDomain != "" {
-			u, err := url.Parse(channel.URL)
-			if err == nil {
-				u.Scheme = "https"
-				host_split := strings.Split(u.Host, ":")
-				if len(host_split) > 0 {
-					u.Host = host_split[0]
-				}
-				channel.URL = fmt.Sprintf("https://%s:%d%s", u.Host, Settings.HttpsPort, u.Path)
-			}
-		}
-
 		logo := ""
 		if channel.TvgLogo != "" {
-			logo = imgc.Image.GetURL(channel.TvgLogo, Settings.HttpThreadfinDomain, Settings.Port, Settings.ForceHttps, Settings.HttpsPort, Settings.HttpsThreadfinDomain)
+			logo = Data.Cache.Images.GetImageURL(channel.TvgLogo)
 		}
 		var parameter = fmt.Sprintf(`#EXTINF:0 channelID="%s" tvg-chno="%s" tvg-name="%s" tvg-id="%s" tvg-logo="%s" group-title="%s",%s`+"\n", channel.XEPG, channel.XChannelID, channel.XName, channel.XChannelID, logo, group, channel.XName)
-		var stream, err = createStreamingURL("M3U", channel.FileM3UID, channel.XChannelID, channel.XName, channel.URL, channel.BackupChannel1URL, channel.BackupChannel2URL, channel.BackupChannel3URL)
+		var stream = ""
+		stream, err = createStreamingURL(channel.FileM3UID, channel.XChannelID, channel.XName, channel.URL, channel.BackupChannel1URL, channel.BackupChannel2URL, channel.BackupChannel3URL)
 		if err == nil {
 			m3u = m3u + parameter + stream + "\n"
 		}

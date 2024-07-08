@@ -281,6 +281,10 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "WebUI request error"
 	case 1102:
 		errMsg = "WebUI response error"
+	case 1110:
+		errMsg = "Could not read message from websocket"
+	case 1120:
+		errMsg = "Could not parse JSON from request"
 
 	// PMS Guide Numbers
 	case 1200:
