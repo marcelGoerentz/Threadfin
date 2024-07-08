@@ -1,12 +1,10 @@
 package imgcache
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -78,18 +76,6 @@ func (ic *ImageCache) GetImageURL(url string) (string) {
 		// Save original url in cache
 		return url
 	}
-}
-
-// Faster creation of file names
-func createFileNameFromURL(url string, key string) (string) {
-	url_stripped := strings.Split(url, "?")[0]
-	ext := filepath.Ext(url_stripped)
-
-	var buf bytes.Buffer
-	buf.WriteString(key)
-	buf.WriteString(ext)
-
-	return buf.String()
 }
 
 // Download the Image
