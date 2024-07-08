@@ -42,6 +42,7 @@ func BinaryUpdate() (err error) {
 	case "Main", "Beta":
 		var releaseInfo = fmt.Sprintf("%s/releases", System.Update.Github)
 		var latest string
+		var bin_name string
 		var body []byte
 
 		var git []*GithubReleaseInfo
@@ -64,7 +65,9 @@ func BinaryUpdate() (err error) {
 			for _, release := range git {
 				if release.Prerelease {
 					latest = release.TagName
+					bin_name = fmt.Sprintf("Threadfin_beta_%s_%s", System.OS, System.ARCH)
 					updater.Response.Version = release.TagName
+					showInfo("TAG LATEST:" + release.TagName)
 					break
 				}
 			}
@@ -74,15 +77,16 @@ func BinaryUpdate() (err error) {
 		if System.Branch == "Main" {
 			for _, release := range git {
 				if !release.Prerelease {
-					updater.Response.Version = release.TagName
 					latest = release.TagName
+					bin_name = fmt.Sprintf("Threadfin_%s_%s", System.OS, System.ARCH)
+					updater.Response.Version = release.TagName
 					showInfo("TAG LATEST:" + release.TagName)
 					break
 				}
 			}
 		}
 
-		var File = fmt.Sprintf("%s/releases/download/%s/%s_%s_%s", System.Update.Git, latest, "Threadfin", System.OS, System.ARCH)
+		var File = fmt.Sprintf("%s/releases/download/%s/%s", System.Update.Git, latest, bin_name)
 
 		updater.Response.Status = true
 		updater.Response.UpdateBIN = File
