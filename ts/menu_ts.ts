@@ -1091,6 +1091,7 @@ function PageReady() {
     updateLog()
   }, 10000);
 
+  getNewestReleaseFromGithub()
 
   return
 }
