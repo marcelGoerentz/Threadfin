@@ -390,6 +390,8 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Update server not available"
 	case 6004:
 		errMsg = "Threadfin update available"
+	case 6005:
+		errMsg = "Couldn't write last_beta_update to disk"
 
 	// Webserver
 	case 7001:

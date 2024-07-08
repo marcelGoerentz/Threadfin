@@ -113,8 +113,14 @@ type GitStruct struct {
 }
 
 type GithubReleaseInfo struct {
-	TagName    string `json:"tag_name"`
-	Prerelease bool   `json:"prerelease"`
+	TagName    string         `json:"tag_name"`
+	Prerelease bool           `json:"prerelease"`
+	Assets     []AssetsStruct `json:"assets"`
+}
+
+type AssetsStruct struct {
+	DownloadUrl string `json:"browser_download_url"`
+	UpdatetAt   string `json:"updated_at"`
 }
 
 // DataStruct : Alle Daten werden hier abgelegt. (Lineup, XMLTV)

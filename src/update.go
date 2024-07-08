@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
+	"os"
+	"strings"
 	up2date "threadfin/src/internal/up2date/client"
+	"time"
 
 	"github.com/hashicorp/go-version"
 
@@ -41,8 +43,8 @@ func BinaryUpdate() (err error) {
 	// Update von GitHub
 	case "Main", "Beta":
 		var releaseInfo = fmt.Sprintf("%s/releases", System.Update.Github)
-		var latest string
-		var bin_name string
+		//var latest string
+		//var bin_name string
 		var body []byte
 
 		var git []*GithubReleaseInfo
@@ -64,10 +66,12 @@ func BinaryUpdate() (err error) {
 		if System.Branch == "Beta" {
 			for _, release := range git {
 				if release.Prerelease {
-					latest = release.TagName
-					bin_name = fmt.Sprintf("Threadfin_beta_%s_%s", System.OS, System.ARCH)
 					updater.Response.Version = release.TagName
-					showInfo("TAG LATEST:" + release.TagName)
+					updater.Response.UpdatedAt = release.Assets[0].UpdatetAt
+					for _, asset := range release.Assets {
+						new_asset := up2date.AssetsStruct{DownloadUrl: asset.DownloadUrl, UpdatetAt: asset.UpdatetAt}
+						updater.Response.Assets = append(updater.Response.Assets, new_asset)
+					}
 					break
 				}
 			}
@@ -77,19 +81,24 @@ func BinaryUpdate() (err error) {
 		if System.Branch == "Main" {
 			for _, release := range git {
 				if !release.Prerelease {
-					latest = release.TagName
-					bin_name = fmt.Sprintf("Threadfin_%s_%s", System.OS, System.ARCH)
 					updater.Response.Version = release.TagName
-					showInfo("TAG LATEST:" + release.TagName)
+					for _, asset := range release.Assets {
+						new_asset := up2date.AssetsStruct{DownloadUrl: asset.DownloadUrl, UpdatetAt: asset.UpdatetAt}
+						updater.Response.Assets = append(updater.Response.Assets, new_asset)
+					}
 					break
 				}
 			}
 		}
 
-		var File = fmt.Sprintf("%s/releases/download/%s/%s", System.Update.Git, latest, bin_name)
+		showInfo("TAG LATEST:" + updater.Response.Version)
 
-		updater.Response.Status = true
-		updater.Response.UpdateBIN = File
+		for _, asset := range updater.Response.Assets {
+			if strings.Contains(asset.DownloadUrl, System.OS) && strings.Contains(asset.DownloadUrl, System.ARCH) {
+				updater.Response.Status = true
+				updater.Response.UpdateBIN = asset.DownloadUrl
+			}
+		}
 
 		showInfo("FILE:" + updater.Response.UpdateBIN)
 
@@ -126,11 +135,38 @@ func BinaryUpdate() (err error) {
 
 	}
 
-	var currentVersion = System.Version + "." + System.Build
-	current_version, _ := version.NewVersion(currentVersion)
-	response_version, _ := version.NewVersion(updater.Response.Version)
+	var path_to_file string
+	do_upgrade := false
+	if System.Branch == "Beta" {
+		path_to_file = System.Folder.Config + "latest_beta_update"
+		// If update file does not exits then update the binary to make sure that the latest version is installed
+		if _, err := os.Stat(path_to_file); errors.Is(err, os.ErrNotExist) {
+			do_upgrade = true
+		} else {
+			// If the file exists check if the latest-release is newer then the last update
+			saved_last_update_date, err := os.ReadFile(path_to_file)
+			if err != nil {
+				ShowError(err, 0)
+				do_upgrade = true
+			}
+			last_time_date, _ := time.Parse(time.RFC3339, string(saved_last_update_date))
+			latest_beta_date, _ := time.Parse(time.RFC3339, updater.Response.UpdatedAt)
+
+			if last_time_date.Before(latest_beta_date) {
+				do_upgrade = true
+			}
+		}
+	} else {
+		var currentVersion = System.Version + "." + System.Build
+		current_version, _ := version.NewVersion(currentVersion)
+		response_version, _ := version.NewVersion(updater.Response.Version)
+		if response_version.GreaterThan(current_version) && updater.Response.Status {
+			do_upgrade = true
+		}
+	}
+
 	// Versionsnummer überprüfen
-	if response_version.GreaterThan(current_version) && updater.Response.Status {
+	if do_upgrade {
 		if Settings.ThreadfinAutoUpdate {
 			// Update durchführen
 			var fileType, url string
@@ -140,7 +176,7 @@ func BinaryUpdate() (err error) {
 			switch System.Branch {
 
 			// Update von GitHub
-			case "master", "beta":
+			case "Master", "Beta":
 				showInfo("Update Server:GitHub")
 
 			// Update vom eigenen Server
@@ -169,7 +205,11 @@ func BinaryUpdate() (err error) {
 				if err != nil {
 					ShowError(err, 6002)
 				}
-
+				if System.Branch == "Beta" {
+					if err := os.WriteFile(path_to_file, []byte(updater.Response.UpdatedAt), 0666); err != nil {
+						ShowError(err, 6005)
+					}
+				}
 			}
 
 		} else {
@@ -177,6 +217,8 @@ func BinaryUpdate() (err error) {
 			showWarning(6004)
 		}
 
+	} else {
+		showInfo("BIN:Update omitted")
 	}
 
 	return nil

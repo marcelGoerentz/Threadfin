@@ -25,11 +25,6 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 		url = Updater.Response.UpdateZIP
 	}
 
-	switch runtime.GOOS {
-	case "windows":
-		filenameBIN = filenameBIN + ".exe"
-	}
-
 	if len(url) > 0 {
 		log.Println("["+strings.ToUpper(fileType)+"]", "New version ("+Updater.Name+"):", Updater.Response.Version)
 
@@ -43,7 +38,7 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 		log.Println("["+strings.ToUpper(fileType)+"]", "Download new version...")
 
 		if resp.StatusCode != http.StatusOK {
-			log.Println("["+strings.ToUpper(fileType)+"]", "Download new version...OK")
+			log.Println("["+strings.ToUpper(fileType)+"]", "Download new version...NOK")
 			return fmt.Errorf("bad status: %s", resp.Status)
 		}
 
