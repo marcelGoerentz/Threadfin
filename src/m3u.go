@@ -181,7 +181,6 @@ func checkConditions(streamValues, conditions, coType string) (status bool) {
 // Threadfin M3U Datei erstellen
 func buildM3U(groups []string) (m3u string, err error) {
 
-	//var imgc = Data.Cache.Images
 	var m3uChannels = make(map[float64]XEPGChannelStruct)
 	var channelNumbers []float64
 
