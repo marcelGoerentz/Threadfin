@@ -62,7 +62,7 @@ func (ic *ImageCache) GetImageURL(url string) (string) {
 	if ic.caching {
 		filename := createFileNameFromURL(url, key)
 		path_to_file := ic.basePath + filename
-		url_to_file := ic.baseURL + "/cache/" + filename
+		url_to_file := ic.baseURL + "/images/" + filename
 
 		// Enqueue the Image for the download
 		ic.EnqueueURL(url, path_to_file)

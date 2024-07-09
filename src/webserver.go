@@ -400,7 +400,7 @@ func Threadfin(w http.ResponseWriter, r *http.Request) {
 func Images(w http.ResponseWriter, r *http.Request) {
 
 	var err error
-	var path = strings.TrimPrefix(r.URL.Path, "/")
+	var path = strings.TrimPrefix(r.URL.Path, "/images/")
 	var filePath = System.Folder.ImagesCache + getFilenameFromPath(path)
 
 	err = checkForRestriction(w, r)
