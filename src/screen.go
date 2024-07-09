@@ -281,6 +281,10 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "WebUI request error"
 	case 1102:
 		errMsg = "WebUI response error"
+	case 1110:
+		errMsg = "Could not read message from websocket"
+	case 1120:
+		errMsg = "Could not parse JSON from request"
 
 	// PMS Guide Numbers
 	case 1200:
@@ -386,6 +390,8 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Update server not available"
 	case 6004:
 		errMsg = "Threadfin update available"
+	case 6005:
+		errMsg = "Couldn't write last_beta_update to disk"
 
 	// Webserver
 	case 7001:

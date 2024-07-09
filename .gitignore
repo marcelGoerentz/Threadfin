@@ -2,8 +2,10 @@
 threadfin
 vendor/
 .DS_Store
-threadfin.exe
 binaries/
 *.js.map
 .vscode/
 dist/
+node_modules/
+*.exe
+*.js

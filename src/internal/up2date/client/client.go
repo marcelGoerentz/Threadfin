@@ -33,6 +33,13 @@ type ServerResponse struct {
 	UpdateBIN string `json:"update.url.bin,omitempty"`
 	UpdateZIP string `json:"update.url.zip,omitempty"`
 	Filename  string `json:"filename.bin,omitempty"`
+	UpdatedAt string
+	Assets    []AssetsStruct
+}
+
+type AssetsStruct struct {
+	DownloadUrl string
+	UpdatetAt   string
 }
 
 // Updater : Client infos

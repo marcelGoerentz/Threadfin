@@ -1,5 +1,5 @@
 <div align="center" style="background-color: #111; padding: 100;">
-    <a href="https://github.com/Threadfin/Threadfin"><img width="285" height="80" src="html/img/threadfin.png" alt="Threadfin" /></a>
+    <a href="https://github.com/marcelGoerentz/Threadfin"><img width="285" height="80" src="html/img/threadfin.png" alt="Threadfin" /></a>
 </div>
 <br>
 
@@ -9,7 +9,7 @@
 You can follow the old xTeVe documentation for now until I update it for Threadfin. Documentation for setup and configuration is [here](https://github.com/xteve-project/xTeVe-Documentation/blob/master/en/configuration.md).
 
 #### Donation
-[Github Sponsor](https://github.com/sponsors/Fyb3roptik)
+[Paypal/Me](https://paypal.me/MarcelGoerentz)
 
 ## Requirements
 ### Plex
@@ -32,6 +32,7 @@ You can follow the old xTeVe documentation for now until I update it for Threadf
 
 * New Bootstrap based UI
 * RAM based buffer instead of File based
+* HTTPS Webserver
 
 #### Filter Group
 * Can now add a starting channel number for the filter group
@@ -68,8 +69,26 @@ You can follow the old xTeVe documentation for now until I update it for Threadf
 
 ---
 
+## CLI arguments
+
+These are the currently available command line arguments:
+
+| arg        | type    | description                                             | example                                     |
+|:-----------|:--------|:--------------------------------------------------------|:--------------------------------------------|
+| -h         | bool    | prints the help and don't start the service             | -h                                          |
+| -dev       | bool    | activates the developer mode                            | -dev                                        |
+| -config    | string  | sets the path to the root config folder                 | -config=~./.threadfin                       |
+| -port      | integer | sets the port for the webserver (also for https)        | -port=34400                                 |
+| -useHttps  | bool    | switches the webserver to https                         | -useHttps                                   |
+| -restore   | string  | restores the settings from the given filepath           | -restore=/path/to/file/threadfin_backup.zip |
+| -gitBranch | string  | sets the branch from which the program is to be updated | -gitBranch=beta                             |
+| -debug     | integer | sets the debug level                                    | -debug=3                                    |
+| -info      | bool    | prints the system info                                  | -info                                       |
+
+---
+
 ## Docker Image
-[Threadfin](https://hub.docker.com/r/fyb3roptik/threadfin)
+[Threadfin](https://hub.docker.com/r/marcelGoerentz/threadfin)
 
 * Docker compose example
 
@@ -94,7 +113,7 @@ services:
 ---
 
 ### Threadfin Beta branch
-New features and bug fixes are only available in beta branch. Only after successful testing are they are merged into the main branch.
+New features and bug fixes are only available in beta branch. Only after successful testing they are merged into the main branch.
 
 **It is not recommended to use the beta version in a production system.**  
 
@@ -102,7 +121,7 @@ With the command line argument `branch` the Git Branch can be changed. Threadfin
 
 #### Switch from master to beta branch:
 ```
-threadfin -branch beta
+threadfin -branch=beta
 
 ...
 [Threadfin] GitHub:                https://github.com/Threadfin/Threadfin
@@ -112,7 +131,7 @@ threadfin -branch beta
 
 #### Switch from beta to master branch:
 ```
-threadfin -branch main
+threadfin -branch=main
 
 ...
 [Threadfin] GitHub:                https://github.com/Threadfin/Threadfin

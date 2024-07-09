@@ -40,20 +40,21 @@ var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadf
 const Name = "Threadfin"
 
 // Version : Version, die Build Nummer wird in der main func geparst.
-const Version = "1.1.15"
+const Version = "1.2.0"
 
 // DBVersion : Datanbank Version
 const DBVersion = "0.5.0"
 
 // APIVersion : API Version
-const APIVersion = "1.1.15"
+const APIVersion = "1.2.0"
 
 var homeDirectory = fmt.Sprintf("%s%s.%s%s", src.GetUserHomeDirectory(), string(os.PathSeparator), strings.ToLower(Name), string(os.PathSeparator))
 var samplePath = fmt.Sprintf("%spath%sto%sthreadfin%s", string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator))
 var sampleRestore = fmt.Sprintf("%spath%sto%sfile%s", string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator))
 
 var configFolder = flag.String("config", "", ": Config Folder        ["+samplePath+"] (default: "+homeDirectory+")")
-var port = flag.String("port", "", ": Server port          [34400] (default: 34400)")
+var port = flag.Int("port", 34400, ": Server port")
+var useHttps = flag.Bool("useHttps", false , ": Use Https Webserver [place server.crt and server.key in config folder]")
 var restore = flag.String("restore", "", ": Restore from backup  ["+sampleRestore+"threadfin_backup.zip]")
 
 var gitBranch = flag.String("branch", "", ": Git Branch           [main|beta] (default: main)")
@@ -141,9 +142,12 @@ func main() {
 	}
 
 	// Webserver Port
-	if len(*port) > 0 {
-		system.Flag.Port = *port
+	if *port != 0 {
+		system.Flag.Port = fmt.Sprintf("%d", *port)
 	}
+
+	// Https Webserver
+	system.Flag.UseHttps = *useHttps
 
 	// Branch
 	system.Flag.Branch = *gitBranch

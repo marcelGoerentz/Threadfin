@@ -381,7 +381,7 @@
     },
     "cacheImages": {
       "title": "Image Caching",
-      "description": "All images from the XMLTV file are cached, allowing faster rendering of the grid in the client.<br>Downloading the images may take a while and will be done in the background."
+      "description": "This option will rewrite the m3u file to local image cache for tv logos.<br>All images from the XMLTV file are cached, allowing faster rendering of the grid in the client.<br>Downloading the images may take a while and will be done in the background.<br>"
     },
     "replaceEmptyImages": {
       "title": "Replace missing program images",
@@ -436,6 +436,11 @@
       "title": "Store buffer in RAM",
       "description": "If checked, write buffer to RAM instead of writing to disk"
     },
+    "omitPorts":
+    {
+      "title": "Omit port",
+      "description": "By activating this checkbox the m3u file will not contain the port in the url"
+    },
     "listeningIp" :
     {
       "title": "Listening IPs",
@@ -443,23 +448,23 @@
     },
     "forceHttps":
     {
-      "title": "Force HTTPS",
-      "description": "With image caching enabled, if checked, will rewrite M3U and EPG urls to include https protocol as well as https port (default is 443)"
+      "title": "Force HTTPS to Upstream server",
+      "description": "When this checkbox is activated Threadfin will be forced to use HTTPS connection to upstream server <br>This is not recommended as the given urls will be rewritten to https urls, this can lead to 404 HTTP Error Codes</br>"
     },
-    "httpsPort":
+    "useHttps":
     {
-      "title": "HTTPS Port",
-      "description": "With image caching enabled, port to use for forcing https. Default is 443"
+      "title": "Use HTTPS",
+      "description": "Enable HTTPS protocol for Threadfin, HTTPS Port needs to be set, otherwise the 443 will be used!"
     },
-    "httpsThreadfinDomain":
+    "forceClientHttps":
     {
-      "title": "HTTPS Threadfin Domain",
-      "description": "With image caching enabled, rewrite the threadfin ip address in the m3u to use a domain for HTTPS mode. Do NOT include https (ex: somedomain.com)"
+      "title": "Force client to use https",
+      "description": "All URLs to this threadfin instance will be starting with https"
     },
-    "httpThreadfinDomain":
+    "threadfinDomain":
     {
       "title": "Threadfin Domain",
-      "description": "With image caching enabled, rewrite the threadfin ip address in the m3u to use a domain for HTTP mode. Do NOT include http (ex: somedomain.com)"
+      "description": "When not empty, this will rewrite the URLs in the new m3u to a FQDN.<br>Do NOT include http (ex: somedomain.com)</br>"
     },
     "enableNonAscii":
     {
