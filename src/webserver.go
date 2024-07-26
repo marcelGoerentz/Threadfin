@@ -22,21 +22,23 @@ import (
 func StartWebserver() (err error) {
 
 	var port = Settings.Port
+	var serverMux = http.NewServeMux()
+	
 
-	http.HandleFunc("/", Index)
-	http.HandleFunc("/stream/", Stream)
-	http.HandleFunc("/xmltv/", Threadfin)
-	http.HandleFunc("/m3u/", Threadfin)
-	http.HandleFunc("/ws/", WS)
-	http.HandleFunc("/web/", Web)
-	http.HandleFunc("/download/", Download)
-	http.HandleFunc("/api/", API)
-	http.HandleFunc("/images/", Images)
-	http.HandleFunc("/data_images/", DataImages)
-	http.HandleFunc("/ppv/enable", enablePPV)
-	http.HandleFunc("/ppv/disable", disablePPV)
+	serverMux.HandleFunc("/", Index)
+	serverMux.HandleFunc("/stream/", Stream)
+	serverMux.HandleFunc("/xmltv/", Threadfin)
+	serverMux.HandleFunc("/m3u/", Threadfin)
+	serverMux.HandleFunc("/ws/", WS)
+	serverMux.HandleFunc("/web/", Web)
+	serverMux.HandleFunc("/download/", Download)
+	serverMux.HandleFunc("/api/", API)
+	serverMux.HandleFunc("/images/", Images)
+	serverMux.HandleFunc("/data_images/", DataImages)
+	serverMux.HandleFunc("/ppv/enable", enablePPV)
+	serverMux.HandleFunc("/ppv/disable", disablePPV)
 
-	//http.HandleFunc("/auto/", Auto)
+	//serverMux.HandleFunc("/auto/", Auto)
 
 	showInfo("DVR IP:" + System.IPAddress + ":" + Settings.Port)
 
@@ -51,56 +53,42 @@ func StartWebserver() (err error) {
 		copy(customIps, customIpsV4)
 		copy(customIps[len(customIpsV4):], customIpsV6)
 	}
-	
+
 	if customIps != nil {
-		showHighlight("Webserver is restricted to listen to this address(es):")
-		for _, ip := range customIps {
-			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+		for _, address := range customIps {
+			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
+			if Settings.UseHttps {
+				go func(address string) {
+					if err = http.ListenAndServeTLS(address + ":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", serverMux); err != nil {
+						ShowError(err, 1001)
+						return
+					}
+				}(address)
+			} else {
+				go func(address string) {
+					if err = http.ListenAndServe(address + ":" + port, serverMux); err != nil {
+						ShowError(err, 1001)
+						return
+					}
+				}(address)
+			}
+
 		}
 	} else {
 		for _, ip := range System.IPAddressesV4 {
-			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 
 		for _, ip := range System.IPAddressesV6 {
-			showHighlight(fmt.Sprintf("Web Intreface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+		}
+		if err = http.ListenAndServe(":" + port, serverMux); err != nil {
+			ShowError(err, 1001)
+			return
 		}
 	}
 
-	
-
-	if Settings.UseHttps {
-		go func () {
-			if err = http.ListenAndServeTLS(":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", nil); err != nil {
-				ShowError(err, 1001)
-				return
-			}
-		} ()
-	} else {
-		go func () {
-			if err = http.ListenAndServe(":" + port, nil); err != nil {
-				ShowError(err, 1001)
-				return
-			}	
-		}()
-	}
-	
-	select {}
-}
-
-func checkForRestriction(w http.ResponseWriter, r *http.Request) error{
-	if Settings.ListeningIp == "" {
-		return nil
-	} else {	
-		for _, ip := range strings.Split(Settings.ListeningIp, ";") {
-			var requestedAddress = strings.Split(r.Host, ":")[0]
-			if requestedAddress == ip || requestedAddress == strings.Split(System.Domain, ":")[0] {
-				return nil
-			}
-		} 
-		httpStatusError(w, http.StatusForbidden)
-		return errors.New("not listening to this IP: " + strings.Split(r.Host, ":")[0])
-	}
+	select{}
 }
 
 // Index : Web Server /
@@ -109,15 +97,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var response []byte
 	var path = r.URL.Path
-	var debug string
+	var debug  = fmt.Sprintf("Web Server Request:Path: %s", path)
 
-	err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
-
-	debug = fmt.Sprintf("Web Server Request:Path: %s", path)
 	showDebug(debug, 2)
 
 	switch path {
@@ -169,12 +150,6 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func Stream(w http.ResponseWriter, r *http.Request) {
 
 	var err error
-
-	err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
 
 	var path = strings.Replace(r.RequestURI, "/stream/", "", 1)
 	//var stream = strings.SplitN(path, "-", 2)
@@ -291,12 +266,6 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 // Auto : HDHR routing (wird derzeit nicht benutzt)
 func Auto(w http.ResponseWriter, r *http.Request) {
 
-	var err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
-
 	var channelID = strings.Replace(r.RequestURI, "/auto/v", "", 1)
 	fmt.Println(channelID)
 
@@ -324,12 +293,6 @@ func Threadfin(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var path = strings.TrimPrefix(r.URL.Path, "/")
 	var groups = []string{}
-
-	err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
 
 	// XMLTV Datei
 	if strings.Contains(path, "xmltv/") {
@@ -404,12 +367,6 @@ func Images(w http.ResponseWriter, r *http.Request) {
 	var path = strings.TrimPrefix(r.URL.Path, "/images/")
 	var filePath = System.Folder.ImagesCache + getFilenameFromPath(path)
 
-	err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
-
 	content, err := readByteFromFile(filePath)
 	if err != nil {
 		httpStatusError(w, http.StatusNotFound)
@@ -428,12 +385,6 @@ func DataImages(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var path = strings.TrimPrefix(r.URL.Path, "/")
 	var filePath = System.Folder.ImagesUpload + getFilenameFromPath(path)
-
-	err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
 
 	content, err := readByteFromFile(filePath)
 	if err != nil {
@@ -459,12 +410,6 @@ func WS(w http.ResponseWriter, r *http.Request) {
 	var request RequestStruct
 	var response ResponseStruct
 	response.Status = true
-
-	err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
 
 	var newToken string
 
@@ -551,6 +496,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 			showInfo("WEB:Saving settings")
 			var authenticationUpdate = Settings.AuthenticationWEB
 			var previousStoreBufferInRAM = Settings.StoreBufferInRAM
+			var previousListeningIP = Settings.ListeningIp
 			response.Settings, err = updateServerSettings(request)
 			if err == nil {
 
@@ -562,6 +508,11 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				
 				if Settings.StoreBufferInRAM != previousStoreBufferInRAM {
 					initBufferVFS(Settings.StoreBufferInRAM)
+				}
+
+				if Settings.ListeningIp != previousListeningIP {
+					showInfo("WEB:Restart program since listening IP option has been changed!")
+					os.Exit(0)
 				}
 
 			}
@@ -746,12 +697,6 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	var content, contentType, file string
 
 	var language LanguageUI
-
-	err = checkForRestriction(w, r)
-	if err != nil {
-		ShowError(err, 7001)
-		return
-	}
 
 	if System.Dev {
 
