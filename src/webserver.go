@@ -93,12 +93,13 @@ func checkForRestriction(w http.ResponseWriter, r *http.Request) error{
 		return nil
 	} else {	
 		for _, ip := range strings.Split(Settings.ListeningIp, ";") {
-			if strings.Split(r.RemoteAddr, ":")[0] == ip {
+			var requestedAddress = strings.Split(r.Host, ":")[0]
+			if requestedAddress == ip || requestedAddress == strings.Split(System.Domain, ":")[0] {
 				return nil
 			}
 		} 
 		httpStatusError(w, http.StatusForbidden)
-		return errors.New("not listening to this IP: " + strings.Split(r.RemoteAddr, ":")[0])
+		return errors.New("not listening to this IP: " + strings.Split(r.Host, ":")[0])
 	}
 }
 
