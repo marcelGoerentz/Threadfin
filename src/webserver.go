@@ -82,9 +82,20 @@ func StartWebserver() (err error) {
 		for _, ip := range System.IPAddressesV6 {
 			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
-		if err = http.ListenAndServe(":" + port, serverMux); err != nil {
-			ShowError(err, 1001)
-			return
+		if Settings.UseHttps {
+			go func() {
+				if err = http.ListenAndServeTLS(":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", serverMux); err != nil {
+					ShowError(err, 1001)
+					return
+				}
+			}()
+		} else {
+			go func() {
+				if err = http.ListenAndServe(":" + port, serverMux); err != nil {
+					ShowError(err, 1001)
+					return
+				}
+			}()
 		}
 	}
 
@@ -497,6 +508,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 			var authenticationUpdate = Settings.AuthenticationWEB
 			var previousStoreBufferInRAM = Settings.StoreBufferInRAM
 			var previousListeningIP = Settings.ListeningIp
+			var previousUseHttps = Settings.UseHttps
 			response.Settings, err = updateServerSettings(request)
 			if err == nil {
 
@@ -510,7 +522,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 					initBufferVFS(Settings.StoreBufferInRAM)
 				}
 
-				if Settings.ListeningIp != previousListeningIP {
+				if Settings.ListeningIp != previousListeningIP  || Settings.UseHttps != previousUseHttps {
 					showInfo("WEB:Restart program since listening IP option has been changed!")
 					os.Exit(0)
 				}
