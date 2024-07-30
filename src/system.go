@@ -185,7 +185,9 @@ func loadSettings() (settings SettingsStruct, err error) {
 		settings.Port = System.Flag.Port
 	}
 
-	settings.UseHttps = System.Flag.UseHttps
+	if System.Flag.UseHttps {
+		settings.UseHttps = System.Flag.UseHttps
+	}
 
 	if len(System.Flag.Branch) > 0 {
 		settings.Branch = System.Flag.Branch
