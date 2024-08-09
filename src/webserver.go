@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -254,6 +255,9 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		showInfo(fmt.Sprintf("Buffer Size:%d KB", Settings.BufferSize))
 	}
 
+	log.Println("Stream Info: ", streamInfo)
+	log.Println("M3U Info: ", Settings.Files.M3U)
+
 	showInfo(fmt.Sprintf("Channel Name:%s", streamInfo.Name))
 	showInfo(fmt.Sprintf("Client User-Agent:%s", r.Header.Get("User-Agent")))
 
@@ -261,12 +265,61 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 	switch Settings.Buffer {
 
 	case "-":
-		showInfo("Streaming URL:" + streamInfo.URL)
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		http.Redirect(w, r, streamInfo.URL, http.StatusFound)
+		providerSettings, ok := Settings.Files.M3U[streamInfo.PlaylistID].(map[string]interface{})
+		if !ok {
+			return
+		}
 
-		showInfo("Streaming Info:URL was passed to the client.")
-		showInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
+		proxyIP, ok := providerSettings["http_proxy.ip"].(string)
+		if !ok {
+			return
+		}
+
+		proxyPort, ok := providerSettings["http_proxy.port"].(string)
+		if !ok {
+			return
+		}
+
+		if proxyIP != "" && proxyPort != "" {
+			showInfo("Streaming Info: Streaming through proxy.")
+
+			proxyURL, err := url.Parse(fmt.Sprintf("http://%s:%s", proxyIP, proxyPort))
+			if err != nil {
+				return
+			}
+
+			httpClient := &http.Client{
+				Transport: &http.Transport{
+					Proxy: http.ProxyURL(proxyURL),
+				},
+			}
+			resp, err := httpClient.Get(streamInfo.URL)
+			if err != nil {
+				http.Error(w, "Failed to fetch stream", http.StatusInternalServerError)
+				return
+			}
+			defer resp.Body.Close()
+
+			for key, values := range resp.Header {
+				for _, value := range values {
+					w.Header().Add(key, value)
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode)
+			_, err = io.Copy(w, resp.Body)
+			if err != nil {
+				http.Error(w, "Failed to stream response", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			showInfo("Streaming URL:" + streamInfo.URL)
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			http.Redirect(w, r, streamInfo.URL, 302)
+
+			showInfo("Streaming Info:URL was passed to the client.")
+			showInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
+		}
 
 	default:
 		bufferingStream(streamInfo.PlaylistID, streamInfo.URL, streamInfo.BackupChannel1URL, streamInfo.BackupChannel2URL, streamInfo.BackupChannel3URL, streamInfo.Name, w, r)
@@ -1089,6 +1142,32 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 
 	defaults = response
 
+	// Total connections for all playlists
+	totalPlaylistCount := 0
+	if len(Settings.Files.M3U) > 0 {
+		for _, value := range Settings.Files.M3U {
+
+			// Assert that value is a map[string]interface{}
+			nestedMap, ok := value.(map[string]interface{})
+			if !ok {
+				fmt.Printf("Error asserting nested value as map: %v\n", value)
+				continue
+			}
+
+			// Get the tuner count
+			if tuner, exists := nestedMap["tuner"]; exists {
+				switch v := tuner.(type) {
+				case float64:
+					totalPlaylistCount += int(v)
+				case int:
+					totalPlaylistCount += v
+				default:
+				}
+			}
+		}
+	}
+
+
 	// Folgende Daten immer an den Client übergeben
 	defaults.ClientInfo.ARCH = System.ARCH
 	defaults.ClientInfo.EpgSource = Settings.EpgSource
@@ -1100,6 +1179,10 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 	defaults.ClientInfo.UUID = Settings.UUID
 	defaults.ClientInfo.Errors = WebScreenLog.Errors
 	defaults.ClientInfo.Warnings = WebScreenLog.Warnings
+	defaults.ClientInfo.ActiveClients = getActiveClientCount()
+	defaults.ClientInfo.ActivePlaylist = getActivePlaylistCount()
+	defaults.ClientInfo.TotalClients = Settings.Tuner
+	defaults.ClientInfo.TotalPlaylist = totalPlaylistCount
 	defaults.Notification = System.Notification
 	defaults.Log = WebScreenLog
 
