@@ -1,6 +1,6 @@
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
-FROM golang:1.22 AS builder
+FROM golang:latest AS builder
 
 # Download the source code
 RUN apt-get update && apt-get install -y git
@@ -16,7 +16,7 @@ RUN go build threadfin.go
 
 # Second stage. Creating an image
 # -----------------------------------------------------------------------------
-FROM ubuntu:22.04
+FROM ubuntu:latest
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -56,7 +56,7 @@ WORKDIR $THREADFIN_HOME
 RUN rm /var/lib/dpkg/info/libc-bin.*
 RUN apt-get clean
 RUN apt-get install libc-bin
-RUN apt-get update && apt-get upgrade
+RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y ca-certificates\
  curl\
  ffmpeg\
