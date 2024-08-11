@@ -751,7 +751,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		case "ffmpeg":
 			path = Settings.FFmpegPath
-			options = fmt.Sprintf("%s title=Threadfin", Settings.FFmpegOptions)
+			options = fmt.Sprintf("%s Title=Threadfin", Settings.FFmpegOptions)
 
 		case "vlc":
 			path = Settings.VLCPath
