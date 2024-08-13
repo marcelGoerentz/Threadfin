@@ -1117,17 +1117,17 @@ function createLayout() {
         activeClass = "text-danger";
     }
     document.getElementById("playlist-connection-information").innerHTML = "Playlist Connections: <span class='" + activeClass + "'>" + SERVER["clientInfo"]["activePlaylist"] + " / " + SERVER["clientInfo"]["totalPlaylist"] + "</span>";
-}
-if (document.getElementById("client-connection-information")) {
-    let activeClass = "text-primary";
-    if (SERVER["clientInfo"]["activeClients"] / SERVER["clientInfo"]["totalClients"] >= 0.6 && SERVER["clientInfo"]["activeClients"] / SERVER["clientInfo"]["totalClients"] < 0.8) {
-        activeClass = "text-warning";
-    }
-    else if (SERVER["clientInfo"]["activeClients"] / SERVER["clientInfo"]["totalClients"] >= 0.8) {
-        activeClass = "text-danger";
-    }
-    document.getElementById("client-connection-information").innerHTML = "Client Connections: <span class='" + activeClass + "'>" + SERVER["clientInfo"]["activeClients"] + " / " + SERVER["clientInfo"]["totalClients"] + "</span>";
-}
+  }
+  if (document.getElementById("client-connection-information")) {
+      let activeClass = "text-primary";
+      if (SERVER["clientInfo"]["activeClients"] / SERVER["clientInfo"]["totalClients"] >= 0.6 && SERVER["clientInfo"]["activeClients"] / SERVER["clientInfo"]["totalClients"] < 0.8) {
+          activeClass = "text-warning";
+      }
+      else if (SERVER["clientInfo"]["activeClients"] / SERVER["clientInfo"]["totalClients"] >= 0.8) {
+          activeClass = "text-danger";
+      }
+      document.getElementById("client-connection-information").innerHTML = "Client Connections: <span class='" + activeClass + "'>" + SERVER["clientInfo"]["activeClients"] + " / " + SERVER["clientInfo"]["totalClients"] + "</span>";
+  }
 
   if (!document.getElementById("main-menu")) {
     return

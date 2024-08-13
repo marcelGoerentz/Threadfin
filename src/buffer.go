@@ -115,6 +115,7 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 		streamID = createStreamID(playlist.Streams)
 
 		client.Connection = 1
+		activeClientCount += 1
 		if activePlaylistCount == 0 {
 			activePlaylistCount = 1
 		}
@@ -129,8 +130,6 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 		playlist.Clients[streamID] = client
 
 		BufferInformation.Store(playlistID, playlist)
-
-		activeClientCount = 1
 
 	} else {
 
@@ -210,7 +209,7 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 
 			streamID = createStreamID(playlist.Streams)
 
-			client.Connection = 1
+			client.Connection += 1
 			activePlaylistCount += 1
 			stream.URL = streamingURL
 			stream.ChannelName = channelName
@@ -351,51 +350,55 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 						}
 						defer file.Close()
 
-						l, err := file.Stat()
 						if err == nil {
 
-							debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
-							showDebug(debug, 2)
-
-							var buffer = make([]byte, int(l.Size()))
-							_, err = file.Read(buffer)
-
+							l, err := file.Stat()
 							if err == nil {
 
-								file.Seek(0, 0)
+								debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
+								showDebug(debug, 2)
 
-								if !streaming {
+								var buffer = make([]byte, int(l.Size()))
+								_, err = file.Read(buffer)
 
-									contentType := http.DetectContentType(buffer)
-									_ = contentType
-									//w.Header().Set("Content-type", "video/mpeg")
-									w.Header().Set("Content-type", contentType)
-									w.Header().Set("Content-Length", "0")
-									w.Header().Set("Connection", "close")
+								if err == nil {
 
-								}
+									file.Seek(0, 0)
 
-								/*
-									// HDHR Header
-									w.Header().Set("Cache-Control", "no-cache")
-									w.Header().Set("Pragma", "no-cache")
-									w.Header().Set("transferMode.dlna.org", "Streaming")
-								*/
+									if !streaming {
 
-								_, err := w.Write(buffer)
+										contentType := http.DetectContentType(buffer)
+										_ = contentType
+										//w.Header().Set("Content-type", "video/mpeg")
+										w.Header().Set("Content-type", contentType)
+										w.Header().Set("Content-Length", "0")
+										w.Header().Set("Connection", "close")
 
-								if err != nil {
+									}
+
+									/*
+									   // HDHR Header
+									   w.Header().Set("Cache-Control", "no-cache")
+									   w.Header().Set("Pragma", "no-cache")
+									   w.Header().Set("transferMode.dlna.org", "Streaming")
+									*/
+
+									_, err := w.Write(buffer)
+
+									if err != nil {
+										file.Close()
+										killClientConnection(streamID, playlistID, false)
+										return
+									}
+
 									file.Close()
-									killClientConnection(streamID, playlistID, false)
-									return
+									streaming = true
+
 								}
 
 								file.Close()
-								streaming = true
 
 							}
-
-							file.Close()
 
 							var n = indexOfString(f, oldSegments)
 
@@ -432,7 +435,7 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 
 		} // Ende BufferInformation
 
-	}
+	} // Ende Loop 1
 
 }
 
@@ -505,6 +508,9 @@ func killClientConnection(streamID int, playlistID string, force bool) {
 				var clients = c.(ClientConnection)
 				clients.Connection -= 1
 				activeClientCount -= 1
+				if activeClientCount <= 0 {
+					activeClientCount = 0
+				}
 				BufferClients.Store(playlistID+stream.MD5, clients)
 
 				showInfo("Streaming Status:Client has terminated the connection")
@@ -1032,6 +1038,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		}
 
 		var cmd = exec.Command(path, args...)
+		//writePIDtoDisc(string(cmd.Process.Pid))
 
 		debug = fmt.Sprintf("%s:%s %s", bufferType, path, args)
 		showDebug(debug, 1)
@@ -1340,4 +1347,23 @@ func terminateProcessGracefully(cmd *exec.Cmd) {
 		// Optionally, you can wait for the process to finish too
 		cmd.Wait()
 	}
+}
+
+func writePIDtoDisc(pid string) {
+    // Open the file in append mode (create it if it doesn't exist)
+    file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
+
+    // Write your text to the file
+    _, err = file.WriteString(pid + "\n")
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
+func deletPIDfromDisc(pid string) {
+	log.Fatal("Nothing")
 }
