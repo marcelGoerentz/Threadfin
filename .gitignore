@@ -9,3 +9,4 @@ dist/
 node_modules/
 *.exe
 *.js
+__debug*

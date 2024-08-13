@@ -6,9 +6,11 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -40,13 +42,13 @@ var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadf
 const Name = "Threadfin"
 
 // Version : Version, die Build Nummer wird in der main func geparst.
-const Version = "1.2.3"
+const Version = "1.2.4-beta"
 
 // DBVersion : Datanbank Version
 const DBVersion = "0.5.0"
 
 // APIVersion : API Version
-const APIVersion = "1.2.3"
+const APIVersion = "1.2.4-beta"
 
 var homeDirectory = fmt.Sprintf("%s%s.%s%s", src.GetUserHomeDirectory(), string(os.PathSeparator), strings.ToLower(Name), string(os.PathSeparator))
 var samplePath = fmt.Sprintf("%spath%sto%sthreadfin%s", string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator))
@@ -149,6 +151,25 @@ func main() {
 	// Https Webserver
 	system.Flag.UseHttps = *useHttps
 
+
+	// Kill all remaining processes and remove PIDs file
+	pids, err := getPIDsFromFile(*system)
+	if err != nil {
+		fmt.Printf("Error scanning file PIDs: %v", err)
+	} else {
+		if len(pids) > 0 {
+			for _, pid := range pids {
+				err := killProcess(pid)
+				if err != nil {
+					fmt.Printf("Error killing process %s: %v", pid, err)
+				} else {
+					fmt.Printf("Successfully killed process %s", pid)
+				}
+			}
+			os.Remove(system.Folder.Temp + "PIDs")
+		}
+	}
+
 	// Branch
 	system.Flag.Branch = *gitBranch
 	if len(system.Flag.Branch) > 0 {
@@ -186,7 +207,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	err := src.Init()
+	err = src.Init()
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
@@ -215,4 +236,34 @@ func main() {
 		os.Exit(0)
 	}
 
+}
+
+func getPIDsFromFile(system src.SystemStruct) ([]string, error){
+	var err error
+	pids := []string{}
+	// Open the file
+	pidsFile := system.Folder.Temp + "PIDs"
+	_, err_stat := os.Stat(pidsFile)
+	if os.IsExist(err_stat) {
+		var file *os.File
+		file, err = os.Open(pidsFile)
+		defer file.Close() // Close the file when done
+
+		// Create a scanner
+		scanner := bufio.NewScanner(file)
+
+		// Read line by line
+		for scanner.Scan() {
+			line := scanner.Text()
+			pids = append(pids, line)
+		}
+	}
+	return pids, err
+
+}
+
+// killProcess kills a process by its PID
+func killProcess(pid string) error {
+	cmd := exec.Command("kill", "-9", pid)
+	return cmd.Run()
 }

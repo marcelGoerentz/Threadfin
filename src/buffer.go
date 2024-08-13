@@ -13,9 +13,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+
 	//"net/url"
 	"os"
 	"os/exec"
+
 	//"path"
 	"sort"
 	"strconv"
@@ -26,6 +28,18 @@ import (
 	"github.com/avfs/avfs/vfs/memfs"
 	"github.com/avfs/avfs/vfs/osfs"
 )
+
+var activeClientCount int
+var activePlaylistCount int
+
+
+func getActiveClientCount() (count int) {
+	return activeClientCount
+}
+
+func getActivePlaylistCount() (count int) {
+	return activePlaylistCount
+}
 
 func createStreamID(stream map[int]ThisStream) (streamID int) {
 
@@ -94,11 +108,17 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 		playlist.Tuner = getTuner(playlistID, playlistType)
 
 		playlist.PlaylistName = getProviderParameter(playlist.PlaylistID, playlistType, "name")
+		playlist.HttpProxyIP = getProviderParameter(playlist.PlaylistID, playlistType, "http_proxy.ip")
+		playlist.HttpProxyPort = getProviderParameter(playlist.PlaylistID, playlistType, "http_proxy.port")
 
 		// Default-Werte für den Stream erstellen
 		streamID = createStreamID(playlist.Streams)
 
 		client.Connection = 1
+		activeClientCount += 1
+		if activePlaylistCount == 0 {
+			activePlaylistCount = 1
+		}
 		stream.URL = streamingURL
 		stream.BackupChannel1URL = backupStreamingURL1
 		stream.BackupChannel2URL = backupStreamingURL2
@@ -127,7 +147,8 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 
 				streamID = id
 				newStream = false
-				client.Connection++
+				client.Connection += 1
+				activeClientCount += 1
 
 				//playlist.Streams[streamID] = stream
 				playlist.Clients[streamID] = client
@@ -142,7 +163,7 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 
 					var clients = c.(ClientConnection)
 					clients.Connection = clients.Connection + 1
-					showInfo(fmt.Sprintf("Streaming Status:Channel: %s (Clients: %d)", stream.ChannelName, clients.Connection))
+					log.Println("CLIENTS: ", clients)
 
 					BufferClients.Store(playlistID+stream.MD5, clients)
 
@@ -188,7 +209,8 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 
 			streamID = createStreamID(playlist.Streams)
 
-			client.Connection = 1
+			client.Connection += 1
+			activePlaylistCount += 1
 			stream.URL = streamingURL
 			stream.ChannelName = channelName
 			stream.Status = false
@@ -328,51 +350,55 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 						}
 						defer file.Close()
 
-						l, err := file.Stat()
 						if err == nil {
 
-							debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
-							showDebug(debug, 2)
-
-							var buffer = make([]byte, int(l.Size()))
-							_, err = file.Read(buffer)
-
+							l, err := file.Stat()
 							if err == nil {
 
-								file.Seek(0, 0)
+								debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
+								showDebug(debug, 2)
 
-								if !streaming {
+								var buffer = make([]byte, int(l.Size()))
+								_, err = file.Read(buffer)
 
-									contentType := http.DetectContentType(buffer)
-									_ = contentType
-									//w.Header().Set("Content-type", "video/mpeg")
-									w.Header().Set("Content-type", contentType)
-									w.Header().Set("Content-Length", "0")
-									w.Header().Set("Connection", "close")
+								if err == nil {
 
-								}
+									file.Seek(0, 0)
 
-								/*
-									// HDHR Header
-									w.Header().Set("Cache-Control", "no-cache")
-									w.Header().Set("Pragma", "no-cache")
-									w.Header().Set("transferMode.dlna.org", "Streaming")
-								*/
+									if !streaming {
 
-								_, err := w.Write(buffer)
+										contentType := http.DetectContentType(buffer)
+										_ = contentType
+										//w.Header().Set("Content-type", "video/mpeg")
+										w.Header().Set("Content-type", contentType)
+										w.Header().Set("Content-Length", "0")
+										w.Header().Set("Connection", "close")
 
-								if err != nil {
+									}
+
+									/*
+									   // HDHR Header
+									   w.Header().Set("Cache-Control", "no-cache")
+									   w.Header().Set("Pragma", "no-cache")
+									   w.Header().Set("transferMode.dlna.org", "Streaming")
+									*/
+
+									_, err := w.Write(buffer)
+
+									if err != nil {
+										file.Close()
+										killClientConnection(streamID, playlistID, false)
+										return
+									}
+
 									file.Close()
-									killClientConnection(streamID, playlistID, false)
-									return
+									streaming = true
+
 								}
 
 								file.Close()
-								streaming = true
 
 							}
-
-							file.Close()
 
 							var n = indexOfString(f, oldSegments)
 
@@ -480,13 +506,18 @@ func killClientConnection(streamID int, playlistID string, force bool) {
 			if c, ok := BufferClients.Load(playlistID + stream.MD5); ok {
 
 				var clients = c.(ClientConnection)
-				clients.Connection = clients.Connection - 1
+				clients.Connection -= 1
+				activeClientCount -= 1
+				if activeClientCount <= 0 {
+					activeClientCount = 0
+				}
 				BufferClients.Store(playlistID+stream.MD5, clients)
 
 				showInfo("Streaming Status:Client has terminated the connection")
 				showInfo(fmt.Sprintf("Streaming Status:Channel: %s (Clients: %d)", stream.ChannelName, clients.Connection))
 
 				if clients.Connection <= 0 {
+					activePlaylistCount -= 1
 					BufferClients.Delete(playlistID + stream.MD5)
 					delete(playlist.Streams, streamID)
 					delete(playlist.Clients, streamID)
@@ -880,20 +911,14 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			if backupNumber >= 1 && backupNumber <= 3 {
 				switch backupNumber {
 				case 1:
-					log.Println("STREAM ID: ", streamID)
-					log.Println("STREAM: ", playlist.Streams)
 					url = playlist.Streams[streamID].BackupChannel1URL
 					showHighlight("START OF BACKUP 1 STREAM")
 					showInfo("Backup Channel 1 URL: " + url)
 				case 2:
-					log.Println("STREAM ID: ", streamID)
-					log.Println("STREAM: ", playlist.Streams)
 					url = playlist.Streams[streamID].BackupChannel2URL
 					showHighlight("START OF BACKUP 2 STREAM")
 					showInfo("Backup Channel 2 URL: " + url)
 				case 3:
-					log.Println("STREAM ID: ", streamID)
-					log.Println("STREAM: ", playlist.Streams)
 					url = playlist.Streams[streamID].BackupChannel3URL
 					showHighlight("START OF BACKUP 3 STREAM")
 					showInfo("Backup Channel 3 URL: " + url)
@@ -909,11 +934,11 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		case "ffmpeg":
 			path = Settings.FFmpegPath
-			options = Settings.FFmpegOptions
+			options = fmt.Sprintf("%s", Settings.FFmpegOptions)
 
 		case "vlc":
 			path = Settings.VLCPath
-			options = Settings.VLCOptions
+			options = fmt.Sprintf("%s meta-title=Threadfin", Settings.VLCOptions)
 
 		default:
 			return
@@ -984,6 +1009,9 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 					if len(Settings.UserAgent) != 0 {
 						args = []string{"-user_agent", Settings.UserAgent}
 					}
+					if playlist.HttpProxyIP != "" && playlist.HttpProxyPort != "" {
+						args = append(args, "-http_proxy", fmt.Sprintf("http://%s:%s", playlist.HttpProxyIP, playlist.HttpProxyPort))
+					}
 				}
 
 				args = append(args, a)
@@ -997,6 +1025,10 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 						args = append(args, fmt.Sprintf(":http-user-agent=%s", Settings.UserAgent))
 					}
 
+					if playlist.HttpProxyIP != "" && playlist.HttpProxyPort != "" {
+						args = append(args, "-http_proxy", fmt.Sprintf("http://%s:%s", playlist.HttpProxyIP, playlist.HttpProxyPort))
+					}
+
 				} else {
 					args = append(args, a)
 				}
@@ -1006,6 +1038,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		}
 
 		var cmd = exec.Command(path, args...)
+		//writePIDtoDisc(string(cmd.Process.Pid))
 
 		debug = fmt.Sprintf("%s:%s %s", bufferType, path, args)
 		showDebug(debug, 1)
@@ -1314,4 +1347,23 @@ func terminateProcessGracefully(cmd *exec.Cmd) {
 		// Optionally, you can wait for the process to finish too
 		cmd.Wait()
 	}
+}
+
+func writePIDtoDisc(pid string) {
+    // Open the file in append mode (create it if it doesn't exist)
+    file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
+
+    // Write your text to the file
+    _, err = file.WriteString(pid + "\n")
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
+func deletPIDfromDisc(pid string) {
+	log.Fatal("Nothing")
 }
