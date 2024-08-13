@@ -935,7 +935,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		case "ffmpeg":
 			path = Settings.FFmpegPath
-			options = Settings.FFmpegOptions
+			options = fmt.Sprintf("%s", Settings.FFmpegOptions)
 
 		case "vlc":
 			path = Settings.VLCPath
@@ -1039,6 +1039,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		}
 
 		var cmd = exec.Command(path, args...)
+		//writePIDtoDisc(string(cmd.Process.Pid))
 
 		debug = fmt.Sprintf("%s:%s %s", bufferType, path, args)
 		showDebug(debug, 1)
