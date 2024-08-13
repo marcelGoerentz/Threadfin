@@ -88,7 +88,7 @@ These are the currently available command line arguments:
 ---
 
 ## Docker Image
-[Threadfin](https://hub.docker.com/r/marcelGoerentz/threadfin)
+[Threadfin](https://hub.docker.com/r/mgoerentz/threadfin)
 
 * Docker compose example
 
