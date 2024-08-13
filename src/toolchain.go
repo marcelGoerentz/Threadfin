@@ -363,7 +363,6 @@ func resolveHostIP() error {
 					// Skip unwanted IPs
 					if !strings.HasPrefix(ip, "169.254") {
 						System.IPAddressesV4 = append(System.IPAddressesV4, ip)
-						System.IPAddress = ip
 					}
 				} else {
 					System.IPAddressesV6 = append(System.IPAddressesV6, ip)
@@ -373,10 +372,20 @@ func resolveHostIP() error {
 	}
 
 	if len(System.IPAddress) == 0 {
-		if len(System.IPAddressesV4) > 0 {
-			System.IPAddress = System.IPAddressesV4[0]
+		if len(System.IPAddressesV4) > 0  {
+			for _, addr := range System.IPAddressesV4 {
+				if !strings.HasPrefix(addr, "127.0.0") {
+					System.IPAddress = addr
+					break
+				}
+			}
 		} else if len(System.IPAddressesV6) > 0 {
-			System.IPAddress = System.IPAddressesV6[0]
+			for _, addr := range System.IPAddressesV4 {
+				if !strings.HasPrefix(addr, "::1") {
+					System.IPAddress = addr
+					break
+				}
+			}
 		}
 	}
 

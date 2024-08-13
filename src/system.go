@@ -295,9 +295,9 @@ func setBaseURL() {
 
 	switch Settings.AuthenticationPMS {
 	case true:
-		System.Addresses.DVR = "username:password@" + System.Domain
+		System.Addresses.DVR = "username:password@" + System.BaseURL
 	case false:
-		System.Addresses.DVR = System.Domain
+		System.Addresses.DVR = System.BaseURL
 	}
 
 	switch Settings.AuthenticationM3U {
