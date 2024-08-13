@@ -1,8 +1,8 @@
-ARG BRANCH=main
-
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
 FROM golang:1.22-alpine AS builder
+
+ARG BRANCH=main
 
 # Download the source code
 RUN apk update && apk upgrade && apk add git
@@ -18,6 +18,7 @@ RUN go build threadfin.go
 # -----------------------------------------------------------------------------
 FROM alpine:latest
 
+ARG BRANCH=main
 ARG BUILD_DATE
 ARG VCS_REF
 ARG THREADFIN_PORT=34400
@@ -42,7 +43,7 @@ ENV THREADFIN_CACHE=/home/threadfin/cache
 ENV THREADFIN_UID=31337
 ENV THREADFIN_GID=31337
 ENV THREADFIN_USER=threadfin
-ENV THREADFIN_BRANCH=main
+ENV THREADFIN_BRANCH=$BRANCH
 ENV THREADFIN_DEBUG=0
 ENV THREADFIN_PORT=34400
 ENV THREADFIN_LOG=/var/log/threadfin.log
