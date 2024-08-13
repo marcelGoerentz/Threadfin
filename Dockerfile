@@ -1,22 +1,20 @@
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
-FROM golang:latest AS builder
+FROM golang:1.22-alpine AS builder
 
 # Download the source code
-RUN apt-get update && apt-get install -y git
+RUN apk update && apk upgrade && apk add git
 RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
 
 WORKDIR /src
 
-ARG BRANCH="main"
-RUN git checkout ${BRANCH}
-RUN git pull
+RUN git checkout main && git pull
 RUN go mod tidy && go mod vendor
 RUN go build threadfin.go
 
 # Second stage. Creating an image
 # -----------------------------------------------------------------------------
-FROM ubuntu:latest
+FROM alpine:latest
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -53,16 +51,10 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$THREADFIN
 # Set working directory
 WORKDIR $THREADFIN_HOME
 
-RUN rm /var/lib/dpkg/info/libc-bin.*
-RUN apt-get clean
-RUN apt-get install libc-bin
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y ca-certificates\
- curl\
- ffmpeg\
- vlc
+RUN apk update && apk upgrade
+RUN apk add ca-certificates curl ffmpeg vlc
 
-RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apt-get -y install tzdata
+RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apk add tzdata
 
 RUN mkdir -p $THREADFIN_BIN
 
@@ -70,14 +62,10 @@ RUN mkdir -p $THREADFIN_BIN
 COPY --chown=${THREADFIN_UID} --from=builder [ "/src/threadfin", "${THREADFIN_BIN}/" ]
 
 # Set binary permissions
-RUN chmod +rx $THREADFIN_BIN/threadfin
-RUN mkdir $THREADFIN_HOME/cache
+RUN chmod +rx $THREADFIN_BIN/threadfin && mkdir $THREADFIN_HOME/cache
 
 # Create working directories for Threadfin
-RUN mkdir $THREADFIN_CONF
-RUN chmod a+rwX $THREADFIN_CONF
-RUN mkdir $THREADFIN_TEMP
-RUN chmod a+rwX $THREADFIN_TEMP
+RUN mkdir $THREADFIN_CONF && chmod a+rwX $THREADFIN_CONF && mkdir $THREADFIN_TEMP && chmod a+rwX $THREADFIN_TEMP
 
 # For VLC
 RUN sed -i 's/geteuid/getppid/' /usr/bin/vlc
