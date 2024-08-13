@@ -1038,6 +1038,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		}
 
 		var cmd = exec.Command(path, args...)
+		//writePIDtoDisc(string(cmd.Process.Pid))
 
 		debug = fmt.Sprintf("%s:%s %s", bufferType, path, args)
 		showDebug(debug, 1)
@@ -1346,4 +1347,23 @@ func terminateProcessGracefully(cmd *exec.Cmd) {
 		// Optionally, you can wait for the process to finish too
 		cmd.Wait()
 	}
+}
+
+func writePIDtoDisc(pid string) {
+    // Open the file in append mode (create it if it doesn't exist)
+    file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
+
+    // Write your text to the file
+    _, err = file.WriteString(pid + "\n")
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
+func deletPIDfromDisc(pid string) {
+	log.Fatal("Nothing")
 }

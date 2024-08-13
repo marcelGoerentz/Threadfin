@@ -1,3 +1,5 @@
+ARG BRANCH=main
+
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
 FROM golang:1.22-alpine AS builder
@@ -8,7 +10,7 @@ RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
 
 WORKDIR /src
 
-RUN git checkout main && git pull
+RUN git checkout $BRANCH && git pull
 RUN go mod tidy && go mod vendor
 RUN go build threadfin.go
 
