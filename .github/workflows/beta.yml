@@ -62,3 +62,9 @@ jobs:
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: mgoerentz/threadfin:${{  github.ref_name }}
+
+      - name: Push image to GHCR
+        run: |
+          docker buildx imagetools create \
+            --tag ghcr.io/marcelGoerentz/threadfin:${{  github.ref_name }} \
+            mgoerentz/threadfin:${{  github.ref_name }}
