@@ -153,7 +153,6 @@ func main() {
 
 
 	// Kill all remaining processes and remove PIDs file
-<<<<<<< HEAD
 	tempFolder := os.TempDir() + string(os.PathSeparator) +  strings.ToLower(Name) + string(os.PathSeparator)
 	folders, err := os.ReadDir(tempFolder)
 	if err == nil {
@@ -175,22 +174,6 @@ func main() {
 					os.Remove(folderName + string(os.PathSeparator) + "PIDs")
 				}
 			}
-=======
-	pids, err := getPIDsFromFile(*system)
-	if err != nil {
-		fmt.Printf("Error scanning file PIDs: %v", err)
-	} else {
-		if len(pids) > 0 {
-			for _, pid := range pids {
-				err := killProcess(pid)
-				if err != nil {
-					fmt.Printf("Error killing process %s: %v", pid, err)
-				} else {
-					fmt.Printf("Successfully killed process %s", pid)
-				}
-			}
-			os.Remove(system.Folder.Temp + "PIDs")
->>>>>>> main
 		}
 	}
 
@@ -262,7 +245,6 @@ func main() {
 
 }
 
-<<<<<<< HEAD
 func getPIDsFromFile(tempFolder string) ([]string, error){
 	pids := []string{}
 	// Open the file
@@ -288,30 +270,6 @@ func getPIDsFromFile(tempFolder string) ([]string, error){
 	}
 	
 	return pids, nil
-=======
-func getPIDsFromFile(system src.SystemStruct) ([]string, error){
-	var err error
-	pids := []string{}
-	// Open the file
-	pidsFile := system.Folder.Temp + "PIDs"
-	_, err_stat := os.Stat(pidsFile)
-	if os.IsExist(err_stat) {
-		var file *os.File
-		file, err = os.Open(pidsFile)
-		defer file.Close() // Close the file when done
-
-		// Create a scanner
-		scanner := bufio.NewScanner(file)
-
-		// Read line by line
-		for scanner.Scan() {
-			line := scanner.Text()
-			pids = append(pids, line)
-		}
-	}
-	return pids, err
-
->>>>>>> main
 }
 
 // killProcess kills a process by its PID
