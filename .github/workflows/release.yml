@@ -61,6 +61,6 @@ jobs:
       - name: Push image to GHCR
         run: |
           docker buildx imagetools create \
-            --tag ghcr.io/marcelGoerentz/threadfin:latest \
-            --tag ghcr.io/marcelGoerentz/threadfin:${{  github.ref_name }} \
+            --tag ghcr.io/marcelgoerentz/threadfin:latest \
+            --tag ghcr.io/marcelgoerentz/threadfin:${{  github.ref_name }} \
             mgoerentz/threadfin:${{  github.ref_name }}
