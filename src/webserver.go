@@ -1188,7 +1188,7 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 	switch System.Branch {
 
 	case "master":
-		defaults.ClientInfo.Version =System.Version
+		defaults.ClientInfo.Version = System.Version
 
 	default:
 		defaults.ClientInfo.Version = fmt.Sprintf("%s (%s)", System.Version, System.Build)
