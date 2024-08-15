@@ -9,15 +9,28 @@ async function getNewestReleaseFromGithub() {
         }));
         // Get tag name
         var release_tag = releases[0]["tag_name"];
-        const regex = /[^\d]/gi;
-        // Create Number from tag name
-        const latest_version = Number(release_tag.replace(regex, ''));
-        const version_elemnt = document.getElementById('version') as HTMLInputElement;
-        const current_version = Number(version_elemnt.value.replace(regex, ''));
-        if (latest_version > current_version) {
-            bannerElement.style.display = 'block'; // Show Banner if newer version is available
+        const split = release_tag.split(".");
+        const release_major_version = split[0][1]
+        const release_minor_version = split[1]
+        const release_build_version = split[2]
+        const release_version = [release_major_version, release_minor_version, release_build_version]
+        let current_version = []
+        
+        if (SERVER) {
+            var current_version_string = SERVER["clientInfo"]["version"];
+            current_version.push(current_version_string.split(".")[0]);
+            current_version.push(current_version_string.split(".")[1][0]);
+            current_version.push(current_version_string.split("(")[1][0]);
         }
-
+        for (let i = 0; i < 3; i++) {
+            if (release_version[i] > current_version[i]) {
+                bannerElement.innerHTML = 'New Version available! Click <a href="https://github.com/marcelGoerentz/Threadfin/releases/latest">here</a> to download.';
+                bannerElement.style.display = 'block'; // Show Banner if newer version is available
+                break
+            } else if (release_version[i] < current_version[i]) {
+                break
+            }
+        }
     } else {
         console.log('Error fetching releases or no releases found.');
     }
