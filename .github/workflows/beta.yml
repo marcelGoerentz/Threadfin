@@ -71,3 +71,9 @@ jobs:
           tags: |
             mgoerentz/threadfin:${{  github.ref_name }}
             ghcr.io/marcelgoerentz/threadfin:${{  github.ref_name }}
+
+      - name: Push image to GHCR
+        run: |
+          docker buildx imagetools create \
+            --tag ghcr.io/marcelgoerentz/threadfin:beta \
+            mgoerentz/threadfin:beta 
