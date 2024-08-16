@@ -16,19 +16,21 @@ async function getNewestReleaseFromGithub() {
         const release_version = [release_major_version, release_minor_version, release_build_version]
         let current_version = []
         
-        if (SERVER) {
+        if ('clientInfo' in SERVER) {
             var current_version_string = SERVER["clientInfo"]["version"];
             current_version.push(current_version_string.split(".")[0]);
             current_version.push(current_version_string.split(".")[1][0]);
             current_version.push(current_version_string.split("(")[1][0]);
         }
-        for (let i = 0; i < 3; i++) {
-            if (release_version[i] > current_version[i]) {
-                bannerElement.innerHTML = 'New Version available! Click <a href="https://github.com/marcelGoerentz/Threadfin/releases/latest">here</a> to download.';
-                bannerElement.style.display = 'block'; // Show Banner if newer version is available
-                break
-            } else if (release_version[i] < current_version[i]) {
-                break
+        if (current_version.length !== 0) {
+            for (let i = 0; i < 3; i++) {
+                if (release_version[i] > current_version[i]) {
+                    bannerElement.innerHTML = 'New Version available! Click <a href="https://github.com/marcelGoerentz/Threadfin/releases/latest">here</a> to download.';
+                    bannerElement.style.display = 'block'; // Show Banner if newer version is available
+                    break
+                } else if (release_version[i] < current_version[i]) {
+                    break
+                }
             }
         }
     } else {
