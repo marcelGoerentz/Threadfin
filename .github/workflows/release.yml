@@ -67,6 +67,6 @@ jobs:
           tags: |
             mgoerentz/threadfin:latest
             mgoerentz/threadfin:${{  github.ref_name }}
-            ghcr.io/marcelGoerentz/threadfin:latest
-            ghcr.io/marcelGoerentz/threadfin:${{  github.ref_name }}
+            ghcr.io/marcelgoerentz/threadfin:latest
+            ghcr.io/marcelgoerentz/threadfin:${{  github.ref_name }}
 
