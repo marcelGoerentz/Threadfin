@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"runtime"
 
 	//"net/url"
 	"os"
@@ -1067,10 +1068,11 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		cmd.Start()
 		defer cmd.Wait()
+		writePIDtoDisc(fmt.Sprintf("%d", cmd.Process.Pid))
 
 		go func() {
 
-			// Log Daten vom Prozess im Dubug Mode 1 anzeigen.
+			// Log Daten vom Prozess im Debug Mode 1 anzeigen.
 			scanner := bufio.NewScanner(logOut)
 			scanner.Split(bufio.ScanLines)
 
@@ -1126,11 +1128,10 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			select {
 			case timeout := <-t:
 				if timeout >= 20 && tmpSegment == 1 {
-					cmd.Process.Kill()
-					err = errors.New("Timout")
+					terminateProcessGracefully(cmd)
+					err = errors.New("Timeout")
 					ShowError(err, 4006)
 					addErrorToStream(err)
-					cmd.Wait()
 					f.Close()
 					return
 				}
@@ -1144,9 +1145,8 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			}
 
 			if !clientConnection(stream) {
-				cmd.Process.Kill()
+				terminateProcessGracefully(cmd)
 				f.Close()
-				cmd.Wait()
 				return
 			}
 
@@ -1158,10 +1158,9 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			fileSize = fileSize + len(buffer[:n])
 
 			if _, err := f.Write(buffer[:n]); err != nil {
-				cmd.Process.Kill()
+				terminateProcessGracefully(cmd)
 				ShowError(err, 0)
 				addErrorToStream(err)
-				cmd.Wait()
 				return
 			}
 
@@ -1192,10 +1191,9 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 				_, errCreate = bufferVFS.Create(tmpFile)
 				f, errOpen = bufferVFS.OpenFile(tmpFile, os.O_APPEND|os.O_WRONLY, 0600)
 				if errCreate != nil || errOpen != nil {
-					cmd.Process.Kill()
+					terminateProcessGracefully(cmd)
 					ShowError(err, 0)
 					addErrorToStream(err)
-					cmd.Wait()
 					return
 				}
 
@@ -1203,8 +1201,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		}
 
-		cmd.Process.Kill()
-		cmd.Wait()
+		terminateProcessGracefully(cmd)
 
 		err = errors.New(bufferType + " error")
 
@@ -1337,15 +1334,21 @@ func debugResponse(resp *http.Response) {
 
 func terminateProcessGracefully(cmd *exec.Cmd) {
 	if cmd.Process != nil {
+
 		// Send a SIGTERM to the process
-		if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-			// If an error occurred while trying to send the SIGTERM, you might resort to a SIGKILL.
-			ShowError(err, 0)
+		if runtime.GOOS == "windows" {
 			cmd.Process.Kill()
+		} else {
+			if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+				// If an error occurred while trying to send the SIGTERM, use SIGKILL.
+				ShowError(err, 0)
+				cmd.Process.Signal(syscall.SIGKILL)
+			}
 		}
 
 		// Optionally, you can wait for the process to finish too
 		cmd.Wait()
+		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
 	}
 }
 
@@ -1364,6 +1367,46 @@ func writePIDtoDisc(pid string) {
     }
 }
 
-func deletPIDfromDisc(pid string) {
-	log.Fatal("Nothing")
+func deletPIDfromDisc(delete_pid string) (error){
+	file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR, 0660)
+	if err != nil {
+        return err
+    }
+	// Create a scanner
+	scanner := bufio.NewScanner(file)
+
+	// Read line by line
+	pids := []string{}
+	for scanner.Scan() {
+		line := scanner.Text()
+		pids = append(pids, line)
+	}
+
+	// Rewind the file to the beginning
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	updatedPIDs := []string{}
+	for index, pid := range pids {
+		if pid != delete_pid {
+			// Create a new slice by excluding the element at the specified index
+			_, err = file.WriteString(pid + "\n")
+			if err != nil {
+				return err
+			}
+		} else {
+			updatedPIDs = append(pids[:index], pids[:index+1]...)
+		}
+	}
+
+	// Truncate any remaining content (if the new slice is shorter)
+	if len(updatedPIDs) < len(pids) {
+		err = file.Truncate(int64(len(updatedPIDs)))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

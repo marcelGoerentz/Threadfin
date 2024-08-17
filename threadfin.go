@@ -42,13 +42,13 @@ var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadf
 const Name = "Threadfin"
 
 // Version : Version, die Build Nummer wird in der main func geparst.
-const Version = "1.2.6"
+const Version = "1.3.0"
 
 // DBVersion : Datanbank Version
 const DBVersion = "0.5.0"
 
 // APIVersion : API Version
-const APIVersion = "1.2.6"
+const APIVersion = "1.3.0"
 
 var homeDirectory = fmt.Sprintf("%s%s.%s%s", src.GetUserHomeDirectory(), string(os.PathSeparator), strings.ToLower(Name), string(os.PathSeparator))
 var samplePath = fmt.Sprintf("%spath%sto%sthreadfin%s", string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator))
@@ -153,20 +153,27 @@ func main() {
 
 
 	// Kill all remaining processes and remove PIDs file
-	pids, err := getPIDsFromFile(*system)
-	if err != nil {
-		fmt.Printf("Error scanning file PIDs: %v", err)
-	} else {
-		if len(pids) > 0 {
-			for _, pid := range pids {
-				err := killProcess(pid)
-				if err != nil {
-					fmt.Printf("Error killing process %s: %v", pid, err)
-				} else {
-					fmt.Printf("Successfully killed process %s", pid)
+	tempFolder := os.TempDir() + string(os.PathSeparator) +  strings.ToLower(Name) + string(os.PathSeparator)
+	folders, err := os.ReadDir(tempFolder)
+	if err == nil {
+		for _, folder := range folders {
+			folderName := fmt.Sprintf("%s%s", tempFolder, folder.Name())
+			pids, err := getPIDsFromFile(folderName)
+			if err != nil {
+				fmt.Printf("Error scanning file PIDs: %v", err)
+			} else {
+				if len(pids) > 0 {
+					for _, pid := range pids {
+						err := killProcess(pid)
+						if err != nil {
+							fmt.Printf("Error killing process %s: %v", pid, err)
+						} else {
+							fmt.Printf("Successfully killed process %s", pid)
+						}
+					}
+					os.Remove(folderName + string(os.PathSeparator) + "PIDs")
 				}
 			}
-			os.Remove(system.Folder.Temp + "PIDs")
 		}
 	}
 
@@ -238,28 +245,31 @@ func main() {
 
 }
 
-func getPIDsFromFile(system src.SystemStruct) ([]string, error){
-	var err error
+func getPIDsFromFile(tempFolder string) ([]string, error){
 	pids := []string{}
 	// Open the file
-	pidsFile := system.Folder.Temp + "PIDs"
+	pidsFile := tempFolder + string(os.PathSeparator) + "PIDs"
 	_, err_stat := os.Stat(pidsFile)
-	if os.IsExist(err_stat) {
-		var file *os.File
-		file, err = os.Open(pidsFile)
-		defer file.Close() // Close the file when done
-
-		// Create a scanner
-		scanner := bufio.NewScanner(file)
-
-		// Read line by line
-		for scanner.Scan() {
-			line := scanner.Text()
-			pids = append(pids, line)
-		}
+	if os.IsNotExist(err_stat) {
+		return pids, nil // Return early if the file doesn't exist
 	}
-	return pids, err
 
+	file, err_open := os.Open(pidsFile)
+	if err_open != nil {
+		return nil, err_open
+	}
+	defer file.Close() // Close the file when done
+	
+	// Create a scanner
+	scanner := bufio.NewScanner(file)
+
+	// Read line by line
+	for scanner.Scan() {
+		line := scanner.Text()
+		pids = append(pids, line)
+	}
+	
+	return pids, nil
 }
 
 // killProcess kills a process by its PID
