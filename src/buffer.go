@@ -117,7 +117,9 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 
 		client.Connection = 1
 		activeClientCount += 1
-		activePlaylistCount += 1
+		if activePlaylistCount == 0 {
+			activePlaylistCount = 1
+		}
 		stream.URL = streamingURL
 		stream.BackupChannel1URL = backupStreamingURL1
 		stream.BackupChannel2URL = backupStreamingURL2
@@ -516,11 +518,7 @@ func killClientConnection(streamID int, playlistID string, force bool) {
 				showInfo(fmt.Sprintf("Streaming Status:Channel: %s (Clients: %d)", stream.ChannelName, clients.Connection))
 
 				if clients.Connection <= 0 {
-					if activePlaylistCount > 0 {
-						activePlaylistCount -= 1
-					} else {
-						activePlaylistCount = 0
-					}
+					activePlaylistCount -= 1
 					BufferClients.Delete(playlistID + stream.MD5)
 					delete(playlist.Streams, streamID)
 					delete(playlist.Clients, streamID)
@@ -1041,7 +1039,6 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		}
 
 		var cmd = exec.Command(path, args...)
-		//writePIDtoDisc(string(cmd.Process.Pid))
 
 		debug = fmt.Sprintf("%s:%s %s", bufferType, path, args)
 		showDebug(debug, 1)
@@ -1399,7 +1396,7 @@ func deletPIDfromDisc(delete_pid string) (error){
 				return err
 			}
 		} else {
-			updatedPIDs = append(pids[:index], pids[:index+1]...)
+			updatedPIDs = append(pids[:index], pids[index+1:]...)
 		}
 	}
 
