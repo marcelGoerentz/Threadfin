@@ -117,9 +117,8 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 
 		client.Connection = 1
 		activeClientCount += 1
-		if activePlaylistCount == 0 {
-			activePlaylistCount = 1
-		}
+		activePlaylistCount += 1
+		
 		stream.URL = streamingURL
 		stream.BackupChannel1URL = backupStreamingURL1
 		stream.BackupChannel2URL = backupStreamingURL2
@@ -518,7 +517,11 @@ func killClientConnection(streamID int, playlistID string, force bool) {
 				showInfo(fmt.Sprintf("Streaming Status:Channel: %s (Clients: %d)", stream.ChannelName, clients.Connection))
 
 				if clients.Connection <= 0 {
-					activePlaylistCount -= 1
+					if activePlaylistCount > 0 {
+						activePlaylistCount -= 1
+					} else {
+						activePlaylistCount = 0
+					}
 					BufferClients.Delete(playlistID + stream.MD5)
 					delete(playlist.Streams, streamID)
 					delete(playlist.Clients, streamID)
