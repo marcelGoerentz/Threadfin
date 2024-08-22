@@ -1336,17 +1336,11 @@ func debugResponse(resp *http.Response) {
 
 func terminateProcessGracefully(cmd *exec.Cmd) {
 	if cmd.Process != nil {
-
-		// Send a SIGTERM to the process
-		if runtime.GOOS == "windows" {
-			cmd.Process.Kill()
-		} else {
-			if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-				// If an error occurred while trying to send the SIGTERM, use SIGKILL.
-				ShowError(err, 0)
-				cmd.Process.Signal(syscall.SIGKILL)
-			}
-		}
+		cmd.Process.Signal(syscall.SIGKILL)
+		cmd.Wait()
+		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
+	}
+}
 
 		// Optionally, you can wait for the process to finish too
 		cmd.Wait()
