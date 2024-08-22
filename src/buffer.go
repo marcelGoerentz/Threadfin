@@ -118,7 +118,7 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 		client.Connection = 1
 		activeClientCount += 1
 		activePlaylistCount += 1
-		
+    
 		stream.URL = streamingURL
 		stream.BackupChannel1URL = backupStreamingURL1
 		stream.BackupChannel2URL = backupStreamingURL2
@@ -1042,6 +1042,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		}
 
 		var cmd = exec.Command(path, args...)
+		//writePIDtoDisc(string(cmd.Process.Pid))
 
 		debug = fmt.Sprintf("%s:%s %s", bufferType, path, args)
 		showDebug(debug, 1)
@@ -1337,12 +1338,6 @@ func debugResponse(resp *http.Response) {
 func terminateProcessGracefully(cmd *exec.Cmd) {
 	if cmd.Process != nil {
 		cmd.Process.Signal(syscall.SIGKILL)
-		cmd.Wait()
-		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
-	}
-}
-
-		// Optionally, you can wait for the process to finish too
 		cmd.Wait()
 		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
 	}
