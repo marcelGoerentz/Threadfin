@@ -118,6 +118,7 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 		client.Connection = 1
 		activeClientCount += 1
 		activePlaylistCount += 1
+    
 		stream.URL = streamingURL
 		stream.BackupChannel1URL = backupStreamingURL1
 		stream.BackupChannel2URL = backupStreamingURL2
@@ -1336,19 +1337,7 @@ func debugResponse(resp *http.Response) {
 
 func terminateProcessGracefully(cmd *exec.Cmd) {
 	if cmd.Process != nil {
-
-		// Send a SIGTERM to the process
-		if runtime.GOOS == "windows" {
-			cmd.Process.Kill()
-		} else {
-			if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-				// If an error occurred while trying to send the SIGTERM, use SIGKILL.
-				ShowError(err, 0)
-				cmd.Process.Signal(syscall.SIGKILL)
-			}
-		}
-
-		// Optionally, you can wait for the process to finish too
+		cmd.Process.Signal(syscall.SIGKILL)
 		cmd.Wait()
 		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
 	}
@@ -1399,7 +1388,7 @@ func deletPIDfromDisc(delete_pid string) (error){
 				return err
 			}
 		} else {
-			updatedPIDs = append(pids[:index], pids[:index+1]...)
+			updatedPIDs = append(pids[:index], pids[index+1:]...)
 		}
 	}
 
