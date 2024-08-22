@@ -1341,12 +1341,6 @@ func terminateProcessGracefully(cmd *exec.Cmd) {
 	}
 }
 
-		// Optionally, you can wait for the process to finish too
-		cmd.Wait()
-		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
-	}
-}
-
 func writePIDtoDisc(pid string) {
     // Open the file in append mode (create it if it doesn't exist)
     file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
