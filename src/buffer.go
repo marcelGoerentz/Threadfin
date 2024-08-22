@@ -13,7 +13,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"runtime"
 
 	//"net/url"
 	"os"
