@@ -1093,7 +1093,36 @@ function PageReady() {
 
   getNewestReleaseFromGithub()
 
+  setCheckboxes()
+
   return
+}
+
+async function setCheckboxes() {
+  var content: PopupContent = new PopupContent()
+  var checkbox_container = document.getElementById("checkbox_container")
+  await new Promise(f => setTimeout(f, 1000));
+  if ("clientInfo" in SERVER) {
+    let listeningIp: string = SERVER['settings']['listeningIp']
+    var listeningIpArray = listeningIp.split(";")
+    let systemnIPs: Array<string> = SERVER["clientInfo"]["systemIPs"]
+    systemnIPs.forEach((ipAddress, index) => {
+      if (ipAddress != '127.0.0.1' && ipAddress != '::1') {
+        var label = document.createElement("label")
+        label.innerHTML = ipAddress + " :"
+        var checkbox = content.createCheckbox("ipCheckbox" + index)
+        checkbox.checked = false
+        listeningIpArray.forEach(element => {
+          if (element === ipAddress) {
+            checkbox.checked = true
+            return;
+          }
+        });
+        label.appendChild(checkbox)
+        checkbox_container.appendChild(label)
+      }
+    });
+  }
 }
 
 function createLayout() {

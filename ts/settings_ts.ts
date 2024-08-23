@@ -138,6 +138,8 @@ class SettingsCategory {
         var tdRight = document.createElement("TD")
         var input = content.createInput("text", "vlc.options", data)
         input.setAttribute("placeholder", "{{.settings.vlcOptions.placeholder}}")
+        input.setAttribute("data-bs-toggle" , "modal")
+        input.setAttribute("data-bs-target", "#checkbox_container")
         input.setAttribute("onchange", "javascript: this.className = 'changed'")
         tdRight.appendChild(input)
 
@@ -148,11 +150,14 @@ class SettingsCategory {
       case "listeningIp":
         var tdLeft = document.createElement("TD")
         tdLeft.innerHTML = "{{.settings.listeningIp.title}}" + ":"
-
         var tdRight = document.createElement("TD")
         var input = content.createInput("text", "listeningIp", data)
         input.setAttribute("placeholder", "{{.settings.listeningIp.placeholder}}")
         input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        input.addEventListener('click', () => {
+          var popup_element = document.getElementById("ip_selection")
+          popup_element.style.display = 'block'
+        })
         tdRight.appendChild(input)
 
         setting.appendChild(tdLeft)
