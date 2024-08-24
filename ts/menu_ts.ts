@@ -1093,7 +1093,64 @@ function PageReady() {
 
   getNewestReleaseFromGithub()
 
+  setCheckboxes()
+
   return
+}
+
+async function setCheckboxes() {
+  var content: PopupContent = new PopupContent()
+  var table = document.getElementById("checkboxTable")
+  await new Promise(f => setTimeout(f, 1000));
+  if ("clientInfo" in SERVER) {
+    let listeningIp: string = SERVER['settings']['listeningIp']
+    var listeningIpArray = listeningIp.split(";")
+    let systemnIPs: Array<string> = SERVER["clientInfo"]["systemIPs"]
+    systemnIPs.forEach((ipAddress, index) => {
+      if (!ipAddress.includes('169.254')) {
+        var tr = document.createElement('tr')
+        var tdLeft = document.createElement('td')
+        var tdRight = document.createElement('td') 
+
+        var checkbox = content.createCheckbox(ipAddress, 'ipCheckbox' + index)
+        checkbox.checked = false
+        listeningIpArray.forEach(element => {
+          if (element === ipAddress) {
+            checkbox.checked = true
+            return;
+          }
+        });
+        var label = document.createElement("label")
+        label.setAttribute("for", "ipCheckbox" + index)
+        label.innerHTML = ipAddress
+        tdLeft.appendChild(checkbox)
+        tdRight.appendChild(label)
+        tr.appendChild(tdLeft)
+        tr.appendChild(tdRight)
+        table.appendChild(tr)
+      }
+    });
+    var checkbox_container = document.getElementById("checkbox_container")
+    var input = content.createInput("button", "buttonSave", "{{.button.save}}")
+    input.setAttribute("onclick", 'javascript: saveBindingIPs()')
+    input.setAttribute('data-bs-target', '#ip_selection')
+    input.setAttribute("data-bs-toggle" , "modal")
+    checkbox_container.appendChild(input)
+  }
+}
+
+function saveBindingIPs() {
+  var checkboxTable = document.getElementById('checkboxTable')
+  var checkboxList = checkboxTable.querySelectorAll('input')
+  var listeningIPs: string[] = []
+  checkboxList.forEach(checkbox => {
+    if (checkbox.checked) {
+      listeningIPs.push(checkbox.name)
+    }
+  });
+  var listeningIp = document.getElementById('listeningIp')
+  listeningIp.setAttribute('value', listeningIPs.join(';') + ";")
+  listeningIp.setAttribute('class', 'changed')
 }
 
 function createLayout() {
@@ -1242,10 +1299,13 @@ class PopupContent extends PopupWindow {
     return input
   }
 
-  createCheckbox(name: string): any {
+  createCheckbox(name: string, id: string = ''): any {
     var input = document.createElement("INPUT")
 
     input.setAttribute("type", "checkbox")
+    if (id != '') {
+      input.setAttribute("id", id)
+    }
     input.setAttribute("name", name)
     return input
   }

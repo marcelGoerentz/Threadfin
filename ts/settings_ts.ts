@@ -148,11 +148,13 @@ class SettingsCategory {
       case "listeningIp":
         var tdLeft = document.createElement("TD")
         tdLeft.innerHTML = "{{.settings.listeningIp.title}}" + ":"
-
         var tdRight = document.createElement("TD")
         var input = content.createInput("text", "listeningIp", data)
+        input.setAttribute("id", settingsKey)
         input.setAttribute("placeholder", "{{.settings.listeningIp.placeholder}}")
         input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        input.setAttribute('data-bs-target', '#ip_selection')
+        input.setAttribute("data-bs-toggle" , "modal")
         tdRight.appendChild(input)
 
         setting.appendChild(tdLeft)
