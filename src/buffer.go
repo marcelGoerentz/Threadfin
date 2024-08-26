@@ -1,10 +1,5 @@
 package src
 
-/*
-  Tuner-Limit Bild als Video rendern [ffmpeg]
-  -loop 1 -i stream-limit.jpg -c:v libx264 -t 1 -pix_fmt yuv420p -vf scale=1920:1080  stream-limit.ts
-*/
-
 import (
 	"bufio"
 	"bytes"
@@ -59,6 +54,10 @@ func createStreamID(stream map[int]ThisStream) (streamID int) {
 	showDebug(debug, 1)
 
 	return
+}
+
+func createAlternativNoMoreStreamsVideo() {
+
 }
 
 func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStreamingURL2, backupStreamingURL3, channelName string, w http.ResponseWriter, r *http.Request) {
@@ -180,24 +179,46 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 			if len(playlist.Streams) >= playlist.Tuner {
 
 				showInfo(fmt.Sprintf("Streaming Status:Playlist: %s - No new connections available. Tuner = %d", playlist.PlaylistName, playlist.Tuner))
+				var content []byte
+				var contentOk, customizedVideo bool
 
-				if value, ok := webUI["html/video/stream-limit.ts"]; ok {
-
-					content := GetHTMLString(value.(string))
-
-					w.WriteHeader(200)
-					w.Header().Set("Content-type", "video/mpeg")
-					w.Header().Set("Content-Length:", "0")
-
-					for i := 1; i < 60; i++ {
-						_ = i
-						w.Write([]byte(content))
-						time.Sleep(time.Duration(500) * time.Millisecond)
+				// Check if a costumized video is available and use it if so
+				videoFolder := System.Folder.Data + "videos/"
+				fileList, err := os.ReadDir(videoFolder)
+				if err == nil {
+					if len(fileList) == 1 {
+						content, err = os.ReadFile(videoFolder + fileList[0].Name())
+						if err == nil {
+							contentOk = true
+							customizedVideo = true
+						} else {
+							ShowError(err, 0) // log error
+							return
+						}
 					}
-
-					return
+				} else {
+					ShowError(err, 0) // log error
 				}
 
+				if value, ok := webUI["html/video/stream-limit.ts"]; ok && !customizedVideo {
+
+					contentOk = true
+					content = GetHTMLString(value.(string))
+				}
+				
+				if contentOk {
+					w.Header().Set("Content-type", "video/mpeg")
+					w.Header().Set("Content-Length:", fmt.Sprintf("%d", len(content)))
+					w.WriteHeader(http.StatusOK)
+
+					for i := 0; i < 60; i++ {
+						if _, err := w.Write(content); err != nil {
+							ShowError(err, 0) // log error
+							return
+						}
+						time.Sleep(500 * time.Millisecond)
+					}
+				}
 				return
 			}
 

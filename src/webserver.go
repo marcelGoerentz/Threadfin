@@ -774,7 +774,7 @@ func Web(w http.ResponseWriter, r *http.Request) {
 		var languageFile = "html/lang/en.json"
 
 		if value, ok := webUI[languageFile].(string); ok {
-			content = GetHTMLString(value)
+			content = string(GetHTMLString(value))
 			lang = jsonToMap(content)
 		}
 
@@ -903,7 +903,7 @@ func Web(w http.ResponseWriter, r *http.Request) {
 
 	if value, ok := webUI[requestFile].(string); ok {
 
-		content = GetHTMLString(value)
+		content = string(GetHTMLString(value))
 		contentType = getContentType(requestFile)
 
 		if contentType == "text/plain" {
