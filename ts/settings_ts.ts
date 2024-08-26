@@ -152,7 +152,6 @@ class SettingsCategory {
         var input = content.createInput("text", "bindingIPs", data)
         input.setAttribute("id", settingsKey)
         input.setAttribute("placeholder", "{{.settings.bindingIPs.placeholder}}")
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
         input.setAttribute('data-bs-target', '#ip_selection')
         input.setAttribute("data-bs-toggle" , "modal")
         tdRight.appendChild(input)

@@ -1167,7 +1167,11 @@ function updateBindingIPs() {
     .filter(checkbox => (checkbox as HTMLInputElement).checked)
     .map(checkbox => (checkbox as HTMLInputElement).name);
   const bindingIPsElement = document.getElementById('bindingIPs');
-  bindingIPsElement.setAttribute('value', bindingIPs.join(';') + ";");
+  if (bindingIPs.length === 0) {
+    bindingIPsElement.setAttribute('value', '')
+  } else {
+    bindingIPsElement.setAttribute('value', bindingIPs.join(';') + ";");
+  }
   bindingIPsElement.setAttribute('class', 'changed');
   checkboxesInitialState = Array.from(checkboxList).map(checkbox => (checkbox as HTMLInputElement).checked);
 }
