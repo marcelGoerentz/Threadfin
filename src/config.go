@@ -162,10 +162,6 @@ func Init() (err error) {
 	if err != nil {
 		ShowError(err, 1015)
 	}
-	err = checkFilePermission(System.Folder.Temp)
-	if err != nil {
-		ShowError(err, 1016)
-	}
 
 	// Separaten tmp Ordner für jede Instanz
 	//System.Folder.Temp = System.Folder.Temp + Settings.UUID + string(os.PathSeparator)
@@ -174,6 +170,11 @@ func Init() (err error) {
 	err = checkFolder(System.Folder.Temp)
 	if err != nil {
 		return
+	}
+
+	err = checkFilePermission(System.Folder.Temp)
+	if err != nil {
+		ShowError(err, 1016)
 	}
 
 	err = removeChildItems(getPlatformPath(System.Folder.Temp))

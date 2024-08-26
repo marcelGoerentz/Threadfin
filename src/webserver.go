@@ -37,10 +37,7 @@ func StartWebserver() (err error) {
 	serverMux.HandleFunc("/data_images/", DataImages)
 	serverMux.HandleFunc("/ppv/enable", enablePPV)
 	serverMux.HandleFunc("/ppv/disable", disablePPV)
-
 	//serverMux.HandleFunc("/auto/", Auto)
-
-	showInfo("DVR IP:" + System.IPAddress + ":" + Settings.Port)
 
 	
 	regexIpV4, _ := regexp.Compile(`(?:\d{1,3}\.){3}\d{1,3}`)

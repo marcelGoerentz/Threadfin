@@ -484,7 +484,7 @@
     "threadfinDomain":
     {
       "title": "Threadfin Domain",
-      "description": "When not empty, this will rewrite the URLs in the new m3u to a FQDN.<br>It will also rewrite the shown DVR IP in the server info dialogue<br>Do NOT include http (ex: somedomain.com)</br>"
+      "description": "When not empty, this will rewrite the URLs in the new m3u to a FQDN.<br>It will also rewrite the shown DVR IP in the server info dialogue.<br>Do NOT include http (ex: somedomain.com)</br>"
     },
     "enableNonAscii":
     {
