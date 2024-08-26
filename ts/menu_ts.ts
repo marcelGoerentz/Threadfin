@@ -1130,7 +1130,7 @@ async function setCheckboxes() {
     });
 
     const checkbox_container = document.getElementById("checkbox_container");
-    const saveButton = createButton(content, "buttonSave", "{{.button.save}}", 'javsrcipt: saveBindingIPs()');
+    const saveButton = createButton(content, "buttonUpdate", "{{.button.update}}", 'javsrcipt: updateBindingIPs()');
     const cancelButton = createButton(content, "buttonCancel", "{{.button.cancel}}");
     checkbox_container.appendChild(saveButton);
     checkbox_container.appendChild(cancelButton);
@@ -1160,7 +1160,7 @@ function resetCheckboxes(checkboxes: NodeListOf<Element>, initialStates: boolean
   })
 }
 
-function saveBindingIPs() {
+function updateBindingIPs() {
   const checkboxTable = document.getElementById('checkboxTable');
   const checkboxList = checkboxTable.querySelectorAll('input[type="checkbox"]');
   var bindingIPs: string[] = Array.from(checkboxList)
