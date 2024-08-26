@@ -1098,31 +1098,29 @@ function PageReady() {
   return
 }
 
+var checkboxesInitialState: boolean[] = []
+
 async function setCheckboxes() {
-  var content: PopupContent = new PopupContent()
-  var table = document.getElementById("checkboxTable")
+  const content: PopupContent = new PopupContent()
+  const table = document.getElementById("checkboxTable")
   await new Promise(f => setTimeout(f, 1000));
   if ("clientInfo" in SERVER) {
-    let listeningIp: string = SERVER['settings']['listeningIp']
-    var listeningIpArray = listeningIp.split(";")
-    let systemnIPs: Array<string> = SERVER["clientInfo"]["systemIPs"]
+    const bindingIPs: string = SERVER['settings']['bindingIPs']
+    const bindingIPspArray = bindingIPs.split(";")
+    const systemnIPs: Array<string> = SERVER["clientInfo"]["systemIPs"]
     systemnIPs.forEach((ipAddress, index) => {
       if (!ipAddress.includes('169.254')) {
-        var tr = document.createElement('tr')
-        var tdLeft = document.createElement('td')
-        var tdRight = document.createElement('td') 
+        const tr = document.createElement('tr')
+        const tdLeft = document.createElement('td')
+        const tdRight = document.createElement('td') 
 
-        var checkbox = content.createCheckbox(ipAddress, 'ipCheckbox' + index)
-        checkbox.checked = false
-        listeningIpArray.forEach(element => {
-          if (element === ipAddress) {
-            checkbox.checked = true
-            return;
-          }
-        });
-        var label = document.createElement("label")
+        const checkbox = content.createCheckbox(ipAddress, 'ipCheckbox' + index)
+        checkbox.checked = bindingIPspArray.includes(ipAddress)
+
+        const label = document.createElement("label")
         label.setAttribute("for", "ipCheckbox" + index)
         label.innerHTML = ipAddress
+
         tdLeft.appendChild(checkbox)
         tdRight.appendChild(label)
         tr.appendChild(tdLeft)
@@ -1130,27 +1128,52 @@ async function setCheckboxes() {
         table.appendChild(tr)
       }
     });
-    var checkbox_container = document.getElementById("checkbox_container")
-    var input = content.createInput("button", "buttonSave", "{{.button.save}}")
-    input.setAttribute("onclick", 'javascript: saveBindingIPs()')
-    input.setAttribute('data-bs-target', '#ip_selection')
-    input.setAttribute("data-bs-toggle" , "modal")
-    checkbox_container.appendChild(input)
+
+    const checkbox_container = document.getElementById("checkbox_container");
+    const saveButton = createButton(content, "buttonUpdate", "{{.button.update}}", 'javsrcipt: updateBindingIPs()');
+    const cancelButton = createButton(content, "buttonCancel", "{{.button.cancel}}");
+    checkbox_container.appendChild(saveButton);
+    checkbox_container.appendChild(cancelButton);
+    
+    const checkboxes = checkbox_container.querySelectorAll('input[type="checkbox"]');
+    checkboxesInitialState = Array.from(checkboxes).map(checkbox => (checkbox as HTMLInputElement).checked);
+    const ipSelection = document.getElementById('ip_selection');
+    const closeButton = ipSelection.querySelector('button.btn-close')
+    closeButton.addEventListener('click', () => resetCheckboxes(checkboxes, checkboxesInitialState))
+    cancelButton.addEventListener('click', () => resetCheckboxes(checkboxes, checkboxesInitialState))
   }
 }
 
-function saveBindingIPs() {
-  var checkboxTable = document.getElementById('checkboxTable')
-  var checkboxList = checkboxTable.querySelectorAll('input')
-  var listeningIPs: string[] = []
-  checkboxList.forEach(checkbox => {
-    if (checkbox.checked) {
-      listeningIPs.push(checkbox.name)
-    }
-  });
-  var listeningIp = document.getElementById('listeningIp')
-  listeningIp.setAttribute('value', listeningIPs.join(';') + ";")
-  listeningIp.setAttribute('class', 'changed')
+function createButton(content: PopupContent, id: string, text: string, onClick?: string): HTMLInputElement {
+  const button = content.createInput("button", id, text);
+  if (onClick) {
+    button.setAttribute("onclick", onClick);
+  }
+  button.setAttribute('data-bs-target', '#ip_selection');
+  button.setAttribute("data-bs-toggle", "modal");
+  return button;
+}
+
+function resetCheckboxes(checkboxes: NodeListOf<Element>, initialStates: boolean[]) {
+  checkboxes.forEach((checkbox, index) => {
+    (checkbox as HTMLInputElement).checked = initialStates[index]
+  })
+}
+
+function updateBindingIPs() {
+  const checkboxTable = document.getElementById('checkboxTable');
+  const checkboxList = checkboxTable.querySelectorAll('input[type="checkbox"]');
+  var bindingIPs: string[] = Array.from(checkboxList)
+    .filter(checkbox => (checkbox as HTMLInputElement).checked)
+    .map(checkbox => (checkbox as HTMLInputElement).name);
+  const bindingIPsElement = document.getElementById('bindingIPs');
+  if (bindingIPs.length === 0) {
+    bindingIPsElement.setAttribute('value', '')
+  } else {
+    bindingIPsElement.setAttribute('value', bindingIPs.join(';') + ";");
+  }
+  bindingIPsElement.setAttribute('class', 'changed');
+  checkboxesInitialState = Array.from(checkboxList).map(checkbox => (checkbox as HTMLInputElement).checked);
 }
 
 function createLayout() {
