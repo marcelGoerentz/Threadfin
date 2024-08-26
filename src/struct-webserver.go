@@ -48,7 +48,7 @@ type RequestStruct struct {
 		SchemeXML                *string   `json:"scheme.xml,omitempty"`
 		StoreBufferInRAM         *bool     `json:"storeBufferInRAM,omitempty"`
 		OmitPorts                *bool     `json:"omitPorts,omitempty"`
-		ListeningIp              *string   `json:"listeningIp,omitempty"`
+		BindingIPs               *string   `json:"bindingIPs,omitempty"`
 		ForceHttpsToUpstream     *bool     `json:"forceHttps,omitempty"`
 		UseHttps                 *bool     `json:"useHttps,omitempty"`
 		ForceClientHttps         *bool     `json:"forceClientHttps"`

@@ -84,7 +84,7 @@ func ShowSystemInfo() {
 	println("---")
 
 	fmt.Println("Network")
-	fmt.Printf("Listening IPs:            %s\n", Settings.ListeningIp)
+	fmt.Printf("Binding IP(s):            %s\n", Settings.BindingIPs)
 	fmt.Printf("Threadfin Domain:         %s\n", Settings.ThreadfinDomain)
 	fmt.Printf("Use Https:                %t\n", Settings.UseHttps)
 	fmt.Printf("Fort Https to upstream:   %t\n", Settings.ForceHttpsToUpstream)

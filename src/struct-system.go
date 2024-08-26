@@ -324,7 +324,7 @@ type SettingsStruct struct {
 	ThreadfinAutoUpdate       bool                  `json:"ThreadfinAutoUpdate"`
 	StoreBufferInRAM          bool                  `json:"storeBufferInRAM"`
 	OmitPorts                 bool                  `json:"omitPorts"`
-	ListeningIp               string                `json:"listeningIp"`
+	BindingIPs                string                `json:"bindingIPs"`
 	ForceHttpsToUpstream      bool                  `json:"forceHttps"`
 	UseHttps                  bool                  `json:"useHttps"`
 	ForceClientHttps          bool                  `json:"forceClientHttps"`

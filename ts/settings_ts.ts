@@ -145,13 +145,13 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-      case "listeningIp":
+      case "bindingIPs":
         var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.listeningIp.title}}" + ":"
+        tdLeft.innerHTML = "{{.settings.bindingIPs.title}}" + ":"
         var tdRight = document.createElement("TD")
-        var input = content.createInput("text", "listeningIp", data)
+        var input = content.createInput("text", "bindingIPs", data)
         input.setAttribute("id", settingsKey)
-        input.setAttribute("placeholder", "{{.settings.listeningIp.placeholder}}")
+        input.setAttribute("placeholder", "{{.settings.bindingIPs.placeholder}}")
         input.setAttribute("onchange", "javascript: this.className = 'changed'")
         input.setAttribute('data-bs-target', '#ip_selection')
         input.setAttribute("data-bs-toggle" , "modal")
@@ -654,8 +654,8 @@ class SettingsCategory {
         text = "{{.settings.ThreadfinAutoUpdate.description}}"
         break
 
-      case "listeningIp":
-        text = "{{.settings.listeningIp.description}}"
+      case "bindingIPs":
+        text = "{{.settings.bindingIPs.description}}"
         break
 
       case "backup.keep":
