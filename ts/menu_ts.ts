@@ -2107,7 +2107,7 @@ function openPopUp(dataType, element) {
       content.createInteraction()
 
       // Logo hochladen
-      var input = content.createInput("button", "cancel", "{{.button.uploadLogo}}")
+      var input = content.createInput("button", "upload", "{{.button.uploadLogo}}")
       input.setAttribute("onclick", 'javascript: uploadLogo();')
       content.addInteraction(input)
 

@@ -56,8 +56,24 @@ func createStreamID(stream map[int]ThisStream) (streamID int) {
 	return
 }
 
-func createAlternativNoMoreStreamsVideo() {
+func createAlternativNoMoreStreamsVideo(pathToFile string) (error){
+	cmd := new(exec.Cmd)
+	switch Settings.Buffer {
+		case "ffmpeg":
+			cmd = exec.Command(Settings.FFmpegPath, "-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080",  fmt.Sprintf("%sstream-limit.ts", System.Folder.Video))
+		case "vlc":
+			cmd = exec.Command(Settings.VLCPath, "--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile)
+	
+	}
+	if len(cmd.Args) > 0 {
+		fmt.Println("Executing command:", cmd.String())
 
+		err := cmd.Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStreamingURL2, backupStreamingURL3, channelName string, w http.ResponseWriter, r *http.Request) {
@@ -182,22 +198,28 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 				var content []byte
 				var contentOk, customizedVideo bool
 
-				// Check if a costumized video is available and use it if so
-				videoFolder := System.Folder.Data + "videos/"
-				fileList, err := os.ReadDir(videoFolder)
+				imageFileList, err := os.ReadDir(System.Folder.Custom)
 				if err == nil {
-					if len(fileList) == 1 {
-						content, err = os.ReadFile(videoFolder + fileList[0].Name())
+					// Check if a costumized video is available and use it if so
+					fileList, err := os.ReadDir(System.Folder.Video)
+					if err == nil {
+						if len(fileList) == 1 {
+							content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
+							if err == nil {
+								contentOk = true
+								customizedVideo = true
+							} else {
+								ShowError(err, 0) // log error
+								return
+							}
+						}
+					} else {
+						err := createAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
 						if err == nil {
 							contentOk = true
 							customizedVideo = true
-						} else {
-							ShowError(err, 0) // log error
-							return
 						}
 					}
-				} else {
-					ShowError(err, 0) // log error
 				}
 
 				if value, ok := webUI["html/video/stream-limit.ts"]; ok && !customizedVideo {
