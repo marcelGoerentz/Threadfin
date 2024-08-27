@@ -461,10 +461,10 @@
       "title": "Omit port",
       "description": "By activating this checkbox the m3u file will not contain the port in the url"
     },
-    "listeningIp" :
+    "bindingIPs" :
     {
-      "title": "Listening IPs",
-      "description": "Enter the listening IPs seprated by an ';' for example: 127.0.0.1;192.168.2.1<br>Changing this option will exit the program! You need to restart it if you didn't configured a restart!"
+      "title": "Binding IP(s)",
+      "description": "By clicking on the input a dialogue will open where you can select the IP(s)<br>Please note that these are also the DVR IPs<br>Changing this option and saving the settings will exit the program!<br>You need to restart it if you didn't configured an automatical restart!"
     },
     "forceHttps":
     {
@@ -474,7 +474,7 @@
     "useHttps":
     {
       "title": "Use HTTPS",
-      "description": "Enable HTTPS protocol for Threadfin, HTTPS Port needs to be set, otherwise the 443 will be used!"
+      "description": "Enable HTTPS protocol for Threadfin, HTTPS Port needs to be set, otherwise the 443 will be used!<br>Also make sure that server.crt and server.key are placed in the config folder!<br>The key file needs to be unencrypted!"
     },
     "forceClientHttps":
     {
@@ -484,7 +484,7 @@
     "threadfinDomain":
     {
       "title": "Threadfin Domain",
-      "description": "When not empty, this will rewrite the URLs in the new m3u to a FQDN.<br>Do NOT include http (ex: somedomain.com)</br>"
+      "description": "When not empty, this will rewrite the URLs in the new m3u to a FQDN.<br>It will also rewrite the shown DVR IP in the server info dialogue.<br>Do NOT include http (ex: somedomain.com)</br>"
     },
     "enableNonAscii":
     {

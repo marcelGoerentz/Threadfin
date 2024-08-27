@@ -48,7 +48,7 @@ type RequestStruct struct {
 		SchemeXML                *string   `json:"scheme.xml,omitempty"`
 		StoreBufferInRAM         *bool     `json:"storeBufferInRAM,omitempty"`
 		OmitPorts                *bool     `json:"omitPorts,omitempty"`
-		ListeningIp              *string   `json:"listeningIp,omitempty"`
+		BindingIPs               *string   `json:"bindingIPs,omitempty"`
 		ForceHttpsToUpstream     *bool     `json:"forceHttps,omitempty"`
 		UseHttps                 *bool     `json:"useHttps,omitempty"`
 		ForceClientHttps         *bool     `json:"forceClientHttps"`
@@ -86,23 +86,24 @@ type RequestStruct struct {
 // ResponseStruct : Antworten an den Client (WEB)
 type ResponseStruct struct {
 	ClientInfo struct {
-		ARCH           string `json:"arch"`
-		Branch         string `json:"branch,omitempty"`
-		DVR            string `json:"DVR"`
-		EpgSource      string `json:"epgSource"`
-		Errors         int    `json:"errors"`
-		M3U            string `json:"m3u-url,required"`
-		OS             string `json:"os"`
-		Streams        string `json:"streams"`
-		ActiveClients  int    `json:"activeClients"`
-		TotalClients   int    `json:"totalClients"`
-		ActivePlaylist int    `json:"activePlaylist"`
-		TotalPlaylist  int    `json:"totalPlaylist"`
-		UUID           string `json:"uuid"`
-		Version        string `json:"version"`
-		Warnings       int    `json:"warnings"`
-		XEPGCount      int64  `json:"xepg"`
-		XML            string `json:"xepg-url,required"`
+		ARCH           string   `json:"arch"`
+		Branch         string   `json:"branch,omitempty"`
+		DVR            string   `json:"DVR"`
+		EpgSource      string   `json:"epgSource"`
+		Errors         int      `json:"errors"`
+		M3U            string   `json:"m3u-url"`
+		OS             string   `json:"os"`
+		Streams        string   `json:"streams"`
+		ActiveClients  int      `json:"activeClients"`
+		TotalClients   int      `json:"totalClients"`
+		ActivePlaylist int      `json:"activePlaylist"`
+		TotalPlaylist  int      `json:"totalPlaylist"`
+		SystemIPs	   []string `json:"systemIPs"`
+		UUID           string   `json:"uuid"`
+		Version        string   `json:"version"`
+		Warnings       int      `json:"warnings"`
+		XEPGCount      int64    `json:"xepg"`
+		XML            string   `json:"xepg-url"`
 	} `json:"clientInfo,omitempty"`
 
 	Data struct {

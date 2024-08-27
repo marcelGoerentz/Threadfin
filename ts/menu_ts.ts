@@ -1093,7 +1093,87 @@ function PageReady() {
 
   getNewestReleaseFromGithub()
 
+  setCheckboxes()
+
   return
+}
+
+var checkboxesInitialState: boolean[] = []
+
+async function setCheckboxes() {
+  const content: PopupContent = new PopupContent()
+  const table = document.getElementById("checkboxTable")
+  await new Promise(f => setTimeout(f, 1000));
+  if ("clientInfo" in SERVER) {
+    const bindingIPs: string = SERVER['settings']['bindingIPs']
+    const bindingIPspArray = bindingIPs.split(";")
+    const systemnIPs: Array<string> = SERVER["clientInfo"]["systemIPs"]
+    systemnIPs.forEach((ipAddress, index) => {
+      if (!ipAddress.includes('169.254')) {
+        const tr = document.createElement('tr')
+        const tdLeft = document.createElement('td')
+        const tdRight = document.createElement('td') 
+
+        const checkbox = content.createCheckbox(ipAddress, 'ipCheckbox' + index)
+        checkbox.checked = bindingIPspArray.includes(ipAddress)
+
+        const label = document.createElement("label")
+        label.setAttribute("for", "ipCheckbox" + index)
+        label.innerHTML = ipAddress
+
+        tdLeft.appendChild(checkbox)
+        tdRight.appendChild(label)
+        tr.appendChild(tdLeft)
+        tr.appendChild(tdRight)
+        table.appendChild(tr)
+      }
+    });
+
+    const checkbox_container = document.getElementById("checkbox_container");
+    const saveButton = createButton(content, "buttonUpdate", "{{.button.update}}", 'javsrcipt: updateBindingIPs()');
+    const cancelButton = createButton(content, "buttonCancel", "{{.button.cancel}}");
+    checkbox_container.appendChild(saveButton);
+    checkbox_container.appendChild(cancelButton);
+    
+    const checkboxes = checkbox_container.querySelectorAll('input[type="checkbox"]');
+    checkboxesInitialState = Array.from(checkboxes).map(checkbox => (checkbox as HTMLInputElement).checked);
+    const ipSelection = document.getElementById('ip_selection');
+    const closeButton = ipSelection.querySelector('button.btn-close')
+    closeButton.addEventListener('click', () => resetCheckboxes(checkboxes, checkboxesInitialState))
+    cancelButton.addEventListener('click', () => resetCheckboxes(checkboxes, checkboxesInitialState))
+  }
+}
+
+function createButton(content: PopupContent, id: string, text: string, onClick?: string): HTMLInputElement {
+  const button = content.createInput("button", id, text);
+  if (onClick) {
+    button.setAttribute("onclick", onClick);
+  }
+  button.setAttribute('data-bs-target', '#ip_selection');
+  button.setAttribute("data-bs-toggle", "modal");
+  return button;
+}
+
+function resetCheckboxes(checkboxes: NodeListOf<Element>, initialStates: boolean[]) {
+  checkboxes.forEach((checkbox, index) => {
+    (checkbox as HTMLInputElement).checked = initialStates[index]
+  })
+}
+
+function updateBindingIPs() {
+  const checkboxTable = document.getElementById('checkboxTable');
+  const checkboxList = checkboxTable.querySelectorAll('input[type="checkbox"]');
+  var bindingIPs: string[] = Array.from(checkboxList)
+    .filter(checkbox => (checkbox as HTMLInputElement).checked)
+    .map(checkbox => (checkbox as HTMLInputElement).name);
+  const bindingIPsElement = document.getElementById('bindingIPs');
+  if (bindingIPs.length === 0) {
+    bindingIPsElement.setAttribute('value', '')
+  } else {
+    bindingIPsElement.setAttribute('value', bindingIPs.join(';') + ";");
+  }
+  bindingIPsElement.setAttribute('class', 'changed');
+  checkboxesInitialState = Array.from(checkboxList).map(checkbox => (checkbox as HTMLInputElement).checked);
 }
 
 function createLayout() {
@@ -1242,10 +1322,13 @@ class PopupContent extends PopupWindow {
     return input
   }
 
-  createCheckbox(name: string): any {
+  createCheckbox(name: string, id: string = ''): any {
     var input = document.createElement("INPUT")
 
     input.setAttribute("type", "checkbox")
+    if (id != '') {
+      input.setAttribute("id", id)
+    }
     input.setAttribute("name", name)
     return input
   }

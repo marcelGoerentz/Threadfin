@@ -45,6 +45,31 @@
     </div>
   </div>
 
+  <div class="modal fade" id="ip_selection">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">IP selection</h3>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="card text-bg-dark mb-3">
+                <div class="card-body" id="checkbox_container">
+                  Select one or more IP(s). If none has been selected then Threadfin will bind to all of them!
+                  <table id="checkboxTable">
+                    <!-- Checkboxes will be added automatically -->
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="server_information">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
@@ -95,6 +120,7 @@
       </div>
     </div>
   </div>
+  
   <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-black">
     <div class="container-fluid">
       <a class="navbar-brand" href="/web">

@@ -28,9 +28,7 @@ import (
 func checkFolder(path string) (err error) {
 
 	var debug string
-	_, err = os.Stat(filepath.Dir(path))
-
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Dir(path)); os.IsNotExist(err) {
 		// Ordner existiert nicht, wird jetzt erstellt
 
 		err = os.MkdirAll(getPlatformPath(path), 0755)
@@ -44,9 +42,9 @@ func checkFolder(path string) (err error) {
 		}
 
 		return nil
+	} else {
+		return nil
 	}
-
-	return nil
 }
 
 // checkVFSFolder : Checks whether the Folder exists in provided virtual filesystem, if not, the Folder is created

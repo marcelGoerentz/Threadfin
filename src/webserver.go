@@ -37,17 +37,14 @@ func StartWebserver() (err error) {
 	serverMux.HandleFunc("/data_images/", DataImages)
 	serverMux.HandleFunc("/ppv/enable", enablePPV)
 	serverMux.HandleFunc("/ppv/disable", disablePPV)
-
 	//serverMux.HandleFunc("/auto/", Auto)
-
-	showInfo("DVR IP:" + System.IPAddress + ":" + Settings.Port)
 
 	
 	regexIpV4, _ := regexp.Compile(`(?:\d{1,3}\.){3}\d{1,3}`)
 	regexIpV6, _ := regexp.Compile(`(?:[A-Fa-f0-9]{0,4}:){3,7}[a-fA-F0-9]{1,4}`)
 	var customIps []string
-	var customIpsV4 = regexIpV4.FindAllString(Settings.ListeningIp, -1)
-	var customIpsV6 = regexIpV6.FindAllString(Settings.ListeningIp, -1)
+	var customIpsV4 = regexIpV4.FindAllString(Settings.BindingIPs, -1)
+	var customIpsV6 = regexIpV6.FindAllString(Settings.BindingIPs, -1)
 	if customIpsV4 != nil || customIpsV6 != nil {
 		customIps=make([]string, len(customIpsV4)+ len(customIpsV6))
 		copy(customIps, customIpsV4)
@@ -56,6 +53,7 @@ func StartWebserver() (err error) {
 
 	if customIps != nil {
 		for _, address := range customIps {
+			showInfo("DVR IP:" + address + ":" + Settings.Port)
 			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
 			if Settings.UseHttps {
 				go func(address string) {
@@ -76,10 +74,12 @@ func StartWebserver() (err error) {
 		}
 	} else {
 		for _, ip := range System.IPAddressesV4 {
+			showInfo("DVR IP:" + ip + ":" + Settings.Port)
 			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 
 		for _, ip := range System.IPAddressesV6 {
+			showInfo("DVR IP:" + ip + ":" + Settings.Port)
 			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 		if Settings.UseHttps {
@@ -559,7 +559,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 			showInfo("WEB:Saving settings")
 			var authenticationUpdate = Settings.AuthenticationWEB
 			var previousStoreBufferInRAM = Settings.StoreBufferInRAM
-			var previousListeningIP = Settings.ListeningIp
+			var previousBindingIPs = Settings.BindingIPs
 			var previousUseHttps = Settings.UseHttps
 			response.Settings, err = updateServerSettings(request)
 			if err == nil {
@@ -574,7 +574,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 					initBufferVFS(Settings.StoreBufferInRAM)
 				}
 
-				if Settings.ListeningIp != previousListeningIP  || Settings.UseHttps != previousUseHttps {
+				if Settings.BindingIPs != previousBindingIPs  || Settings.UseHttps != previousUseHttps {
 					showInfo("WEB:Restart program since listening IP option has been changed!")
 					os.Exit(0)
 				}
@@ -1182,6 +1182,7 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 	defaults.ClientInfo.ActivePlaylist = getActivePlaylistCount()
 	defaults.ClientInfo.TotalClients = Settings.Tuner
 	defaults.ClientInfo.TotalPlaylist = totalPlaylistCount
+	defaults.ClientInfo.SystemIPs = System.IPAddressesList
 	defaults.Notification = System.Notification
 	defaults.Log = WebScreenLog
 
