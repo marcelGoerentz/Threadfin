@@ -151,8 +151,11 @@ class SettingsCategory {
         var tdRight = document.createElement("TD")
         var input = content.createInput("text", "bindingIPs", data)
         input.setAttribute("id", settingsKey)
+        input.addEventListener('click', () => {
+          createBindingIPsOptionDialogue()
+        });
         input.setAttribute("placeholder", "{{.settings.bindingIPs.placeholder}}")
-        input.setAttribute('data-bs-target', '#ip_selection')
+        input.setAttribute('data-bs-target', '#dialogueContainer')
         input.setAttribute("data-bs-toggle" , "modal")
         tdRight.appendChild(input)
 
@@ -614,6 +617,16 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
+      // Button
+      case "uploadCustomImage":
+
+        var tdLeft = document.createElement("TD");
+        tdLeft.innerHTML = "{{.settings.uploadCustomImage.title}}" + ":";
+
+        var tdRight = document.createElement("TD");
+        setting.appendChild(tdLeft);
+        setting.appendChild(tdRight);
+        break;
     }
 
     return setting
@@ -648,6 +661,10 @@ class SettingsCategory {
           text = "{{.settings.authenticationAPI.description}}"
         }
         break
+      
+      case "uploadCustomImage":
+        text = "{{.settings.uploadCustomImage.description}}";
+        break;
 
       case "ThreadfinAutoUpdate":
         text = "{{.settings.ThreadfinAutoUpdate.description}}"

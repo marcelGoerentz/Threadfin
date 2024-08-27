@@ -46,6 +46,7 @@ menuItems.push(new MainMenuItem("logout", "{{.mainMenu.item.logout}}", "logout.p
 // Kategorien für die Einstellungen
 var settingsCategory = new Array()
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.general}}", "ThreadfinAutoUpdate,ssdp,tuner,epgSource,epgCategories,epgCategoriesColors,dummy,dummyChannel,ignoreFilters,api"))
+settingsCategory.push(new SettingsCategoryItem("{{.settings.category.costumization}}", "uploadCustomImage"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.files}}", "update,files.update,temp.path,cache.images,omitPorts,xepg.replace.missing.images,xepg.replace.channel.title,enableNonAscii"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.network}}", "bindingIPs,threadfinDomain,useHttps,forceClientHttps,forceHttps"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}", "buffer,udpxy,buffer.size.kb,storeBufferInRAM,buffer.timeout,user.agent,ffmpeg.path,ffmpeg.options,vlc.path,vlc.options"))
