@@ -17,6 +17,11 @@ jobs:
         with:
           ref: beta
 
+      - name: Delete release and Tag
+        run: gh release --cleanup-tag --yes delete latest-beta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up and Build
         uses: actions/setup-go@v5
         with:
@@ -33,7 +38,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: Development Build
+          name: Latest Devolopment Build (Beta)
           tag_name: latest-beta
           files: dist/*
   
