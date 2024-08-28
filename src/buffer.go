@@ -1,10 +1,5 @@
 package src
 
-/*
-  Tuner-Limit Bild als Video rendern [ffmpeg]
-  -loop 1 -i stream-limit.jpg -c:v libx264 -t 1 -pix_fmt yuv420p -vf scale=1920:1080  stream-limit.ts
-*/
-
 import (
 	"bufio"
 	"bytes"
@@ -32,7 +27,6 @@ import (
 var activeClientCount int
 var activePlaylistCount int
 
-
 func getActiveClientCount() (count int) {
 	return activeClientCount
 }
@@ -59,6 +53,26 @@ func createStreamID(stream map[int]ThisStream) (streamID int) {
 	showDebug(debug, 1)
 
 	return
+}
+
+func createAlternativNoMoreStreamsVideo(pathToFile string) (error) {
+	cmd := new(exec.Cmd)
+	switch Settings.Buffer {
+	case "ffmpeg":
+		cmd = exec.Command(Settings.FFmpegPath, "-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video))
+	case "vlc":
+		cmd = exec.Command(Settings.VLCPath, "--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile)
+
+	}
+	if len(cmd.Args) > 0 {
+		fmt.Println("Executing command:", cmd.String())
+
+		err := cmd.Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStreamingURL2, backupStreamingURL3, channelName string, w http.ResponseWriter, r *http.Request) {
@@ -117,7 +131,7 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 		client.Connection = 1
 		activeClientCount += 1
 		activePlaylistCount += 1
-    
+
 		stream.URL = streamingURL
 		stream.BackupChannel1URL = backupStreamingURL1
 		stream.BackupChannel2URL = backupStreamingURL2
@@ -180,24 +194,52 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 			if len(playlist.Streams) >= playlist.Tuner {
 
 				showInfo(fmt.Sprintf("Streaming Status:Playlist: %s - No new connections available. Tuner = %d", playlist.PlaylistName, playlist.Tuner))
+				var content []byte
+				var contentOk, customizedVideo bool
 
-				if value, ok := webUI["html/video/stream-limit.ts"]; ok {
-
-					content := GetHTMLString(value.(string))
-
-					w.WriteHeader(200)
-					w.Header().Set("Content-type", "video/mpeg")
-					w.Header().Set("Content-Length:", "0")
-
-					for i := 1; i < 60; i++ {
-						_ = i
-						w.Write([]byte(content))
-						time.Sleep(time.Duration(500) * time.Millisecond)
+				imageFileList, err := os.ReadDir(System.Folder.Custom)
+				if err == nil {
+					// Check if a customized video is available and use it if so
+					fileList, err := os.ReadDir(System.Folder.Video)
+					if err == nil {
+						if len(fileList) == 1 {
+							content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
+							if err == nil {
+								contentOk = true
+								customizedVideo = true
+							} else {
+								ShowError(err, 0) // log error
+								return
+							}
+						}
+					} else {
+						err := createAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
+						if err == nil {
+							contentOk = true
+							customizedVideo = true
+						}
 					}
-
-					return
 				}
 
+				if value, ok := webUI["html/video/stream-limit.ts"]; ok && !customizedVideo {
+
+					contentOk = true
+					content = GetHTMLString(value.(string))
+				}
+
+				if contentOk {
+					w.Header().Set("Content-type", "video/mpeg")
+					w.Header().Set("Content-Length:", fmt.Sprintf("%d", len(content)))
+					w.WriteHeader(http.StatusOK)
+
+					for i := 0; i < 60; i++ {
+						if _, err := w.Write(content); err != nil {
+							ShowError(err, 0) // log error
+							return
+						}
+						time.Sleep(500 * time.Millisecond)
+					}
+				}
 				return
 			}
 
@@ -1343,25 +1385,25 @@ func terminateProcessGracefully(cmd *exec.Cmd) {
 }
 
 func writePIDtoDisc(pid string) {
-    // Open the file in append mode (create it if it doesn't exist)
-    file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer file.Close()
+	// Open the file in append mode (create it if it doesn't exist)
+	file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
-    // Write your text to the file
-    _, err = file.WriteString(pid + "\n")
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Write your text to the file
+	_, err = file.WriteString(pid + "\n")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func deletPIDfromDisc(delete_pid string) (error){
+func deletPIDfromDisc(delete_pid string) (error) {
 	file, err := os.OpenFile(System.Folder.Temp + "PIDs", os.O_RDWR, 0660)
 	if err != nil {
-        return err
-    }
+		return err
+	}
 	// Create a scanner
 	scanner := bufio.NewScanner(file)
 
