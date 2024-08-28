@@ -47,6 +47,7 @@
     "craeteAccount": "Create Account",
     "resetLogs": "Reset Logs",
     "uploadLogo": "Upload Logo",
+    "uploadCustomImage": "Upload custom image",
     "sortChannelsAlpha": "Sort Channels Alphabetically",
     "sortChannelNumbers": "Sort Channels"
   },
@@ -356,7 +357,7 @@
   "settings": {
     "category": {
       "general": "General",
-      "costumization": "Costumization",
+      "customization": "Customization",
       "files": "Files",
       "network": "Network",
       "streaming": "Streaming",
@@ -365,7 +366,7 @@
     },
     "uploadCustomImage": {
       "title": "Custom Image",
-      "description": "Here you can upload an image that will be shown to costumers when no more tuners are available in the playlist!"
+      "description": "Here you can upload an image that will be shown to users when no more tuners are available in the playlist!"
     },
     "update": {
       "title": "Schedule for updating (Playlist, XMLTV, Backup)",

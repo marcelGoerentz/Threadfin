@@ -245,7 +245,8 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Invalid file permissions for config folder"
 	case 1016:
 		errMsg = "Invalid file permissions for temp folder"
-
+	case 1017:
+		errMsg = "Could not save custom image"
 	case 1020:
 		errMsg = "Data could not be saved, invalid keyword"
 
@@ -392,10 +393,6 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Threadfin update available"
 	case 6005:
 		errMsg = "Couldn't write last_beta_update to disk"
-
-	// Webserver
-	case 7001:
-		errMsg = "Trying to access Webserver through restricted IP"
 
 	default:
 		errMsg = fmt.Sprintf("Unknown error / warning (%d)", errCode)

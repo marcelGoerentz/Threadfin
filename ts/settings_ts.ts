@@ -624,6 +624,9 @@ class SettingsCategory {
         tdLeft.innerHTML = "{{.settings.uploadCustomImage.title}}" + ":";
 
         var tdRight = document.createElement("TD");
+        var button = content.createInput("button", "upload", "{{.button.uploadCustomImage}}");
+        button.setAttribute('onclick', 'javascript: uploadCustomImage();');
+        tdRight.appendChild(button)
         setting.appendChild(tdLeft);
         setting.appendChild(tdRight);
         break;
@@ -632,7 +635,6 @@ class SettingsCategory {
     return setting
 
   }
-
 
   createDescription(settingsKey: string): any {
 
@@ -945,4 +947,59 @@ function saveSettings() {
 
   var server: Server = new Server(cmd)
   server.request(data)
+}
+
+function uploadCustomImage() {
+  if (document.getElementById('upload')) {
+    document.getElementById('upload').remove()
+  }
+
+  var upload = document.createElement("INPUT");
+  upload.setAttribute("type", "file");
+  upload.setAttribute("accept", ".jpg,.png")
+  upload.setAttribute("class", "notVisible");
+  upload.setAttribute("name", "");
+  upload.id = "upload";
+
+  document.body.appendChild(upload);
+  upload.click();
+
+  upload.onblur = function () {
+    alert()
+  }
+
+  upload.onchange = function () {
+
+    var filename = (upload as HTMLInputElement).files[0].name
+
+    var reader = new FileReader();
+    var file = (document.querySelector('input[type=file]') as HTMLInputElement).files[0];
+
+    if (file) {
+
+      reader.readAsDataURL(file);
+      reader.onload = function () {
+        console.log(reader.result);
+        var data = new Object();
+        var cmd = "uploadCustomImage"
+        data["base64"] = reader.result
+        data["filename"] = file.name
+
+        var server: Server = new Server(cmd)
+        server.request(data)
+
+        var updateLogo = (document.getElementById('update-icon') as HTMLInputElement)
+        updateLogo.checked = false
+        updateLogo.className = "changed"
+
+      };
+
+    } else {
+      alert("File could not be loaded")
+    }
+
+    upload.remove()
+    return
+  }
+
 }
