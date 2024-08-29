@@ -313,7 +313,7 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		} else {
 			showInfo("Streaming URL:" + streamInfo.URL)
 			w.Header().Set("Access-Control-Allow-Origin", "*")
-			http.Redirect(w, r, streamInfo.URL, 302)
+			http.Redirect(w, r, streamInfo.URL, http.StatusFound)
 
 			showInfo("Streaming Info:URL was passed to the client.")
 			showInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
@@ -1107,54 +1107,60 @@ func API(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch request.Cmd {
-	case "login": // Muss nichts übergeben werden
+		case "login": // Muss nichts übergeben werden
 
-	case "status":
+		case "status":
 
-		response.VersionThreadfin = System.Version
-		response.VersionAPI = System.APIVersion
-		response.StreamsActive = int64(len(Data.Streams.Active))
-		response.StreamsAll = int64(len(Data.Streams.All))
-		response.StreamsXepg = int64(Data.XEPG.XEPGCount)
-		response.EpgSource = Settings.EpgSource
-		response.URLDvr = System.Domain
-		response.URLM3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
-		response.URLXepg = System.ServerProtocol + "://" + System.Domain + "/xmltv/threadfin.xml"
+			response.VersionThreadfin = System.Version
+			response.VersionAPI = System.APIVersion
+			response.StreamsActive = int64(len(Data.Streams.Active))
+			response.StreamsAll = int64(len(Data.Streams.All))
+			response.StreamsXepg = int64(Data.XEPG.XEPGCount)
+			response.EpgSource = Settings.EpgSource
+			response.URLDvr = System.Domain
+			response.URLM3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
+			response.URLXepg = System.ServerProtocol + "://" + System.Domain + "/xmltv/threadfin.xml"
 
-	case "update.m3u":
-		err = getProviderData("m3u", "")
-		if err != nil {
-			break
-		}
+		case "getCurrentlyUsedChannels":
+			err = getCurrentlyUsedChannels()
+			if err != nil {
+				break
+			}
 
-		err = buildDatabaseDVR()
-		if err != nil {
-			break
-		}
+		case "update.m3u":
+			err = getProviderData("m3u", "")
+			if err != nil {
+				break
+			}
 
-	case "update.hdhr":
+			err = buildDatabaseDVR()
+			if err != nil {
+				break
+			}
 
-		err = getProviderData("hdhr", "")
-		if err != nil {
-			break
-		}
+		case "update.hdhr":
 
-		err = buildDatabaseDVR()
-		if err != nil {
-			break
-		}
+			err = getProviderData("hdhr", "")
+			if err != nil {
+				break
+			}
 
-	case "update.xmltv":
-		err = getProviderData("xmltv", "")
-		if err != nil {
-			break
-		}
+			err = buildDatabaseDVR()
+			if err != nil {
+				break
+			}
 
-	case "update.xepg":
-		buildXEPG(false)
+		case "update.xmltv":
+			err = getProviderData("xmltv", "")
+			if err != nil {
+				break
+			}
 
-	default:
-		err = errors.New(getErrMsg(5000))
+		case "update.xepg":
+			buildXEPG(false)
+
+		default:
+			err = errors.New(getErrMsg(5000))
 
 	}
 

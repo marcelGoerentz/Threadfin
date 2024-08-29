@@ -391,55 +391,51 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 						}
 						defer file.Close()
 
+						l, err := file.Stat()
 						if err == nil {
 
-							l, err := file.Stat()
+							debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
+							showDebug(debug, 2)
+
+							var buffer = make([]byte, int(l.Size()))
+							_, err = file.Read(buffer)
+
 							if err == nil {
 
-								debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
-								showDebug(debug, 2)
+								file.Seek(0, 0)
 
-								var buffer = make([]byte, int(l.Size()))
-								_, err = file.Read(buffer)
+								if !streaming {
 
-								if err == nil {
-
-									file.Seek(0, 0)
-
-									if !streaming {
-
-										contentType := http.DetectContentType(buffer)
-										_ = contentType
-										//w.Header().Set("Content-type", "video/mpeg")
-										w.Header().Set("Content-type", contentType)
-										w.Header().Set("Content-Length", "0")
-										w.Header().Set("Connection", "close")
-
-									}
-
-									/*
-									   // HDHR Header
-									   w.Header().Set("Cache-Control", "no-cache")
-									   w.Header().Set("Pragma", "no-cache")
-									   w.Header().Set("transferMode.dlna.org", "Streaming")
-									*/
-
-									_, err := w.Write(buffer)
-
-									if err != nil {
-										file.Close()
-										killClientConnection(streamID, playlistID, false)
-										return
-									}
-
-									file.Close()
-									streaming = true
+									contentType := http.DetectContentType(buffer)
+									_ = contentType
+									//w.Header().Set("Content-type", "video/mpeg")
+									w.Header().Set("Content-type", contentType)
+									w.Header().Set("Content-Length", "0")
+									w.Header().Set("Connection", "close")
 
 								}
 
+								/*
+									// HDHR Header
+									w.Header().Set("Cache-Control", "no-cache")
+									w.Header().Set("Pragma", "no-cache")
+									w.Header().Set("transferMode.dlna.org", "Streaming")
+								*/
+
+								_, err := w.Write(buffer)
+
+								if err != nil {
+									file.Close()
+									killClientConnection(streamID, playlistID, false)
+									return
+								}
+
 								file.Close()
+								streaming = true
 
 							}
+
+							file.Close()
 
 							var n = indexOfString(f, oldSegments)
 
@@ -979,7 +975,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		case "ffmpeg":
 			path = Settings.FFmpegPath
-			options = fmt.Sprintf("%s", Settings.FFmpegOptions)
+			options = Settings.FFmpegOptions
 
 		case "vlc":
 			path = Settings.VLCPath
@@ -1441,4 +1437,14 @@ func deletPIDfromDisc(delete_pid string) (error) {
 		}
 	}
 	return nil
+}
+
+func getCurrentlyUsedChannels() (error) {
+	BufferInformation.Range(createPairs)
+	return nil
+}
+
+func createPairs(playlistID any, playlist any) (bool) {
+
+	return true
 }
