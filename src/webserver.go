@@ -1027,149 +1027,166 @@ func API(w http.ResponseWriter, r *http.Request) {
 			}
 	*/
 
-	var request APIRequestStruct
-	var response APIResponseStruct
+    var request APIRequestStruct
+    var response APIResponseStruct
 
-	var responseAPIError = func(err error) {
+    responseAPIError := func(err error, statusCode int) {
+        response.Error = err.Error()
+        w.WriteHeader(statusCode)
+        w.Write([]byte(mapToJSON(response)))
+    }
 
-		var response APIResponseStruct
+    if !Settings.API {
+        httpStatusError(w, http.StatusLocked)
+        return
+    }
 
-		response.Status = false
-		response.Error = err.Error()
-		w.Write([]byte(mapToJSON(response)))
-	}
+    if r.Method == "GET" {
+        httpStatusError(w, http.StatusNotFound)
+        return
+    }
 
-	response.Status = true
+    b, err := io.ReadAll(r.Body)
+    defer r.Body.Close()
+    if err != nil {
+        responseAPIError(err, http.StatusBadRequest)
+        return
+    }
 
-	if !Settings.API {
-		httpStatusError(w, http.StatusLocked)
-		return
-	}
+    err = json.Unmarshal(b, &request)
+    if err != nil {
+        responseAPIError(err, http.StatusBadRequest)
+        return
+    }
 
-	if r.Method == "GET" {
-		httpStatusError(w, http.StatusNotFound)
-		return
-	}
+    w.Header().Set("content-type", "application/json")
 
-	b, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-	if err != nil {
-		httpStatusError(w, http.StatusBadRequest)
-		return
+    if Settings.AuthenticationAPI {
+        token, err := handleAuthentication(request)
+        if err != nil {
+            responseAPIError(err, http.StatusUnauthorized)
+            return
+        }
+        response.Token = token
+    }
 
-	}
+    switch request.Cmd {
+    case "login":
+        // No additional action needed
+    case "status":
+        populateStatusResponse(&response)
+    case "getCurrentlyUsedChannels":
+        err = getCurrentlyUsedChannels()
+        if err != nil {
+            responseAPIError(err, http.StatusInternalServerError)
+            return
+        }
+    case "update.m3u":
+        err = updateM3U()
+        if err != nil {
+            responseAPIError(err, http.StatusInternalServerError)
+            return
+        }
+    case "update.hdhr":
+        err = updateHDHR()
+        if err != nil {
+            responseAPIError(err, http.StatusInternalServerError)
+            return
+        }
+    case "update.xmltv":
+        err = updateXMLTV()
+        if err != nil {
+            responseAPIError(err, http.StatusInternalServerError)
+            return
+        }
+    case "update.xepg":
+        buildXEPG(false)
+    default:
+        responseAPIError(errors.New(getErrMsg(5000)), http.StatusBadRequest)
+        return
+    }
 
-	err = json.Unmarshal(b, &request)
-	if err != nil {
-		httpStatusError(w, http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("content-type", "application/json")
-
-	if Settings.AuthenticationAPI {
-		var token string
-		switch len(request.Token) {
-		case 0:
-			if request.Cmd == "login" {
-				token, err = authentication.UserAuthentication(request.Username, request.Password)
-				if err != nil {
-					responseAPIError(err)
-					return
-				}
-
-			} else {
-				err = errors.New("login incorrect")
-				if err != nil {
-					responseAPIError(err)
-					return
-				}
-
-			}
-
-		default:
-			token, err = tokenAuthentication(request.Token)
-			fmt.Println(err)
-			if err != nil {
-				responseAPIError(err)
-				return
-			}
-
-		}
-		err = checkAuthorizationLevel(token, "authentication.api")
-		if err != nil {
-			responseAPIError(err)
-			return
-		}
-
-		response.Token = token
-
-	}
-
-	switch request.Cmd {
-		case "login": // Muss nichts übergeben werden
-
-		case "status":
-
-			response.VersionThreadfin = System.Version
-			response.VersionAPI = System.APIVersion
-			response.StreamsActive = int64(len(Data.Streams.Active))
-			response.StreamsAll = int64(len(Data.Streams.All))
-			response.StreamsXepg = int64(Data.XEPG.XEPGCount)
-			response.EpgSource = Settings.EpgSource
-			response.URLDvr = System.Domain
-			response.URLM3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
-			response.URLXepg = System.ServerProtocol + "://" + System.Domain + "/xmltv/threadfin.xml"
-
-		case "getCurrentlyUsedChannels":
-			err = getCurrentlyUsedChannels()
-			if err != nil {
-				break
-			}
-
-		case "update.m3u":
-			err = getProviderData("m3u", "")
-			if err != nil {
-				break
-			}
-
-			err = buildDatabaseDVR()
-			if err != nil {
-				break
-			}
-
-		case "update.hdhr":
-
-			err = getProviderData("hdhr", "")
-			if err != nil {
-				break
-			}
-
-			err = buildDatabaseDVR()
-			if err != nil {
-				break
-			}
-
-		case "update.xmltv":
-			err = getProviderData("xmltv", "")
-			if err != nil {
-				break
-			}
-
-		case "update.xepg":
-			buildXEPG(false)
-
-		default:
-			err = errors.New(getErrMsg(5000))
-
-	}
-
-	if err != nil {
-		responseAPIError(err)
-	}
-
-	w.Write([]byte(mapToJSON(response)))
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte(mapToJSON(response)))
 }
+
+func handleAuthentication(request APIRequestStruct) (string, error) {
+    var token string
+    var err error
+
+    if request.Token == "" {
+        if request.Cmd == "login" {
+            token, err = authentication.UserAuthentication(request.Username, request.Password)
+        } else {
+            err = errors.New("login incorrect")
+        }
+    } else {
+        token, err = tokenAuthentication(request.Token)
+    }
+
+    if err != nil {
+        return "", err
+    }
+
+    err = checkAuthorizationLevel(token, "authentication.api")
+    if err != nil {
+        return "", err
+    }
+
+    return token, nil
+}
+
+func populateStatusResponse(response *APIResponseStruct) {
+	response.SystemInfo = populateSystemInfo()
+}
+
+func populateSystemInfo() SystemInfoStruct {
+	var systemInfo SystemInfoStruct
+	systemInfo.APIVersion = System.APIVersion
+	systemInfo.ThreadfinVersion = System.Version
+	systemInfo.EpgSource = Settings.EpgSource
+
+	systemInfo.SystemURLs = populateSystemURLs()
+	systemInfo.ChannelInfo = populateChannelInfo()
+	return systemInfo
+}
+ 
+func populateSystemURLs() SystemURLsStruct{
+	var systemURLs SystemURLsStruct
+	systemURLs.DVR = System.Domain
+	systemURLs.M3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
+	systemURLs.XEPG = System.ServerProtocol + "://" + System.Domain + "/xmltv/threadfin.xml"
+	return systemURLs
+}
+
+func populateChannelInfo() ChannelInfoStruct {
+	var channelInfo ChannelInfoStruct
+	channelInfo.ActiveChannels = uint32(len(Data.Streams.Active))
+	channelInfo.AllChannels = uint32(len(Data.Streams.All))
+	channelInfo.XEPGChannels = uint32(Data.XEPG.XEPGCount)
+	return channelInfo
+}
+
+func updateM3U() error {
+    err := getProviderData("m3u", "")
+    if err != nil {
+        return err
+    }
+    return buildDatabaseDVR()
+}
+
+func updateHDHR() error {
+    err := getProviderData("hdhr", "")
+    if err != nil {
+        return err
+    }
+    return buildDatabaseDVR()
+}
+
+func updateXMLTV() error {
+    return getProviderData("xmltv", "")
+}
+
 
 // Download : Datei Download
 func Download(w http.ResponseWriter, r *http.Request) {
@@ -1291,9 +1308,9 @@ func enablePPV(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var response APIResponseStruct
 
-		response.Status = false
 		response.Error = err.Error()
 		w.Write([]byte(mapToJSON(response)))
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	for _, c := range xepg {
@@ -1309,7 +1326,6 @@ func enablePPV(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var response APIResponseStruct
 
-		response.Status = false
 		response.Error = err.Error()
 		w.Write([]byte(mapToJSON(response)))
 		w.WriteHeader(405)
@@ -1318,7 +1334,7 @@ func enablePPV(w http.ResponseWriter, r *http.Request) {
 	buildXEPG(false)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }
 
 func disablePPV(w http.ResponseWriter, r *http.Request) {
@@ -1326,7 +1342,6 @@ func disablePPV(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var response APIResponseStruct
 
-		response.Status = false
 		response.Error = err.Error()
 		w.Write([]byte(mapToJSON(response)))
 	}
@@ -1344,7 +1359,6 @@ func disablePPV(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var response APIResponseStruct
 
-		response.Status = false
 		response.Error = err.Error()
 		w.Write([]byte(mapToJSON(response)))
 	}
