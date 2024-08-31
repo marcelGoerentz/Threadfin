@@ -1140,15 +1140,14 @@ func populateStatusResponse(response *APIResponseStruct) {
 	response.SystemInfo = populateSystemInfo()
 }
 
-func populateSystemInfo() SystemInfoStruct {
+func populateSystemInfo() *SystemInfoStruct {
 	var systemInfo SystemInfoStruct
 	systemInfo.APIVersion = System.APIVersion
 	systemInfo.ThreadfinVersion = System.Version
 	systemInfo.EpgSource = Settings.EpgSource
-
 	systemInfo.SystemURLs = populateSystemURLs()
 	systemInfo.ChannelInfo = populateChannelInfo()
-	return systemInfo
+	return &systemInfo
 }
  
 func populateSystemURLs() SystemURLsStruct{

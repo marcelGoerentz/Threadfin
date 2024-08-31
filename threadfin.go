@@ -48,7 +48,7 @@ const Version = "1.5.0-beta"
 const DBVersion = "0.5.0"
 
 // APIVersion : API Version
-const APIVersion = "1.5.1-beta"
+const APIVersion = "2.0.0-beta"
 
 var homeDirectory = fmt.Sprintf("%s%s.%s%s", src.GetUserHomeDirectory(), string(os.PathSeparator), strings.ToLower(Name), string(os.PathSeparator))
 var samplePath = fmt.Sprintf("%spath%sto%sthreadfin%s", string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator))

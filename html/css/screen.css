@@ -126,9 +126,6 @@ nav p {
   float: right;
 }
 
-#settings-footer {}
-
-
 /* Wizard*/
 #box {
   background-color: #444;
@@ -200,12 +197,6 @@ nav p {
 
 #allStreams {
   padding: 2px;
-}
-
-#activeStreams,
-#inactiveStreams {
-  /* width: 50%; */
-  /* float: left; */
 }
 
 #activeStreams .tdKey,
@@ -343,8 +334,6 @@ tbody {
 .hideBulk {
   display: none;
 }
-
-.noBulk {}
 
 #content_table tr.activeEPG,
 #inactive_content_table tr.activeEPG {
@@ -548,10 +537,16 @@ tbody {
     display: flex;
     flex-direction: column;
   }
-
-  #settings,
-  #settings-footer {}
 }
+
+@media only screen and (max-width: 620px) {
+  body {
+    background-color: #444; /* Ensure the background color is consistent */
+  }
+
+  /* Add any other styles specific to small devices here */
+}
+
 
 /*
 =============== 
@@ -720,11 +715,6 @@ Sidebar
 }
 .show-sidebar .close-btn {
   display: block;
-}
-@media screen and (min-width: 676px) {
-  .sidebar {
-    width: 1000px;
-  }
 }
 
 .sidebar .card {

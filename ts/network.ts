@@ -72,16 +72,9 @@ class Server {
       if (response.hasOwnProperty("token")) {
         document.cookie = "Token=" + response["token"]
       }
+      
+      if (response.error) {
 
-      if (response["status"] == false) {
-
-        alert(response["err"])
-
-        if (response.hasOwnProperty("reload")) {
-          location.reload()
-        }
-
-        return
       }
 
 
@@ -94,7 +87,7 @@ class Server {
 
       switch (data["cmd"]) {
         case "updateLog":
-          SERVER["log"] = response["log"]
+          SERVER.log = response["log"]
           if (document.getElementById("content_log")) {
             showLogs(false)
           }
@@ -122,7 +115,7 @@ class Server {
           break;
 
         default:
-          SERVER = new Object()
+          SERVER: Server
           SERVER = response
           break;
       }

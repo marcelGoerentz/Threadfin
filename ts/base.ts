@@ -1,4 +1,4 @@
-var SERVER = new Object()
+var SERVER: Server
 var BULK_EDIT: Boolean = false
 var COLUMN_TO_SORT: number
 var INACTIVE_COLUMN_TO_SORT: number
@@ -763,4 +763,133 @@ function updateLog() {
   var server: Server = new Server("updateLog")
   server.request(new Object())
 
+}
+
+
+interface Server {
+  clientInfo: clientInfo;
+  data: Data;
+  alert:               string;
+	configurationWizard: boolean;
+	err:                 string;
+	log:                 WebScreenLog;
+	logoURL:             string;
+	openLink:            string;
+	openMenu:            string;
+	reload:              boolean;
+	settings:            Settings;
+	status:              boolean;
+	token:               string;
+	users:               Users;
+	wizard:              number;
+	xepg:                XEPG;
+	notification:        Record<string, Notification>;
+}
+
+interface clientInfo {
+  arch: string;
+  branch: string;
+  DVR: string;
+  epgSource: string;
+  errors: string;
+  m3uUrl: string;
+  os: string;
+  streams: string;
+  activeClients: number;
+  totalClients: number;
+  activePlaylist: number;
+  totalPlaylist: number;
+  systemIPs: string[];
+  uuid: string;
+  version: string;
+  warnings: string;
+  xepg: string;
+  xepgUrl: string;
+}
+
+interface Data {
+  playlist: Playlist;
+}
+
+interface Playlist {
+  m3u: M3U;
+}
+
+interface M3U {
+  groups: Groups;
+}
+
+interface Groups {
+  text: string[];
+  value: string[];
+}
+
+interface WebScreenLog {
+  errors:   number
+	log:      string[]
+	warnings: number
+}
+
+interface Settings {
+    api:                      boolean
+		ssdp:                     boolean
+		authenticationAPI:        boolean
+		authenticationM3U:        boolean;
+		authenticationPMS:        boolean;
+		authenticationWEP:        boolean;
+		authenticationXML:        boolean;
+		backupKeep:               number;
+		backupPath:               string;
+		buffer:                   string;
+		bufferSize:               number;
+		bufferTimeout:            number;
+		cacheImages:              boolean;
+		epgSource:                string;
+		ffmpegOptions:            string;
+		ffmpegPath:               string;
+		vlcOptions:               string;
+		vlcPath:                  string;
+		filesUpdate:              boolean;
+		tempPath:                 string;
+		tuner:                    number;
+		udpxy:                    string;
+		update:                   string[];
+		userAgent:                string;
+		xepgReplaceMissingImages: boolean;
+		xepgReplaceChannelTitle:  boolean;
+		threadfinAutoUpdate:      boolean;
+		schemeM3U:                string;
+		schemeXML:                string;
+		storeBufferInRAM:         boolean;
+		omitPorts:                boolean;
+		bindingIPs:               string;
+		forceHttpsToUpstream:     boolean;
+		useHttps:                 boolean;
+		forceClientHttps:         boolean;
+		threadfinDomain:          string;
+		enableNonAscii:           boolean;
+		epgCategories:            string;
+		epgCategoriesColors:      string;
+		dummy:                    boolean;
+		dummyChannel:             string;
+		ignoreFilters:            boolean;
+}
+
+interface Users {
+  dbVersion: string;
+  hash: string;
+  users: Record<string, any>
+}
+
+interface XEPG {
+  epgMapping: Record<string, any>
+  xmltvMap: Record<string, any>
+}
+
+interface Notification {
+  headline: string;
+	message:  string;
+	new:      boolean;
+	time:     string;
+	type:     string;
 }

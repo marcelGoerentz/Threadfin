@@ -151,8 +151,8 @@ type APIRequestStruct struct {
 // APIResponseStruct : Antwort an den Client (API)
 type APIResponseStruct struct {
 	Error      string                 `json:"error,omitempty"`
-	SystemInfo    SystemInfoStruct    `json:"systemInfo,omitempty"`
-	ActiveStreams ActiveStreamsStruct `json:"activeStreams,omitempty"`
+	SystemInfo    *SystemInfoStruct    `json:"systemInfo,omitempty"`
+	ActiveStreams *ActiveStreamsStruct `json:"activeStreams,omitempty"`
 	Token      string                 `json:"token,omitempty"`
 }
 
