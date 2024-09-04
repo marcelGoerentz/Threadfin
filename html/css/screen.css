@@ -245,23 +245,23 @@ caption {
   overflow-y: scroll;
 }
 
-#content_table,
-#inactive_content_table,
+#contentTable,
+#inactiveContentTable,
 #mapping-detail-table,
-#content_table {
+#contentTable {
   display: table;
   --bs-table-color: none;
   border-collapse: collapse;
   overflow-y: scroll;
 }
 
-#inactive_content_table {
+#inactiveContentTable {
   margin-top: 2%;
 }
 
 
-#content_table .content_table_header,
-#inactive_content_table .inactive_content_table_header {
+#contentTable .contentTableHeader,
+#inactiveContentTable .inactiveContentTableHeader {
   background-color: #333;
   height: 50px;
   border-bottom: solid 1px #111;
@@ -283,34 +283,34 @@ tbody {
   white-space: nowrap;
 }
 
-#content_table img,
-#inactive_content_table img {
+#contentTable img,
+#inactiveContentTable img {
   display: block;
   margin-left: auto;
   margin-right: auto;
   max-width: 60px;
 }
 
-#content_table tr,
-#inactive_content_table tr {
+#contentTable tr,
+#inactiveContentTable tr {
   border-left: solid 3px 444;
   border-bottom: solid 1px #333;
   cursor: pointer;
 }
 
-#content_table tr:hover,
-#inactive_content_table tr:hover {
+#contentTable tr:hover,
+#inactiveContentTable tr:hover {
   background-color: #333;
 }
 
-#content_table td,
-#inactive_content_table td {
+#contentTable td,
+#inactiveContentTable td {
 
   padding: 0px 2px;
 }
 
-#content_table input[type=text],
-#inactive_content_table input[type=text] {
+#contentTable input[type=text],
+#inactiveContentTable input[type=text] {
   width: 80%;
   min-width: 35px;
   max-width: 60px;
@@ -320,8 +320,8 @@ tbody {
   text-align: left;
 }
 
-#content_table input[type=checkbox],
-#inactive_content_table input[type=checkbox] {
+#contentTable input[type=checkbox],
+#inactiveContentTable input[type=checkbox] {
   max-width: 25px;
   margin: auto;
 }
@@ -335,13 +335,13 @@ tbody {
   display: none;
 }
 
-#content_table tr.activeEPG,
-#inactive_content_table tr.activeEPG {
+#contentTable tr.activeEPG,
+#inactiveContentTable tr.activeEPG {
   border-left: solid 3px lawngreen;
 }
 
-#content_table tr.notActiveEPG,
-#inactive_content_table tr.notActiveEPG {
+#contentTable tr.notActiveEPG,
+#inactiveContentTable tr.notActiveEPG {
   border-left: solid 3px red;
 }
 

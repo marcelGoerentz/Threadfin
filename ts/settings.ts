@@ -152,11 +152,11 @@ class SettingsCategory {
         var input = content.createInput("text", "bindingIPs", data)
         input.setAttribute("id", settingsKey)
         input.addEventListener('click', () => {
-          createBindingIPsOptionDialogue()
+          showIPBindingDialogue()
         });
         input.setAttribute("placeholder", "{{.settings.bindingIPs.placeholder}}")
-        input.setAttribute('data-bs-target', '#dialogueContainer')
-        input.setAttribute("data-bs-toggle" , "modal")
+        //input.setAttribute('data-bs-target', '#dialogueContainer')
+        //input.setAttribute("data-bs-toggle" , "modal")
         tdRight.appendChild(input)
 
         setting.appendChild(tdLeft)

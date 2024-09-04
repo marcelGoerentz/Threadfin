@@ -1,60 +1,46 @@
 // Function to create the option Dialogue
-function createOptionDialogueContainer() {
+function showIPBindingDialogue() {
+  var myModal = new bootstrap.Modal(document.getElementById('popup'));
   const fragment = document.createDocumentFragment();
+  const popupModalContent = document.getElementById('popupModalContent');
+  fragment.appendChild(popupModalContent);
+  editCustomPopUpContainer(fragment);
+  addCustomPopUpContent(fragment);
 
-  const optionsDialogue = createElementWithAttributes('div', {
-    class: 'modal fade',
-    id: 'dialogueContainer'
-  });
+  const parent = document.getElementById('popup');
+  const child = parent.children[0].appendChild(fragment);
+  showElement("popup", true);
+}
 
-  const modalDialog = createElementWithAttributes('div', {
-    class: 'modal-dialog modal-xl'
-  });
-  optionsDialogue.appendChild(modalDialog);
+function editCustomPopUpContainer(fragment: DocumentFragment){
+  const popupHeader = fragment.getElementById('popupHeader');
+  const popupRow = fragment.getElementById('popupRow')
+  const popupCustom = fragment.getElementById('popupCustom');
 
-  const modalContent = createElementWithAttributes('div', {
-    class: 'modal-content'
-  });
-  modalDialog.appendChild(modalContent);
-
-  const modalHeader = createElementWithAttributes('div', {
-    class: 'modal-header'
-  });
-  modalContent.appendChild(modalHeader);
-
+  // Remove former header and add a custom one
+  popupHeader.removeChild(popupHeader.querySelector('h3'))
   const headline = createElementWithAttributes('h3', {
     class: 'modal-title',
     id: 'optionHeadline'
   });
-  modalHeader.appendChild(headline);
+  headline.textContent = 'IP selection';
+  popupHeader.appendChild(headline);
 
   const xButton = createElementWithAttributes('button', {
     type: 'button',
-    class: 'btn-close',
-    'data-bs-dismiss': 'modal',
-    'aria-label': 'Close'
+    class: 'btn-close'
   });
-  modalHeader.appendChild(xButton);
+  popupHeader.appendChild(xButton);
 
-  const modalBody = createElementWithAttributes('div', {
-    class: 'modal-body'
-  });
-  modalContent.appendChild(modalBody);
-
-  const fluidContainer = createElementWithAttributes('div', {
-    class: 'container-fluid'
-  });
-  modalBody.appendChild(fluidContainer);
-
-  const row = createElementWithAttributes('div', {
-    class: 'row'
-  });
-  fluidContainer.appendChild(row);
+  // Delete and renew popupCustom
+  popupCustom.remove()
+  const newPopupCustom = createElementWithAttributes('div', {id: 'popupCustom'});
+  popupRow.appendChild(newPopupCustom);
 
   const card = createElementWithAttributes('div', {
     class: 'card text-bg-dark mb-3'
   });
-  row.appendChild(card);
+  newPopupCustom.appendChild(card);
 
   const cardBody = createElementWithAttributes('div', {
     class: 'card-body',
@@ -67,21 +53,17 @@ function createOptionDialogueContainer() {
   });
   cardBody.appendChild(table);
 
-  fragment.appendChild(optionsDialogue);
-  document.body.appendChild(fragment);
 }
 
-function createBindingIPsOptionDialogue() {
+function addCustomPopUpContent(fragment: DocumentFragment) {
   const content: PopupContent = new PopupContent();
-  const fragment = document.createDocumentFragment();
 
-  if ("clientInfo" in SERVER) {
-    const optionHeadline = document.getElementById('optionHeadline');
-    optionHeadline.textContent = 'IP selection';
+  if ("clientInfo" in SERVER) {    
     const bindingIPsElement = document.getElementById('bindingIPs') as HTMLInputElement;
     const bindingIPs: string = bindingIPsElement.getAttribute('value');
     const bindingIPspArray = bindingIPs.split(";");
     const systemnIPs: Array<string> = SERVER["clientInfo"]["systemIPs"];
+    const optionTable = fragment.getElementById('optionTable');
     
     systemnIPs.forEach((ipAddress, index) => {
       if (!ipAddress.includes('169.254')) {
@@ -100,28 +82,22 @@ function createBindingIPsOptionDialogue() {
         tdRight.appendChild(label);
         tr.appendChild(tdLeft);
         tr.appendChild(tdRight);
-        fragment.appendChild(tr);
+        optionTable.appendChild(tr);
       }
     });
 
-    const optionTable = document.getElementById("optionTable");
-    optionTable.appendChild(fragment);
-
-    const checkbox_container = document.getElementById('optionCardBody');
+    const checkbox_container = fragment.getElementById('optionCardBody');
     checkbox_container.textContent = 'Select one or more IP(s). If none has been selected then Threadfin will bind to all of them!'; // This deletes all nodes and replace with text!
-    checkbox_container.appendChild(optionTable);
+    checkbox_container.appendChild(optionTable); // Reappend the table
+
     const saveButton = createButton(content, "buttonUpdate", "{{.button.update}}", 'javascript: updateBindingIPs()');
-    const cancelButton = createButton(content, "buttonCancel", "{{.button.cancel}}");
+    const cancelButton = createButton(content, "buttonCancel", "{{.button.cancel}}", 'javascript: resetPopup()');
     checkbox_container.appendChild(saveButton);
     checkbox_container.appendChild(cancelButton);
-
     
-    
-    
-    const ipSelection = document.getElementById('dialogueContainer');
+    const ipSelection = fragment.getElementById('popupHeader');
     const closeButton = ipSelection.querySelector('button.btn-close');
-    closeButton.addEventListener('click', () => resetOptionsDialogue());
-    cancelButton.addEventListener('click', () => resetOptionsDialogue());
+    closeButton.addEventListener('click', () => resetPopup());
   }
 }
 
@@ -130,21 +106,29 @@ function createButton(content: PopupContent, id: string, text: string, onClick?:
   if (onClick) {
     button.setAttribute("onclick", onClick);
   }
-  button.setAttribute('data-bs-target', '#dialogueContainer');
-  button.setAttribute("data-bs-toggle", "modal");
   return button;
 }
 
-function resetOptionsDialogue() {
-  let optionsDialogue = document.getElementById('dialogueContainer');
-  
-  if (optionsDialogue) {
-    // Remove the existing modal
-    optionsDialogue.remove();
-  }
+function resetPopup() {
 
-  // Create a new modal
-  createOptionDialogueContainer();
+  // remove cancel x-button and headline from popupHeader
+  const popupHeader = document.getElementById('popupHeader');
+  popupHeader.removeChild(popupHeader.querySelector('button'))
+  popupHeader.removeChild(popupHeader.querySelector('h3'))
+
+  // remove existing popupCustom
+  const optionsDialogue = document.getElementById('popupCustom');
+  optionsDialogue.remove();
+
+  // add new popup
+  const popupRow = document.getElementById('popupRow');
+  const newPopupCustom = createElementWithAttributes('div', {
+    id: 'popupCustom'
+  })
+  popupRow.appendChild(newPopupCustom)
+
+  // don't show the popup anymore
+  showElement('popup', false)
 }
 
 function updateBindingIPs() {
@@ -160,7 +144,7 @@ function updateBindingIPs() {
     bindingIPsElement.setAttribute('value', bindingIPs.join(';') + ";");
   }
   bindingIPsElement.setAttribute('class', 'changed');
-  resetOptionsDialogue()
+  resetPopup()
 }
 
 function createElementWithAttributes(tag: string, attributes: object) {
