@@ -73,11 +73,17 @@ RUN mkdir $THREADFIN_CONF && chmod a+rwX $THREADFIN_CONF && mkdir $THREADFIN_TEM
 # For VLC
 RUN sed -i 's/geteuid/getppid/' /usr/bin/vlc
 
+# Add threadfin group and user
+RUN addgroup -S threadfin -g ${THREADFIN_GID} && adduser -S threadfin -G threadfin -u ${THREADFIN_UID} -g ${THREADFIN_GID} -s /bin/sh
+
 # Configure container volume mappings
 VOLUME $THREADFIN_CONF
 VOLUME $THREADFIN_TEMP
 
 EXPOSE $THREADFIN_PORT
+
+# Set user
+USER threadfin
 
 # Run the Threadfin executable
 ENTRYPOINT ${THREADFIN_BIN}/threadfin -port=${THREADFIN_PORT} -config=${THREADFIN_CONF} -debug=${THREADFIN_DEBUG} -branch=${THREADFIN_BRANCH}
