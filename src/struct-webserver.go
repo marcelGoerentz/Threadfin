@@ -157,12 +157,12 @@ type APIResponseStruct struct {
 }
 
 type ActiveStreamsStruct struct {
-	Playlists []PlaylistStruct `json:"playlists"`
+	Playlists map[string]*PlaylistStruct `json:"playlists"`
 }
 
 type PlaylistStruct struct {
-	PlaylistName string   `json:"playlistName"`
-	ChannelList  []string `json:"channelList"`
+	PlaylistName string `json:"playlistName"`
+	ActiveChannels *[]string `json:"activeChannels"`
 }
 
 type SystemInfoStruct struct {
@@ -190,4 +190,12 @@ type WebScreenLogStruct struct {
 	Errors   int      `json:"errors"`
 	Log      []string `json:"log"`
 	Warnings int      `json:"warnings"`
+}
+
+type BufferInfoStruct struct {
+	Name string
+	Path string
+	PlaylistID string
+	URL string
+	
 }

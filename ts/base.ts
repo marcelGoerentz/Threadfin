@@ -54,20 +54,9 @@ settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.backup}}", "backup.path,backup.keep"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.authentication}}", "authentication.web,authentication.pms,authentication.m3u,authentication.xml,authentication.api"))
 
-function showPopUpElement(elm) {
-
-  showElement(elm, true)
-
-  // setTimeout(function () {
-  //   showElement("popup", true);
-  // }, 10);
-
-  return
-}
-
-function showElement(elmID, type) {
+function showElement(elmID, show: boolean) {
   if (elmID == "popupCustom" || elmID == "popup") {
-    switch (type) {
+    switch (show) {
       case true: 
         popupModal.show()
         break;
@@ -78,7 +67,7 @@ function showElement(elmID, type) {
   }
 
   if (elmID == "loading") {
-    switch (type) {
+    switch (show) {
       case true: 
       loadingModal.show()
         break;

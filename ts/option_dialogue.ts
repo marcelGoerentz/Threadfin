@@ -18,10 +18,14 @@ function editCustomPopUpContainer(fragment: DocumentFragment){
   const popupCustom = fragment.getElementById('popupCustom');
 
   // Remove former header and add a custom one
-  popupHeader.removeChild(popupHeader.querySelector('h3'))
+  const h3 = popupHeader.querySelector('h3')
+  if (h3) {
+    popupHeader.removeChild(h3)
+  }
+  
   const headline = createElementWithAttributes('h3', {
     class: 'modal-title',
-    id: 'optionHeadline'
+    id: 'modalHeadline'
   });
   headline.textContent = 'IP selection';
   popupHeader.appendChild(headline);
@@ -35,23 +39,12 @@ function editCustomPopUpContainer(fragment: DocumentFragment){
   // Delete and renew popupCustom
   popupCustom.remove()
   const newPopupCustom = createElementWithAttributes('div', {id: 'popupCustom'});
+
   popupRow.appendChild(newPopupCustom);
-
-  const card = createElementWithAttributes('div', {
-    class: 'card text-bg-dark mb-3'
-  });
-  newPopupCustom.appendChild(card);
-
-  const cardBody = createElementWithAttributes('div', {
-    class: 'card-body',
-    id: 'optionCardBody'
-  });
-  card.appendChild(cardBody);
-
   const table = createElementWithAttributes('table', {
     id: 'optionTable'
   });
-  cardBody.appendChild(table);
+  newPopupCustom.appendChild(table);
 
 }
 
@@ -71,7 +64,7 @@ function addCustomPopUpContent(fragment: DocumentFragment) {
         const tdLeft = document.createElement('td');
         const tdRight = document.createElement('td');
 
-        const checkbox = content.createCheckbox(ipAddress, 'ipCheckbox' + index);
+        const checkbox = createCheckbox(ipAddress, 'ipCheckbox' + index);
         checkbox.checked = bindingIPspArray.includes(ipAddress);
 
         const label = document.createElement("label");
@@ -86,7 +79,7 @@ function addCustomPopUpContent(fragment: DocumentFragment) {
       }
     });
 
-    const checkbox_container = fragment.getElementById('optionCardBody');
+    const checkbox_container = fragment.getElementById('popupCustom');
     checkbox_container.textContent = 'Select one or more IP(s). If none has been selected then Threadfin will bind to all of them!'; // This deletes all nodes and replace with text!
     checkbox_container.appendChild(optionTable); // Reappend the table
 
@@ -102,11 +95,11 @@ function addCustomPopUpContent(fragment: DocumentFragment) {
 }
 
 function createButton(content: PopupContent, id: string, text: string, onClick?: string): HTMLInputElement {
-  const button = content.createInput("button", id, text);
-  if (onClick) {
-    button.setAttribute("onclick", onClick);
-  }
-  return button;
+  return createInput('button', id, text, {'onclick': onClick}) as HTMLInputElement
+}
+
+function createCheckbox(name: string, id: string = ''): HTMLInputElement {
+  return createInput('checkbox', name, {}, {id: id}) as HTMLInputElement
 }
 
 function resetPopup() {
@@ -134,22 +127,31 @@ function resetPopup() {
 function updateBindingIPs() {
   const checkboxTable = document.getElementById('optionTable');
   const checkboxList = checkboxTable.querySelectorAll('input[type="checkbox"]');
+  // get checked boxes and create array
   var bindingIPs: string[] = Array.from(checkboxList)
     .filter(checkbox => (checkbox as HTMLInputElement).checked)
     .map(checkbox => (checkbox as HTMLInputElement).name);
+  
   const bindingIPsElement = document.getElementById('bindingIPs');
   if (bindingIPs.length === 0) {
+    // set value to none
     bindingIPsElement.setAttribute('value', '')
   } else {
+    // insert the values from the array
     bindingIPsElement.setAttribute('value', bindingIPs.join(';') + ";");
   }
+  // tell about the change
   bindingIPsElement.setAttribute('class', 'changed');
+  // resetPopup for the next run
   resetPopup()
+}
+
+function createInput(type, name, value, attribute = {}) {
+  return createElementWithAttributes('input', { type, name, value, ...attribute });
 }
 
 function createElementWithAttributes(tag: string, attributes: object) {
   const element = document.createElement(tag);
-  var test = {id: 'test'}
   for (const key in attributes) {
     element.setAttribute(key, attributes[key]);
   }

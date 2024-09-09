@@ -828,8 +828,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", "-")
         input.setAttribute("onclick", 'javascript: openPopUp("playlist")')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -837,8 +835,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", -1)
         input.setAttribute("onclick", 'javascript: openPopUp("filter", this)')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -847,8 +843,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", "xmltv")
         input.setAttribute("onclick", 'javascript: openPopUp("xmltv")')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -856,8 +850,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", "users")
         input.setAttribute("onclick", 'javascript: openPopUp("users")')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -1194,7 +1186,7 @@ class PopupWindow {
 
   createInteraction(): any {
     var div = document.createElement("div")
-    div.setAttribute("id", "popup-interaction")
+    div.setAttribute("id", "popupInteraction")
     div.className = "interaction"
     this.doc.appendChild(div)
   }
@@ -1297,7 +1289,7 @@ class PopupContent extends PopupWindow {
 
   // Interaktion
   addInteraction(element: any) {
-    var interaction = document.getElementById("popup-interaction")
+    var interaction = document.getElementById("popupInteraction")
     interaction.appendChild(element)
   }
 }
@@ -2053,7 +2045,7 @@ function openPopUp(dataType, element) {
       break;
   }
 
-  showPopUpElement('popupCustom');
+  showElement('popupCustom', true);
 }
 
 class XMLTVFile {
