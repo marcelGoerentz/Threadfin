@@ -67,10 +67,12 @@ func createAlternativNoMoreStreamsVideo(pathToFile string) (error) {
 	if len(cmd.Args) > 0 {
 		fmt.Println("Executing command:", cmd.String())
 
-		err := cmd.Run()
+		err := cmd.Start()
 		if err != nil {
 			return err
 		}
+		cmd.WaitDelay = time.Duration(3)
+		cmd.Wait()
 	}
 	return nil
 }
@@ -202,7 +204,14 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 					// Check if a customized video is available and use it if so
 					fileList, err := os.ReadDir(System.Folder.Video)
 					if err == nil {
-						if len(fileList) == 1 {
+						switch len(fileList) {
+						case 0: // If no customized video is available create one
+							err := createAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
+							if err == nil {
+								contentOk = true
+								customizedVideo = true
+							}
+						case 1: // Is there one file use it
 							content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
 							if err == nil {
 								contentOk = true
@@ -211,12 +220,16 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 								ShowError(err, 0) // log error
 								return
 							}
-						}
-					} else {
-						err := createAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
-						if err == nil {
-							contentOk = true
-							customizedVideo = true
+						default:
+							// remove all found files
+							for _, file := range fileList {
+								os.Remove(System.Folder.Video + file.Name())
+							}
+							err := createAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
+							if err == nil {
+								contentOk = true
+								customizedVideo = true
+							}
 						}
 					}
 				}
