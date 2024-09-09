@@ -65,8 +65,7 @@ func createAlternativNoMoreStreamsVideo(pathToFile string) (error) {
 
 	}
 	if len(cmd.Args) > 0 {
-		fmt.Println("Executing command:", cmd.String())
-
+		showInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
 		err := cmd.Run()
 		if err != nil {
 			return err
@@ -198,26 +197,40 @@ func bufferingStream(playlistID, streamingURL, backupStreamingURL1, backupStream
 				var contentOk, customizedVideo bool
 
 				imageFileList, err := os.ReadDir(System.Folder.Custom)
+				if err != nil {
+					ShowError(err, 0)
+				}
+				// Check if a customized video is available and use it if so
+				fileList, err := os.ReadDir(System.Folder.Video)
 				if err == nil {
-					// Check if a customized video is available and use it if so
-					fileList, err := os.ReadDir(System.Folder.Video)
-					if err == nil {
-						if len(fileList) == 1 {
-							content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
-							if err == nil {
-								contentOk = true
-								customizedVideo = true
-							} else {
-								ShowError(err, 0) // log error
-								return
+					var createContent = false
+					switch len(fileList) {
+					case 0: // If no customized video is available create one
+						createContent = true
+					case 1: // Is there only one file, use it
+						break
+					default:
+						// remove all found files
+						for _, file := range fileList {
+							os.Remove(System.Folder.Video + file.Name())
+						}
+						createContent = true
+					}
+					if createContent {
+						if len(imageFileList) > 0 {
+							err := createAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
+							if err != nil {
+								ShowError(err, 0)
 							}
 						}
+					}
+					content, err = os.ReadFile(System.Folder.Video + "stream-limit.ts")
+					if err == nil {
+						contentOk = true
+						customizedVideo = true
 					} else {
-						err := createAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
-						if err == nil {
-							contentOk = true
-							customizedVideo = true
-						}
+						ShowError(err, 0) // log error
+						return
 					}
 				}
 
