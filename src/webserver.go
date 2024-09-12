@@ -1,6 +1,7 @@
 package src
 
 import (
+	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,7 +24,6 @@ func StartWebserver() (err error) {
 
 	var port = Settings.Port
 	var serverMux = http.NewServeMux()
-	
 
 	serverMux.HandleFunc("/", Index)
 	serverMux.HandleFunc("/stream/", Stream)
@@ -39,14 +39,13 @@ func StartWebserver() (err error) {
 	serverMux.HandleFunc("/ppv/disable", disablePPV)
 	//serverMux.HandleFunc("/auto/", Auto)
 
-	
 	regexIpV4, _ := regexp.Compile(`(?:\d{1,3}\.){3}\d{1,3}`)
 	regexIpV6, _ := regexp.Compile(`(?:[A-Fa-f0-9]{0,4}:){3,7}[a-fA-F0-9]{1,4}`)
 	var customIps []string
 	var customIpsV4 = regexIpV4.FindAllString(Settings.BindingIPs, -1)
 	var customIpsV6 = regexIpV6.FindAllString(Settings.BindingIPs, -1)
 	if customIpsV4 != nil || customIpsV6 != nil {
-		customIps=make([]string, len(customIpsV4)+ len(customIpsV6))
+		customIps = make([]string, len(customIpsV4) + len(customIpsV6))
 		copy(customIps, customIpsV4)
 		copy(customIps[len(customIpsV4):], customIpsV6)
 	}
@@ -99,7 +98,7 @@ func StartWebserver() (err error) {
 		}
 	}
 
-	select{}
+	select {}
 }
 
 // Index : Web Server /
@@ -108,7 +107,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var response []byte
 	var path = r.URL.Path
-	var debug  = fmt.Sprintf("Web Server Request:Path: %s", path)
+	var debug = fmt.Sprintf("Web Server Request:Path: %s", path)
 
 	showDebug(debug, 2)
 
@@ -207,12 +206,12 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 			var streamURL = "https"
 			host_split := strings.Split(u.Host, ":")
 			if len(host_split) > 0 {
-				streamURL += "://" + host_split[0]				
+				streamURL += "://" + host_split[0]
 			}
 			if len(host_split) > 1 {
 				streamURL += ":" + host_split[1]
 			}
-			if u.RawQuery != ""{
+			if u.RawQuery != "" {
 				streamInfo.URL = fmt.Sprintf("%s%s?%s", streamURL, u.Path, u.RawQuery)
 			} else {
 				streamInfo.URL = streamURL + u.Path
@@ -314,7 +313,7 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		} else {
 			showInfo("Streaming URL:" + streamInfo.URL)
 			w.Header().Set("Access-Control-Allow-Origin", "*")
-			http.Redirect(w, r, streamInfo.URL, 302)
+			http.Redirect(w, r, streamInfo.URL, http.StatusFound)
 
 			showInfo("Streaming Info:URL was passed to the client.")
 			showInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
@@ -569,12 +568,12 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				if Settings.AuthenticationWEB && !authenticationUpdate {
 					response.Reload = true
 				}
-				
+
 				if Settings.StoreBufferInRAM != previousStoreBufferInRAM {
 					initBufferVFS(Settings.StoreBufferInRAM)
 				}
 
-				if Settings.BindingIPs != previousBindingIPs  || Settings.UseHttps != previousUseHttps {
+				if Settings.BindingIPs != previousBindingIPs || Settings.UseHttps != previousUseHttps {
 					showInfo("WEB:Restart program since listening IP option has been changed!")
 					os.Exit(0)
 				}
@@ -700,6 +699,14 @@ func WS(w http.ResponseWriter, r *http.Request) {
 
 			}
 
+		case "uploadCustomImage":
+			if len(request.Base64) > 0 {
+				err = uploadCustomImage(request.Base64, request.Filename)
+				if err != nil {
+					ShowError(err, 1017)
+				}
+			}
+
 		case "saveWizard":
 			nextStep, errNew := saveWizard(request)
 
@@ -751,6 +758,44 @@ func WS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func uploadCustomImage(input string, filename string) (error) {
+	b64data := input[strings.IndexByte(input, ',')+1:]
+
+	// decode Base64 string into bytes and save them to disk
+	fileBytes, err := b64.StdEncoding.DecodeString(b64data)
+	if err != nil {
+		return err
+	}
+
+	// get and delete former files in dir
+	fileList, err := os.ReadDir(System.Folder.Custom)
+	if err != nil {
+		return err
+	} else {
+		for _, file := range fileList {
+			os.Remove(System.Folder.Custom + file.Name())
+		}
+	}
+
+	// delete generated video file if exist
+	fileList, err = os.ReadDir(System.Folder.Video)
+	if err != nil {
+		return err
+	} else {
+		for _, file := range fileList {
+			os.Remove(System.Folder.Custom + file.Name())
+		}
+	}
+
+	// save file to disk
+	var file = fmt.Sprintf("%s%s", System.Folder.Custom, filename)
+	err = writeByteToFile(file, fileBytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Web : Web Server /web/
 func Web(w http.ResponseWriter, r *http.Request) {
 
@@ -774,7 +819,7 @@ func Web(w http.ResponseWriter, r *http.Request) {
 		var languageFile = "html/lang/en.json"
 
 		if value, ok := webUI[languageFile].(string); ok {
-			content = GetHTMLString(value)
+			content = string(GetHTMLString(value))
 			lang = jsonToMap(content)
 		}
 
@@ -903,7 +948,7 @@ func Web(w http.ResponseWriter, r *http.Request) {
 
 	if value, ok := webUI[requestFile].(string); ok {
 
-		content = GetHTMLString(value)
+		content = string(GetHTMLString(value))
 		contentType = getContentType(requestFile)
 
 		if contentType == "text/plain" {
@@ -1062,54 +1107,54 @@ func API(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch request.Cmd {
-	case "login": // Muss nichts übergeben werden
+		case "login": // Muss nichts übergeben werden
 
-	case "status":
+		case "status":
 
-		response.VersionThreadfin = System.Version
-		response.VersionAPI = System.APIVersion
-		response.StreamsActive = int64(len(Data.Streams.Active))
-		response.StreamsAll = int64(len(Data.Streams.All))
-		response.StreamsXepg = int64(Data.XEPG.XEPGCount)
-		response.EpgSource = Settings.EpgSource
-		response.URLDvr = System.Domain
-		response.URLM3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
-		response.URLXepg = System.ServerProtocol + "://" + System.Domain + "/xmltv/threadfin.xml"
+			response.VersionThreadfin = System.Version
+			response.VersionAPI = System.APIVersion
+			response.StreamsActive = int64(len(Data.Streams.Active))
+			response.StreamsAll = int64(len(Data.Streams.All))
+			response.StreamsXepg = int64(Data.XEPG.XEPGCount)
+			response.EpgSource = Settings.EpgSource
+			response.URLDvr = System.Domain
+			response.URLM3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
+			response.URLXepg = System.ServerProtocol + "://" + System.Domain + "/xmltv/threadfin.xml"
 
-	case "update.m3u":
-		err = getProviderData("m3u", "")
-		if err != nil {
-			break
-		}
+		case "update.m3u":
+			err = getProviderData("m3u", "")
+			if err != nil {
+				break
+			}
 
-		err = buildDatabaseDVR()
-		if err != nil {
-			break
-		}
+			err = buildDatabaseDVR()
+			if err != nil {
+				break
+			}
 
-	case "update.hdhr":
+		case "update.hdhr":
 
-		err = getProviderData("hdhr", "")
-		if err != nil {
-			break
-		}
+			err = getProviderData("hdhr", "")
+			if err != nil {
+				break
+			}
 
-		err = buildDatabaseDVR()
-		if err != nil {
-			break
-		}
+			err = buildDatabaseDVR()
+			if err != nil {
+				break
+			}
 
-	case "update.xmltv":
-		err = getProviderData("xmltv", "")
-		if err != nil {
-			break
-		}
+		case "update.xmltv":
+			err = getProviderData("xmltv", "")
+			if err != nil {
+				break
+			}
 
-	case "update.xepg":
-		buildXEPG(false)
+		case "update.xepg":
+			buildXEPG(false)
 
-	default:
-		err = errors.New(getErrMsg(5000))
+		default:
+			err = errors.New(getErrMsg(5000))
 
 	}
 
@@ -1165,7 +1210,6 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 			}
 		}
 	}
-
 
 	// Folgende Daten immer an den Client übergeben
 	defaults.ClientInfo.ARCH = System.ARCH

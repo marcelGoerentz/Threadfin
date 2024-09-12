@@ -82,6 +82,8 @@ func Init() (err error) {
 	System.Folder.Cache = System.Folder.Config + "cache" + string(os.PathSeparator)
 	System.Folder.ImagesCache = System.Folder.Cache + "images" + string(os.PathSeparator)
 	System.Folder.ImagesUpload = System.Folder.Data + "images" + string(os.PathSeparator)
+	System.Folder.Custom = System.Folder.ImagesUpload + "custom" + string(os.PathSeparator)
+	System.Folder.Video = System.Folder.Data + "video" + string(os.PathSeparator)
 	System.Folder.Temp = tempFolder
 
 	// Dev Info

@@ -63,10 +63,12 @@ type SystemStruct struct {
 		Backup       string
 		Cache        string
 		Config       string
+		Custom       string
 		Data         string
 		ImagesCache  string
 		ImagesUpload string
 		Temp         string
+		Video        string
 	}
 
 	BaseURL                string

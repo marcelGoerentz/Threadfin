@@ -1093,7 +1093,7 @@ function PageReady() {
 
   getNewestReleaseFromGithub()
 
-  setCheckboxes()
+  createOptionDialogueContainer()
 
   return
 }
@@ -1144,36 +1144,10 @@ async function setCheckboxes() {
   }
 }
 
-function createButton(content: PopupContent, id: string, text: string, onClick?: string): HTMLInputElement {
-  const button = content.createInput("button", id, text);
-  if (onClick) {
-    button.setAttribute("onclick", onClick);
-  }
-  button.setAttribute('data-bs-target', '#ip_selection');
-  button.setAttribute("data-bs-toggle", "modal");
-  return button;
-}
-
 function resetCheckboxes(checkboxes: NodeListOf<Element>, initialStates: boolean[]) {
   checkboxes.forEach((checkbox, index) => {
     (checkbox as HTMLInputElement).checked = initialStates[index]
   })
-}
-
-function updateBindingIPs() {
-  const checkboxTable = document.getElementById('checkboxTable');
-  const checkboxList = checkboxTable.querySelectorAll('input[type="checkbox"]');
-  var bindingIPs: string[] = Array.from(checkboxList)
-    .filter(checkbox => (checkbox as HTMLInputElement).checked)
-    .map(checkbox => (checkbox as HTMLInputElement).name);
-  const bindingIPsElement = document.getElementById('bindingIPs');
-  if (bindingIPs.length === 0) {
-    bindingIPsElement.setAttribute('value', '')
-  } else {
-    bindingIPsElement.setAttribute('value', bindingIPs.join(';') + ";");
-  }
-  bindingIPsElement.setAttribute('class', 'changed');
-  checkboxesInitialState = Array.from(checkboxList).map(checkbox => (checkbox as HTMLInputElement).checked);
 }
 
 function createLayout() {
@@ -2107,7 +2081,7 @@ function openPopUp(dataType, element) {
       content.createInteraction()
 
       // Logo hochladen
-      var input = content.createInput("button", "cancel", "{{.button.uploadLogo}}")
+      var input = content.createInput("button", "upload", "{{.button.uploadLogo}}")
       input.setAttribute("onclick", 'javascript: uploadLogo();')
       content.addInteraction(input)
 

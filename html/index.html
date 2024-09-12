@@ -2,10 +2,9 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <!---
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
-    -->
+  <meta charset="utf-8" >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
   <title>Threadfin</title>
   <!-- font-awesome -->
   <link
@@ -32,15 +31,40 @@
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header" id="popup_header"></div>
+          <div class="modal-body">
+            <div class="container-fluid">
+              <div class="row">
+                <div id="popup-custom">
+                </div>
+              </div>
+            </div>
+          </div>
+        <div class="modal-footer" id="popup_footer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="ip_selection">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">IP selection</h3>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
         <div class="modal-body">
           <div class="container-fluid">
             <div class="row">
-              <div id="popup-custom">
+              <div class="card text-bg-dark mb-3">
+                <div class="card-body" id="checkbox_container">
+                  Select one or more IP(s). If none has been selected then Threadfin will bind to all of them!
+                  <table id="checkboxTable">
+                    <!-- Checkboxes will be added automatically -->
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer" id="popup_footer"></div>
       </div>
     </div>
   </div>
@@ -160,9 +184,10 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.10/clipboard.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script language="javascript" type="text/javascript" src="js/network_ts.js"></script>
+  <script language="javascript" type="text/javascript" src="js/option_dialogue_ts.js"></script>
   <script language="javascript" type="text/javascript" src="js/menu_ts.js"></script>
   <script language="javascript" type="text/javascript" src="js/settings_ts.js"></script>
   <script language="javascript" type="text/javascript" src="js/logs_ts.js"></script>
