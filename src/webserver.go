@@ -320,8 +320,7 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		}
 
 	default:
-		bufferingStream(streamInfo.PlaylistID, streamInfo.URL, streamInfo.BackupChannel1URL, streamInfo.BackupChannel2URL, streamInfo.BackupChannel3URL, streamInfo.Name, w, r)
-
+		bufferingStream(streamInfo, w, r)
 	}
 }
 
