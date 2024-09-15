@@ -1,4 +1,4 @@
-var SERVER = new Object()
+var SERVER: Server
 var BULK_EDIT: Boolean = false
 var COLUMN_TO_SORT: number
 var INACTIVE_COLUMN_TO_SORT: number
@@ -24,7 +24,8 @@ clipboard.on('error', function(e) {
 
 var popupModal = new bootstrap.Modal(document.getElementById("popup"), {
   keyboard: true,
-  focus: true
+  focus: true,
+  backdrop: 'static'
 })
 
 var loadingModal = new bootstrap.Modal(document.getElementById("loading"), {
@@ -53,20 +54,9 @@ settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.backup}}", "backup.path,backup.keep"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.authentication}}", "authentication.web,authentication.pms,authentication.m3u,authentication.xml,authentication.api"))
 
-function showPopUpElement(elm) {
-
-  showElement(elm, true)
-
-  // setTimeout(function () {
-  //   showElement("popup", true);
-  // }, 10);
-
-  return
-}
-
-function showElement(elmID, type) {
-  if (elmID == "popup-custom" || elmID == "popup") {
-    switch (type) {
+function showElement(elmID, show: boolean) {
+  if (elmID == "popupCustom" || elmID == "popup") {
+    switch (show) {
       case true: 
         popupModal.show()
         break;
@@ -77,7 +67,7 @@ function showElement(elmID, type) {
   }
 
   if (elmID == "loading") {
-    switch (type) {
+    switch (show) {
       case true: 
       loadingModal.show()
         break;
@@ -166,7 +156,7 @@ function getAllSelectedChannels(): string[] {
     return channels
   }
 
-  var trs = document.getElementById("content_table").getElementsByTagName("TR")
+  var trs = document.getElementById("contentTable").getElementsByTagName("TR")
 
   for (var i = 1; i < trs.length; i++) {
 
@@ -180,7 +170,7 @@ function getAllSelectedChannels(): string[] {
 
   }
 
-  var trs_inactive = document.getElementById("inactive_content_table").getElementsByTagName("TR")
+  var trs_inactive = document.getElementById("inactiveContentTable").getElementsByTagName("TR")
 
   for (var i = 1; i < trs_inactive.length; i++) {
 
@@ -197,7 +187,7 @@ function getAllSelectedChannels(): string[] {
   return channels
 }
 
-function selectAllChannels(table_name = "content_table") {
+function selectAllChannels(table_name = "contentTable") {
 
   var bulk: Boolean = false
   var trs = document.getElementById(table_name).getElementsByTagName("TR")
@@ -253,10 +243,10 @@ function bulkEdit() {
   return
 }
 
-function sortTable(column, table_name = "content_table") {
+function sortTable(column, table_name = "contentTable") {
   // console.log("COLUMN: " + column);
 
-  if ((column == COLUMN_TO_SORT && table_name == "content_table") || (column == INACTIVE_COLUMN_TO_SORT && table_name == "inactive_content_table")) {
+  if ((column == COLUMN_TO_SORT && table_name == "contentTable") || (column == INACTIVE_COLUMN_TO_SORT && table_name == "inactiveContentTable")) {
     return;
   }
 
@@ -270,17 +260,17 @@ function sortTable(column, table_name = "content_table") {
   var tableHeader
   var sortByString = false
 
-  if (column > 0 && COLUMN_TO_SORT > 0 && table_name == "content_table") {
+  if (column > 0 && COLUMN_TO_SORT > 0 && table_name == "contentTable") {
     tableItems[COLUMN_TO_SORT].className = "pointer";
     tableItems[column].className = "sortThis";
-  } else if (column > 0 && INACTIVE_COLUMN_TO_SORT > 0 && table_name == "inactive_content_table") {
+  } else if (column > 0 && INACTIVE_COLUMN_TO_SORT > 0 && table_name == "inactiveContentTable") {
     tableItems[INACTIVE_COLUMN_TO_SORT].className = "pointer";
     tableItems[column].className = "sortThis";
   }
 
-  if (table_name == "content_table") {
+  if (table_name == "contentTable") {
     COLUMN_TO_SORT = column;
-  } else if (table_name == "inactive_content_table") {
+  } else if (table_name == "inactiveContentTable") {
     INACTIVE_COLUMN_TO_SORT = column;
   }
 
@@ -442,7 +432,7 @@ function enableGroupSelection(selector) {
 function searchInMapping() {
 
   var searchValue = (document.getElementById("searchMapping") as HTMLInputElement).value;
-  var trs = document.getElementById("content_table").getElementsByTagName("TR")
+  var trs = document.getElementById("contentTable").getElementsByTagName("TR")
 
   for (var i = 1; i < trs.length; ++i) {
 
@@ -763,4 +753,133 @@ function updateLog() {
   var server: Server = new Server("updateLog")
   server.request(new Object())
 
+}
+
+
+interface Server {
+  clientInfo: clientInfo;
+  data: Data;
+  alert:               string;
+	configurationWizard: boolean;
+	err:                 string;
+	log:                 WebScreenLog;
+	logoURL:             string;
+	openLink:            string;
+	openMenu:            string;
+	reload:              boolean;
+	settings:            Settings;
+	status:              boolean;
+	token:               string;
+	users:               Users;
+	wizard:              number;
+	xepg:                XEPG;
+	notification:        Record<string, Notification>;
+}
+
+interface clientInfo {
+  arch: string;
+  branch: string;
+  DVR: string;
+  epgSource: string;
+  errors: string;
+  m3uUrl: string;
+  os: string;
+  streams: string;
+  activeClients: number;
+  totalClients: number;
+  activePlaylist: number;
+  totalPlaylist: number;
+  systemIPs: string[];
+  uuid: string;
+  version: string;
+  warnings: string;
+  xepg: string;
+  xepgUrl: string;
+}
+
+interface Data {
+  playlist: Playlist;
+}
+
+interface Playlist {
+  m3u: M3U;
+}
+
+interface M3U {
+  groups: Groups;
+}
+
+interface Groups {
+  text: string[];
+  value: string[];
+}
+
+interface WebScreenLog {
+  errors:   number
+	log:      string[]
+	warnings: number
+}
+
+interface Settings {
+    api:                      boolean
+		ssdp:                     boolean
+		authenticationAPI:        boolean
+		authenticationM3U:        boolean;
+		authenticationPMS:        boolean;
+		authenticationWEP:        boolean;
+		authenticationXML:        boolean;
+		backupKeep:               number;
+		backupPath:               string;
+		buffer:                   string;
+		bufferSize:               number;
+		bufferTimeout:            number;
+		cacheImages:              boolean;
+		epgSource:                string;
+		ffmpegOptions:            string;
+		ffmpegPath:               string;
+		vlcOptions:               string;
+		vlcPath:                  string;
+		filesUpdate:              boolean;
+		tempPath:                 string;
+		tuner:                    number;
+		udpxy:                    string;
+		update:                   string[];
+		userAgent:                string;
+		xepgReplaceMissingImages: boolean;
+		xepgReplaceChannelTitle:  boolean;
+		threadfinAutoUpdate:      boolean;
+		schemeM3U:                string;
+		schemeXML:                string;
+		storeBufferInRAM:         boolean;
+		omitPorts:                boolean;
+		bindingIPs:               string;
+		forceHttpsToUpstream:     boolean;
+		useHttps:                 boolean;
+		forceClientHttps:         boolean;
+		threadfinDomain:          string;
+		enableNonAscii:           boolean;
+		epgCategories:            string;
+		epgCategoriesColors:      string;
+		dummy:                    boolean;
+		dummyChannel:             string;
+		ignoreFilters:            boolean;
+}
+
+interface Users {
+  dbVersion: string;
+  hash: string;
+  users: Record<string, any>
+}
+
+interface XEPG {
+  epgMapping: Record<string, any>
+  xmltvMap: Record<string, any>
+}
+
+interface Notification {
+  headline: string;
+	message:  string;
+	new:      boolean;
+	time:     string;
+	type:     string;
 }
