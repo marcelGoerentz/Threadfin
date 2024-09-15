@@ -55,8 +55,7 @@ func createAlternativNoMoreStreamsVideo(pathToFile string) (error) {
 
 	}
 	if len(cmd.Args) > 0 {
-		fmt.Println("Executing command:", cmd.String())
-
+		showInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
 		err := cmd.Run()
 		if err != nil {
 			return err
