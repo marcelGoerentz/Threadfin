@@ -92,4 +92,4 @@ VOLUME $THREADFIN_TEMP
 
 EXPOSE $THREADFIN_PORT
 
-ENTRYPOINT ["${THREADFIN_BIN}/threadfin", "-port=${THREADFIN_PORT}", "-config=${THREADFIN_CONF}", "-debug=${THREADFIN_DEBUG}", "-branch=${THREADFIN_BRANCH}"]
+ENTRYPOINT ["/bin/sh", "-c", "threadfin -port=${THREADFIN_PORT} -config=${THREADFIN_CONF} -debug=${THREADFIN_DEBUG} -branch=${THREADFIN_BRANCH}"]
