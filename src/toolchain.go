@@ -58,20 +58,30 @@ func checkVFSFolder(path string, vfs avfs.VFS) (err error) {
 
 		// If we are on Windows and the cache location path is NOT on C:\ we need to create the volume it is located on
 		// Failure to do so here will result in a panic error and the stream not playing
-		vm := vfs.(avfs.VolumeManager)
-		pathIterator := avfs.NewPathIterator(vfs, path)
-		if vfs.OSType() == avfs.OsWindows && pathIterator.VolumeName() != "C:" {
-			vm.VolumeAdd(path)
-		}
+		if Settings.StoreBufferInRAM {
+			vm := vfs.(avfs.VolumeManager)
+			pathIterator := avfs.NewPathIterator(vfs, path)
+			if vfs.OSType() == avfs.OsWindows && pathIterator.VolumeName() != "C:" {
+				vm.VolumeAdd(path)
+			}
 
-		err = vfs.MkdirAll(getPlatformPath(path), 0755)
-		if err == nil {
+			err = vfs.MkdirAll(getPlatformPath(path), 0755)
+			if err == nil {
 
-			debug = fmt.Sprintf("Create virtual filesystem Folder:%s", path)
-			showDebug(debug, 1)
+				debug = fmt.Sprintf("Create virtual filesystem Folder:%s", path)
+				showDebug(debug, 1)
 
+			} else {
+				return err
+			}
 		} else {
-			return err
+			err = os.MkdirAll(path, 0755)
+			if err == nil {
+				debug = fmt.Sprintf("Created folder on disk: %s", path)
+				showDebug(debug, 1)
+			} else {
+				return err
+			}
 		}
 
 		return nil
