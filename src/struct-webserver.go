@@ -150,18 +150,39 @@ type APIRequestStruct struct {
 
 // APIResponseStruct : Antwort an den Client (API)
 type APIResponseStruct struct {
-	EpgSource        string `json:"epg.source,omitempty"`
-	Error            string `json:"err,omitempty"`
-	Status           bool   `json:"status"`
-	StreamsActive    int64  `json:"streams.active,omitempty"`
-	StreamsAll       int64  `json:"streams.all,omitempty"`
-	StreamsXepg      int64  `json:"streams.xepg,omitempty"`
-	Token            string `json:"token,omitempty"`
-	URLDvr           string `json:"url.dvr,omitempty"`
-	URLM3U           string `json:"url.m3u,omitempty"`
-	URLXepg          string `json:"url.xepg,omitempty"`
-	VersionAPI       string `json:"version.api,omitempty"`
-	VersionThreadfin string `json:"version.threadfin,omitempty"`
+	Error      string                 `json:"error,omitempty"`
+	SystemInfo    *SystemInfoStruct    `json:"systemInfo,omitempty"`
+	ActiveStreams *ActiveStreamsStruct `json:"activeStreams,omitempty"`
+	Token      string                 `json:"token,omitempty"`
+}
+
+type ActiveStreamsStruct struct {
+	Playlists map[string]*PlaylistStruct `json:"playlists"`
+}
+
+type PlaylistStruct struct {
+	PlaylistName string `json:"playlistName"`
+	ActiveChannels *[]string `json:"activeChannels"`
+}
+
+type SystemInfoStruct struct {
+	ThreadfinVersion string            `json:"appVersion"`
+	APIVersion       string            `json:"apiVersion"`
+	EpgSource		 string            `json:"epgSource"`
+	SystemURLs       SystemURLsStruct  `json:"systemURLs"`
+	ChannelInfo      ChannelInfoStruct `json:"channelInfo"`
+}
+
+type SystemURLsStruct struct {
+	DVR  string `json:"dvr"`
+	M3U  string `json:"m3u"`
+    XEPG string `json:"xepg"`
+}
+
+type ChannelInfoStruct struct {
+	ActiveChannels uint32 `json:"activeChannels"`
+	AllChannels    uint32 `json:"allChannels"`
+	XEPGChannels   uint32 `json:"xepgChannels"`
 }
 
 // WebScreenLogStruct : Logs werden im RAM gespeichert und für das Webinterface bereitgestellt
@@ -169,4 +190,12 @@ type WebScreenLogStruct struct {
 	Errors   int      `json:"errors"`
 	Log      []string `json:"log"`
 	Warnings int      `json:"warnings"`
+}
+
+type BufferInfoStruct struct {
+	Name string
+	Path string
+	PlaylistID string
+	URL string
+	
 }

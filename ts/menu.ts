@@ -78,13 +78,12 @@ class MainMenuItem extends MainMenu {
 class Content {
 
   DocumentID: string = "content"
-  HeaderID: string = "popup_header"
-  FooterID: string = "popup_footer"
-  TableID: string = "content_table"
-  InactiveTableID: string = "inactive_content_table"
+  HeaderID: string = "popupHeader"
+  TableID: string = "contentTable"
+  InactiveTableID: string = "inactiveContentTable"
   DivID: string
-  headerClass: string = "content_table_header"
-  headerClassInactive: string = "inactive_content_table_header"
+  headerClass: string = "contentTableHeader"
+  headerClassInactive: string = "inactiveContentTableHeader"
   interactionID: string = "content-interaction"
 
   createHeadline(value): any {
@@ -746,7 +745,7 @@ class Cell {
           if (this.active) {
             (element as HTMLInputElement).setAttribute("onclick", "javascript: selectAllChannels()")
           } else {
-            (element as HTMLInputElement).setAttribute("onclick", "javascript: selectAllChannels('inactive_content_table')")
+            (element as HTMLInputElement).setAttribute("onclick", "javascript: selectAllChannels('inactiveContentTable')")
           }
           break
 
@@ -805,16 +804,16 @@ class ShowContent extends Content {
     showPreview(false)
 
     // Überschrift
-    var popup_header = document.getElementById(this.HeaderID)
+    var popupHeader = document.getElementById(this.HeaderID)
     var headline: string[] = menuItems[this.menuID].headline
 
     var menuKey = menuItems[this.menuID].menuKey
     var h = this.createHeadline(headline)
-    var existingHeader = popup_header.querySelector('h3')
+    var existingHeader = popupHeader.querySelector('h3')
     if(existingHeader) {
-      popup_header.replaceChild(h, existingHeader)
+      popupHeader.replaceChild(h, existingHeader)
     } else {
-      popup_header.appendChild(h)
+      popupHeader.appendChild(h)
     }
 
     var hr = this.createHR()
@@ -829,8 +828,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", "-")
         input.setAttribute("onclick", 'javascript: openPopUp("playlist")')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -838,8 +835,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", -1)
         input.setAttribute("onclick", 'javascript: openPopUp("filter", this)')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -848,8 +843,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", "xmltv")
         input.setAttribute("onclick", 'javascript: openPopUp("xmltv")')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -857,8 +850,6 @@ class ShowContent extends Content {
         var input = this.createInput("button", menuKey, "{{.button.new}}")
         input.setAttribute("id", "users")
         input.setAttribute("onclick", 'javascript: openPopUp("users")')
-        input.setAttribute('data-bs-toggle', 'modal')
-        input.setAttribute('data-bs-target', '#popup')
         interaction.appendChild(input)
         break;
 
@@ -1024,23 +1015,23 @@ class ShowContent extends Content {
 
             if (element == "{{.mapping.table.chNo}}") {
               cell.onclick = true
-              cell.onclickFunktion = "javascript: sortTable(1, 'inactive_content_table');"
+              cell.onclickFunktion = "javascript: sortTable(1, 'inactiveContentTable');"
               cell.tdClassName = "sortThis"
             }
 
             if (element == "{{.mapping.table.channelName}}") {
               cell.onclick = true
-              cell.onclickFunktion = "javascript: sortTable(3, 'inactive_content_table');"
+              cell.onclickFunktion = "javascript: sortTable(3, 'inactiveContentTable');"
             }
 
             if (element == "{{.mapping.table.playlist}}") {
               cell.onclick = true
-              cell.onclickFunktion = "javascript: sortTable(4, 'inactive_content_table');"
+              cell.onclickFunktion = "javascript: sortTable(4, 'inactiveContentTable');"
             }
 
             if (element == "{{.mapping.table.groupTitle}}") {
               cell.onclick = true
-              cell.onclickFunktion = "javascript: sortTable(5, 'inactive_content_table');"
+              cell.onclickFunktion = "javascript: sortTable(5, 'inactiveContentTable');"
             }
 
           }
@@ -1063,7 +1054,7 @@ class ShowContent extends Content {
     switch (menuKey) {
       case "mapping":
         sortTable(1)
-        sortTable(1, "inactive_content_table")
+        sortTable(1, "inactiveContentTable")
         break;
 
       case "filter":
@@ -1093,7 +1084,7 @@ function PageReady() {
 
   getNewestReleaseFromGithub()
 
-  createOptionDialogueContainer()
+  //createOptionDialogueContainer()
 
   return
 }
@@ -1228,7 +1219,7 @@ function openThisMenu(element) {
 }
 
 class PopupWindow {
-  DocumentID: string = "popup-custom"
+  DocumentID: string = "popupCustom"
   InteractionID: string = "interaction"
   doc = document.getElementById(this.DocumentID)
 
@@ -1247,7 +1238,7 @@ class PopupWindow {
 
   createInteraction(): any {
     var div = document.createElement("div")
-    div.setAttribute("id", "popup-interaction")
+    div.setAttribute("id", "popupInteraction")
     div.className = "interaction"
     this.doc.appendChild(div)
   }
@@ -1350,7 +1341,7 @@ class PopupContent extends PopupWindow {
 
   // Interaktion
   addInteraction(element: any) {
-    var interaction = document.getElementById("popup-interaction")
+    var interaction = document.getElementById("popupInteraction")
     interaction.appendChild(element)
   }
 }
@@ -2106,7 +2097,7 @@ function openPopUp(dataType, element) {
       break;
   }
 
-  showPopUpElement('popup-custom');
+  showElement('popupCustom', true);
 }
 
 class XMLTVFile {
@@ -2435,6 +2426,8 @@ function changeChannelLogo(epgMapId: string) {
 
 function savePopupData(dataType: string, id: string, remove: Boolean, option: number) {
 
+  showElement('popup', false)
+
   showElement("loading", true)
 
   if (dataType == "mapping") {
@@ -2460,7 +2453,7 @@ function savePopupData(dataType: string, id: string, remove: Boolean, option: nu
   }
 
   console.log("Save popup data")
-  var div = document.getElementById("popup-custom")
+  var div = document.getElementById("popupCustom")
 
   var inputs = div.getElementsByTagName("TABLE")[0].getElementsByTagName("INPUT");
   var selects = div.getElementsByTagName("TABLE")[0].getElementsByTagName("SELECT");
@@ -2639,13 +2632,12 @@ function savePopupData(dataType: string, id: string, remove: Boolean, option: nu
   server.request(data)
 
   showElement("loading", false)
-
 }
 
 function donePopupData(dataType: string, idsStr: string) {
 
   var ids: string[] = idsStr.split(',');
-  var div = document.getElementById("popup-custom")
+  var div = document.getElementById("popupCustom")
   var inputs = div.getElementsByClassName("changed")
 
   ids.forEach(id => {

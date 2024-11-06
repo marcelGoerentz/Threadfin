@@ -54,10 +54,26 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$THREADFIN
 # Set working directory
 WORKDIR $THREADFIN_HOME
 
-RUN apk update && apk upgrade
-RUN apk add ca-certificates curl ffmpeg vlc
+#Set variables
+RUN DEBIAN_FRONTEND=noninteractive && TZ="America/New_York"
 
-RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" apk add tzdata
+# Install needed packages
+RUN apk update && apk upgrade && apk add ca-certificates curl ffmpeg vlc doas tzdata
+
+# Add group wheel to doas
+RUN echo "permit persist :wheel" >> /etc/doas.d/doas.conf
+
+# Add threadfin group and user
+RUN addgroup -S threadfin -g ${THREADFIN_GID} \
+&& adduser threadfin -G threadfin -u ${THREADFIN_UID} -g ${THREADFIN_GID} -s /bin/sh -D \
+&&adduser threadfin wheel \
+&& echo "threadfin:threadfin" | chpasswd
+
+# For VLC
+RUN sed -i 's/geteuid/getppid/' /usr/bin/vlc
+
+# Set user
+USER threadfin
 
 RUN mkdir -p $THREADFIN_BIN
 
@@ -70,9 +86,6 @@ RUN chmod +rx $THREADFIN_BIN/threadfin && mkdir $THREADFIN_HOME/cache
 # Create working directories for Threadfin
 RUN mkdir $THREADFIN_CONF && chmod a+rwX $THREADFIN_CONF && mkdir $THREADFIN_TEMP && chmod a+rwX $THREADFIN_TEMP
 
-# For VLC
-RUN sed -i 's/geteuid/getppid/' /usr/bin/vlc
-
 # Add threadfin group and user
 RUN addgroup -S threadfin -g ${THREADFIN_GID} && adduser -S threadfin -G threadfin -u ${THREADFIN_UID} -g ${THREADFIN_GID} -s /bin/sh
 
@@ -82,8 +95,4 @@ VOLUME $THREADFIN_TEMP
 
 EXPOSE $THREADFIN_PORT
 
-# Set user
-USER threadfin
-
-# Run the Threadfin executable
-ENTRYPOINT ${THREADFIN_BIN}/threadfin -port=${THREADFIN_PORT} -config=${THREADFIN_CONF} -debug=${THREADFIN_DEBUG} -branch=${THREADFIN_BRANCH}
+ENTRYPOINT ["/bin/sh", "-c", "threadfin -port=${THREADFIN_PORT} -config=${THREADFIN_CONF} -debug=${THREADFIN_DEBUG} -branch=${THREADFIN_BRANCH}"]
