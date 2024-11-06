@@ -62,10 +62,11 @@ RUN apk update && apk upgrade && apk add ca-certificates curl ffmpeg vlc doas tz
 
 # Add group wheel to doas
 RUN echo "permit persist :wheel" >> /etc/doas.d/doas.conf
+RUN whoami
 
 # Add threadfin group and user
-RUN addgroup -S threadfin -g ${THREADFIN_GID} \
-&& adduser threadfin -G threadfin -u ${THREADFIN_UID} -g ${THREADFIN_GID} -s /bin/sh -D \
+RUN addgroup -S threadfin -g "${THREADFIN_GID}" \
+&& adduser threadfin -G threadfin -u "${THREADFIN_UID}" -g "${THREADFIN_GID}" -s /bin/sh -D \
 &&adduser threadfin wheel \
 && echo "threadfin:threadfin" | chpasswd
 
@@ -85,9 +86,6 @@ RUN chmod +rx $THREADFIN_BIN/threadfin && mkdir $THREADFIN_HOME/cache
 
 # Create working directories for Threadfin
 RUN mkdir $THREADFIN_CONF && chmod a+rwX $THREADFIN_CONF && mkdir $THREADFIN_TEMP && chmod a+rwX $THREADFIN_TEMP
-
-# Add threadfin group and user
-RUN addgroup -S threadfin -g ${THREADFIN_GID} && adduser -S threadfin -G threadfin -u ${THREADFIN_UID} -g ${THREADFIN_GID} -s /bin/sh
 
 # Configure container volume mappings
 VOLUME $THREADFIN_CONF
