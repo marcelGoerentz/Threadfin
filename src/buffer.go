@@ -782,18 +782,18 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		// Byte-Daten vom Prozess
 		stdOut, err := cmd.StdoutPipe()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			ShowError(err, 0)
-			terminateProcessGracefully(cmd)
+			terminateProcessGracefully(cmd, stream)
 			addErrorToStream(err)
 			return
 		}
 
 		// Log-Daten vom Prozess
 		logOut, err := cmd.StderrPipe()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			ShowError(err, 0)
-			terminateProcessGracefully(cmd)
+			terminateProcessGracefully(cmd, stream)
 			addErrorToStream(err)
 			return
 		}
@@ -864,7 +864,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			select {
 			case timeout := <-t:
 				if timeout >= 20 && tmpSegment == 1 {
-					terminateProcessGracefully(cmd)
+					terminateProcessGracefully(cmd, stream)
 					err = errors.New("Timeout")
 					ShowError(err, 4006)
 					addErrorToStream(err)
@@ -881,20 +881,21 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			}
 
 			if !clientConnection(stream) {
-				terminateProcessGracefully(cmd)
+				terminateProcessGracefully(cmd, stream)
 				f.Close()
 				return
 			}
 
 			n, err := reader.Read(buffer)
 			if err == io.EOF {
+				terminateProcessGracefully(cmd, stream)
 				break
 			}
 
 			fileSize = fileSize + len(buffer[:n])
 
 			if _, err := f.Write(buffer[:n]); err != nil {
-				terminateProcessGracefully(cmd)
+				terminateProcessGracefully(cmd, stream)
 				ShowError(err, 0)
 				addErrorToStream(err)
 				return
@@ -927,7 +928,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 				_, errCreate = bufferVFS.Create(tmpFile)
 				f, errOpen = bufferVFS.OpenFile(tmpFile, os.O_APPEND|os.O_WRONLY, 0600)
 				if errCreate != nil || errOpen != nil {
-					terminateProcessGracefully(cmd)
+					terminateProcessGracefully(cmd, stream)
 					ShowError(err, 0)
 					addErrorToStream(err)
 					return
@@ -937,7 +938,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		}
 
-		terminateProcessGracefully(cmd)
+		terminateProcessGracefully(cmd, stream)
 
 		err = errors.New(bufferType + " error")
 
@@ -945,8 +946,6 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		ShowError(err, 1204)
 
 		time.Sleep(time.Duration(500) * time.Millisecond)
-		clientConnection(stream)
-
 		return
 	}
 }
@@ -983,11 +982,12 @@ func initBufferVFS(virtual bool) {
 
 }
 
-func terminateProcessGracefully(cmd *exec.Cmd) {
+func terminateProcessGracefully(cmd *exec.Cmd, stream ThisStream) {
 	if cmd.Process != nil {
 		cmd.Process.Signal(syscall.SIGKILL)
 		cmd.Wait()
 		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
+	//	clientConnection(stream)
 	}
 }
 
