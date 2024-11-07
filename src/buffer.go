@@ -987,7 +987,7 @@ func terminateProcessGracefully(cmd *exec.Cmd, stream ThisStream) {
 		cmd.Process.Signal(syscall.SIGKILL)
 		cmd.Wait()
 		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
-	//	clientConnection(stream)
+		clientConnection(stream)
 	}
 }
 
