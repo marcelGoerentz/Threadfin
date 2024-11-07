@@ -437,10 +437,6 @@ func bufferingStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Reque
 										killClientConnection(streamID, playlist.PlaylistID, false)
 										return
 									}
-
-									file.Close()
-									killClientConnection(streamID, playlist.PlaylistID, false)
-									return
 								}
 
 								file.Close()
