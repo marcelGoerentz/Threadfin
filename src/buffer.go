@@ -1074,7 +1074,7 @@ func getCurrentlyUsedChannels(response *APIResponseStruct) (error) {
 		} else if response.ActiveStreams.Playlists == nil {
 			response.ActiveStreams.Playlists = make(map[string]*PlaylistStruct)
 		}
-		response.ActiveStreams.Playlists[playlistID] = createPlaylistStruct(playlist.PlaylistName, playlist.Streams)
+		response.ActiveStreams.Playlists[playlistID] = createPlaylistStruct(playlist.PlaylistName, playlistID, playlist.Streams)
 		return true
 	})
 	return nil
@@ -1083,13 +1083,18 @@ func getCurrentlyUsedChannels(response *APIResponseStruct) (error) {
 /*
 	This function will extract the info from the ThisStrem Struct
 */
-func createPlaylistStruct(name string, streams map[int]ThisStream) *PlaylistStruct{
+func createPlaylistStruct(name string, playlistID string, streams map[int]ThisStream) *PlaylistStruct{
 	var playlist = &PlaylistStruct{}
 	playlist.PlaylistName = name
 	playlist.ActiveChannels = &[]string{}
+	playlist.ClientConnections = 0
 
 	for _, stream := range streams {
 		*playlist.ActiveChannels = append(*playlist.ActiveChannels, stream.ChannelName)
+		if c, ok := BufferClients.Load(playlistID + stream.MD5); ok {
+			var clients = c.(ClientConnection)
+			playlist.ClientConnections += clients.Connection
+		}
 	}
 	return playlist
 }

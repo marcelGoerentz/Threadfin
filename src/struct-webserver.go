@@ -163,6 +163,7 @@ type ActiveStreamsStruct struct {
 type PlaylistStruct struct {
 	PlaylistName string `json:"playlistName"`
 	ActiveChannels *[]string `json:"activeChannels"`
+	ClientConnections int `json:"clienConnections"`
 }
 
 type SystemInfoStruct struct {
