@@ -94,10 +94,6 @@ type ResponseStruct struct {
 		M3U            string   `json:"m3u-url"`
 		OS             string   `json:"os"`
 		Streams        string   `json:"streams"`
-		ActiveClients  int      `json:"activeClients"`
-		TotalClients   int      `json:"totalClients"`
-		ActivePlaylist int      `json:"activePlaylist"`
-		TotalPlaylist  int      `json:"totalPlaylist"`
 		SystemIPs	   []string `json:"systemIPs"`
 		UUID           string   `json:"uuid"`
 		Version        string   `json:"version"`
@@ -163,6 +159,7 @@ type ActiveStreamsStruct struct {
 type PlaylistStruct struct {
 	PlaylistName string `json:"playlistName"`
 	ActiveChannels *[]string `json:"activeChannels"`
+	ClientConnections int `json:"clienConnections"`
 }
 
 type SystemInfoStruct struct {

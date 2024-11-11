@@ -704,6 +704,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					ShowError(err, 1017)
 				}
+				showDebug("Sucessfully uploaded custom image", 1)
 			}
 
 		case "saveWizard":
@@ -1080,25 +1081,25 @@ func API(w http.ResponseWriter, r *http.Request) {
             responseAPIError(err, http.StatusInternalServerError)
             return
         }
-    case "update.m3u":
+    case "updateM3U":
         err = updateM3U()
         if err != nil {
             responseAPIError(err, http.StatusInternalServerError)
             return
         }
-    case "update.hdhr":
+    case "updateHDHR":
         err = updateHDHR()
         if err != nil {
             responseAPIError(err, http.StatusInternalServerError)
             return
         }
-    case "update.xmltv":
+    case "updateXMLTV":
         err = updateXMLTV()
         if err != nil {
             responseAPIError(err, http.StatusInternalServerError)
             return
         }
-    case "update.xepg":
+    case "updateXEPG":
         buildXEPG(false)
     default:
         responseAPIError(errors.New(getErrMsg(5000)), http.StatusBadRequest)
@@ -1207,31 +1208,6 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 
 	defaults = response
 
-	// Total connections for all playlists
-	totalPlaylistCount := 0
-	if len(Settings.Files.M3U) > 0 {
-		for _, value := range Settings.Files.M3U {
-
-			// Assert that value is a map[string]interface{}
-			nestedMap, ok := value.(map[string]interface{})
-			if !ok {
-				fmt.Printf("Error asserting nested value as map: %v\n", value)
-				continue
-			}
-
-			// Get the tuner count
-			if tuner, exists := nestedMap["tuner"]; exists {
-				switch v := tuner.(type) {
-				case float64:
-					totalPlaylistCount += int(v)
-				case int:
-					totalPlaylistCount += v
-				default:
-				}
-			}
-		}
-	}
-
 	// Folgende Daten immer an den Client übergeben
 	defaults.ClientInfo.ARCH = System.ARCH
 	defaults.ClientInfo.EpgSource = Settings.EpgSource
@@ -1243,10 +1219,6 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 	defaults.ClientInfo.UUID = Settings.UUID
 	defaults.ClientInfo.Errors = WebScreenLog.Errors
 	defaults.ClientInfo.Warnings = WebScreenLog.Warnings
-	defaults.ClientInfo.ActiveClients = getActiveClientCount()
-	defaults.ClientInfo.ActivePlaylist = getActivePlaylistCount()
-	defaults.ClientInfo.TotalClients = Settings.Tuner
-	defaults.ClientInfo.TotalPlaylist = totalPlaylistCount
 	defaults.ClientInfo.SystemIPs = System.IPAddressesList
 	defaults.Notification = System.Notification
 	defaults.Log = WebScreenLog

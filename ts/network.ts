@@ -12,36 +12,36 @@ class Server {
     //  return
     //}
 
-    SERVER_CONNECTION = true
+    SERVER_CONNECTION = true;
 
-    console.log(data)
+    console.log(data);
     if (this.cmd != "updateLog") {
       // showElement("loading", true)
-      UNDO = new Object()
+      UNDO = new Object();
     }
 
     switch (window.location.protocol) {
       case "http:":
-        this.protocol = "ws://"
-        break
+        this.protocol = "ws://";
+        break;
       case "https:":
-        this.protocol = "wss://"
-        break
+        this.protocol = "wss://";
+        break;
     }
 
-    var url = this.protocol + window.location.hostname + ":" + window.location.port + "/ws/" + "?Token=" + getCookie("Token")
+    var url = this.protocol + window.location.hostname + ":" + window.location.port + "/ws/" + "?Token=" + getCookie("Token");
 
-    data["cmd"] = this.cmd
-    var ws = new WebSocket(url)
+    data["cmd"] = this.cmd;
+    var ws = new WebSocket(url);
     ws.onopen = function () {
 
-      WS_AVAILABLE = true
+      WS_AVAILABLE = true;
 
       console.log("REQUEST (JS):");
-      console.log(data)
+      console.log(data);
 
       console.log("REQUEST: (JSON)");
-      console.log(JSON.stringify(data))
+      console.log(JSON.stringify(data));
 
       this.send(JSON.stringify(data));
 
@@ -49,11 +49,11 @@ class Server {
 
     ws.onerror = function (e) {
 
-      console.log("No websocket connection to Threadfin could be established. Check your network configuration.")
-      SERVER_CONNECTION = false
+      console.log("No websocket connection to Threadfin could be established. Check your network configuration.");
+      SERVER_CONNECTION = false;
 
       if (WS_AVAILABLE == false) {
-        alert("No websocket connection to Threadfin could be established. Check your network configuration.")
+        alert("No websocket connection to Threadfin could be established. Check your network configuration.");
       }
 
     }
@@ -61,8 +61,8 @@ class Server {
 
     ws.onmessage = function (e) {
 
-      SERVER_CONNECTION = false
-      showElement("loading", false)
+      SERVER_CONNECTION = false;
+      showElement("loading", false);
 
       console.log("RESPONSE:");
       var response = JSON.parse(e.data);
@@ -70,82 +70,61 @@ class Server {
       console.log(response);
 
       if (response.hasOwnProperty("token")) {
-        document.cookie = "Token=" + response["token"]
+        document.cookie = "Token=" + response["token"];
       }
       
       if (response.error) {
-
+        ;
       }
 
 
       if (response.hasOwnProperty("logoURL")) {
-        var div = (document.getElementById("channel-icon") as HTMLInputElement)
-        div.value = response["logoURL"]
-        div.className = "changed"
-        return
+        var div = (document.getElementById("channel-icon") as HTMLInputElement);
+        div.value = response["logoURL"];
+        div.className = "changed";
+        return;
       }
 
       switch (data["cmd"]) {
         case "updateLog":
-          SERVER.log = response["log"]
+          SERVER.log = response["log"];
           if (document.getElementById("content_log")) {
-            showLogs(false)
+            showLogs(false);
           }
-          if (document.getElementById("playlist-connection-information")) {
-            let activeClass = "text-primary";
-            if (response["clientInfo"]["activePlaylist"] / response["clientInfo"]["totalPlaylist"] >= 0.6 && response["clientInfo"]["activePlaylist"] / response["clientInfo"]["totalPlaylist"] < 0.8) {
-                activeClass = "text-warning";
-            }
-            else if (response["clientInfo"]["activePlaylist"] / response["clientInfo"]["totalPlaylist"] >= 0.8) {
-                activeClass = "text-danger";
-            }
-            document.getElementById("playlist-connection-information").innerHTML = "Playlist Connections: <span class='" + activeClass + "'>" + response["clientInfo"]["activePlaylist"] + " / " + response["clientInfo"]["totalPlaylist"] + "</span>";
-          }
-          if (document.getElementById("client-connection-information")) {
-            let activeClass = "text-primary";
-            if (response["clientInfo"]["activeClients"] / response["clientInfo"]["totalClients"] >= 0.6 && response["clientInfo"]["activeClients"] / response["clientInfo"]["totalClients"] < 0.8) {
-                activeClass = "text-warning";
-            }
-            else if (response["clientInfo"]["activeClients"] / response["clientInfo"]["totalClients"] >= 0.8) {
-                activeClass = "text-danger";
-            }
-            document.getElementById("client-connection-information").innerHTML = "Client Connections: <span class='" + activeClass + "'>" + response["clientInfo"]["activeClients"] + " / " + response["clientInfo"]["totalClients"] + "</span>";
-          }
-          return
-          break;
+          return;
 
         default:
-          SERVER: Server
-          SERVER = response
+          SERVER: Server;
+          SERVER = response;
           break;
       }
 
       if (response.hasOwnProperty("openMenu")) {
-        var menu = document.getElementById(response["openMenu"])
-        menu.click()
-        showElement("popup", false)
+        var menu = document.getElementById(response["openMenu"]);
+        menu.click();
+        showElement("popup", false);
       }
 
       if (response.hasOwnProperty("openLink")) {
-        window.location = response["openLink"]
+        window.location = response["openLink"];
       }
 
       if (response.hasOwnProperty("alert")) {
-        alert(response["alert"])
+        alert(response["alert"]);
       }
 
       if (response.hasOwnProperty("reload")) {
-        location.reload()
+        location.reload();
       }
 
 
       if (response.hasOwnProperty("wizard")) {
-        createLayout()
-        configurationWizard[response["wizard"]].createWizard()
-        return
+        createLayout();
+        configurationWizard[response["wizard"]].createWizard();
+        return;
       }
 
-      createLayout()
+      createLayout();
 
     }
 

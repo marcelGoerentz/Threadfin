@@ -24,17 +24,6 @@ import (
 	"github.com/avfs/avfs/vfs/osfs"
 )
 
-var activeClientCount int
-var activePlaylistCount int
-
-func getActiveClientCount() (count int) {
-	return activeClientCount
-}
-
-func getActivePlaylistCount() (count int) {
-	return activePlaylistCount
-}
-
 func createStreamID(stream map[int]ThisStream) int {
     for i := 0; ; i++ {
         if _, ok := stream[i]; !ok {
@@ -60,6 +49,7 @@ func createAlternativNoMoreStreamsVideo(pathToFile string) (error) {
 		if err != nil {
 			return err
 		}
+		showInfo("Streaming Status:Successfully created video from custom image")
 	}
 	return nil
 }
@@ -136,8 +126,6 @@ func bufferingStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Reque
 		streamID = createStreamID(playlist.Streams)
 
 		client.Connection = 1
-		activeClientCount += 1
-		activePlaylistCount += 1
 
 		stream = createNewStream(streamInfo)
 
@@ -163,7 +151,6 @@ func bufferingStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Reque
 				streamID = id
 				newStream = false
 				client.Connection += 1
-				activeClientCount += 1
 
 				playlist.Streams[streamID] = stream
 				playlist.Clients[streamID] = client
@@ -263,7 +250,6 @@ func bufferingStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Reque
 			streamID = createStreamID(playlist.Streams)
 
 			client.Connection += 1
-			activePlaylistCount += 1
 			stream = createNewStream(streamInfo)
 
 			playlist.Streams[streamID] = stream
@@ -376,7 +362,6 @@ func bufferingStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Reque
 					}
 
 					var tmpFiles = getBufTmpFiles(&stream)
-					//fmt.Println("Buffer Loop:", stream.Connection)
 
 					for _, f := range tmpFiles {
 
@@ -395,74 +380,57 @@ func bufferingStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Reque
 							showDebug(debug, 2)
 							return
 						}
-						defer file.Close()
 
+
+						l, err := file.Stat()
 						if err == nil {
 
-							l, err := file.Stat()
+							debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
+							showDebug(debug, 2)
+
+							var buffer = make([]byte, int(l.Size()))
+							_, err = file.Read(buffer)
+
 							if err == nil {
 
-								debug = fmt.Sprintf("Buffer Status:Send to client (%s)", fileName)
-								showDebug(debug, 2)
+								file.Seek(0, 0)
 
-								var buffer = make([]byte, int(l.Size()))
-								_, err = file.Read(buffer)
+								if !streaming {
 
-								if err == nil {
+									contentType := http.DetectContentType(buffer)
+									w.Header().Set("Content-type", contentType)
+									w.Header().Set("Content-Length", "0")
+									w.Header().Set("Connection", "close")
 
-									file.Seek(0, 0)
+								}
 
-									if !streaming {
+								_, err := w.Write(buffer)
 
-										contentType := http.DetectContentType(buffer)
-										_ = contentType
-										//w.Header().Set("Content-type", "video/mpeg")
-										w.Header().Set("Content-type", contentType)
-										w.Header().Set("Content-Length", "0")
-										w.Header().Set("Connection", "close")
-
-									}
-
-									/*
-									   // HDHR Header
-									   w.Header().Set("Cache-Control", "no-cache")
-									   w.Header().Set("Pragma", "no-cache")
-									   w.Header().Set("transferMode.dlna.org", "Streaming")
-									*/
-
-									_, err := w.Write(buffer)
-
-									if err != nil {
-										file.Close()
-										killClientConnection(streamID, playlist.PlaylistID, false)
-										return
-									}
-
-									file.Close()
+								if err != nil {
 									killClientConnection(streamID, playlist.PlaylistID, false)
+									file.Close()
 									return
 								}
-
-								file.Close()
-
 							}
 
-							var n = indexOfString(f, oldSegments)
+							file.Close()
 
-							if n > 20 {
-
+							if len(oldSegments) > 20 {
+								// Delete oldest segment
 								var fileToRemove = stream.Folder + oldSegments[0]
-								if err = bufferVFS.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
-									ShowError(err, 4007)
-								}
+								go func() {
+									timer := time.NewTimer(30 * time.Second)	
+									<-timer.C
+									if err = bufferVFS.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
+										ShowError(err, 4007)
+									}	
+								}()
 								oldSegments = append(oldSegments[:0], oldSegments[0+1:]...)
-
 							}
-
+							continue
 						}
 
 						file.Close()
-
 					}
 
 					if len(tmpFiles) == 0 {
@@ -554,21 +522,12 @@ func killClientConnection(streamID int, playlistID string, force bool) {
 
 				var clients = c.(ClientConnection)
 				clients.Connection -= 1
-				activeClientCount -= 1
-				if activeClientCount <= 0 {
-					activeClientCount = 0
-				}
 				BufferClients.Store(playlistID+stream.MD5, clients)
 
 				showInfo("Streaming Status:Client has terminated the connection")
 				showInfo(fmt.Sprintf("Streaming Status:Channel: %s (Clients: %d)", stream.ChannelName, clients.Connection))
 
 				if clients.Connection <= 0 {
-					if activePlaylistCount > 0 {
-						activePlaylistCount -= 1
-					} else {
-						activePlaylistCount = 0
-					}
 					BufferClients.Delete(playlistID + stream.MD5)
 					delete(playlist.Streams, streamID)
 					delete(playlist.Clients, streamID)
@@ -596,18 +555,6 @@ func clientConnection(stream ThisStream) (status bool) {
 
 	if _, ok := BufferClients.Load(stream.PlaylistID + stream.MD5); !ok {
 
-		var debug = fmt.Sprintf("Streaming Status:Remove temporary files (%s)", stream.Folder)
-		showDebug(debug, 1)
-
-		status = false
-
-		debug = fmt.Sprintf("Remove tmp folder:%s", stream.Folder)
-		showDebug(debug, 1)
-
-		if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
-			ShowError(err, 4005)
-		}
-
 		if p, ok := BufferInformation.Load(stream.PlaylistID); ok {
 
 			showInfo(fmt.Sprintf("Streaming Status:Channel: %s - No client is using this channel anymore. Streaming Server connection has ended", stream.ChannelName))
@@ -619,11 +566,9 @@ func clientConnection(stream ThisStream) (status bool) {
 			if len(playlist.Streams) <= 0 {
 				BufferInformation.Delete(stream.PlaylistID)
 			}
-
 		}
 
 		status = false
-
 	}
 
 	return
@@ -786,18 +731,18 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 
 		// Byte-Daten vom Prozess
 		stdOut, err := cmd.StdoutPipe()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			ShowError(err, 0)
-			terminateProcessGracefully(cmd)
+			terminateProcessGracefully(cmd, stream)
 			addErrorToStream(err)
 			return
 		}
 
 		// Log-Daten vom Prozess
 		logOut, err := cmd.StderrPipe()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			ShowError(err, 0)
-			terminateProcessGracefully(cmd)
+			terminateProcessGracefully(cmd, stream)
 			addErrorToStream(err)
 			return
 		}
@@ -868,11 +813,10 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			select {
 			case timeout := <-t:
 				if timeout >= 20 && tmpSegment == 1 {
-					terminateProcessGracefully(cmd)
+					terminateProcessGracefully(cmd, stream)
 					err = errors.New("Timeout")
 					ShowError(err, 4006)
 					addErrorToStream(err)
-					f.Close()
 					return
 				}
 
@@ -885,8 +829,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			}
 
 			if !clientConnection(stream) {
-				terminateProcessGracefully(cmd)
-				f.Close()
+				terminateProcessGracefully(cmd, stream)
 				return
 			}
 
@@ -898,7 +841,7 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 			fileSize = fileSize + len(buffer[:n])
 
 			if _, err := f.Write(buffer[:n]); err != nil {
-				terminateProcessGracefully(cmd)
+				terminateProcessGracefully(cmd, stream)
 				ShowError(err, 0)
 				addErrorToStream(err)
 				return
@@ -912,7 +855,6 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 					showInfo(fmt.Sprintf("Streaming Status:Buffering data from %s", bufferType))
 				}
 
-				f.Close()
 				tmpSegment++
 
 				if !stream.Status {
@@ -931,17 +873,18 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 				_, errCreate = bufferVFS.Create(tmpFile)
 				f, errOpen = bufferVFS.OpenFile(tmpFile, os.O_APPEND|os.O_WRONLY, 0600)
 				if errCreate != nil || errOpen != nil {
-					terminateProcessGracefully(cmd)
+					terminateProcessGracefully(cmd, stream)
 					ShowError(err, 0)
 					addErrorToStream(err)
 					return
 				}
+				defer f.Close() // Make sure the new file gets closed!
 
 			}
 
 		}
 
-		terminateProcessGracefully(cmd)
+		terminateProcessGracefully(cmd, stream)
 
 		err = errors.New(bufferType + " error")
 
@@ -949,8 +892,6 @@ func thirdPartyBuffer(streamID int, playlistID string, useBackup bool, backupNum
 		ShowError(err, 1204)
 
 		time.Sleep(time.Duration(500) * time.Millisecond)
-		clientConnection(stream)
-
 		return
 	}
 }
@@ -987,11 +928,25 @@ func initBufferVFS(virtual bool) {
 
 }
 
-func terminateProcessGracefully(cmd *exec.Cmd) {
+func terminateProcessGracefully(cmd *exec.Cmd, stream ThisStream) {
 	if cmd.Process != nil {
 		cmd.Process.Signal(syscall.SIGKILL)
 		cmd.Wait()
-		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))
+		deletPIDfromDisc(fmt.Sprintf("%d", cmd.Process.Pid))	
+
+		go func()  {
+			timer := time.NewTimer(30 * time.Second)	
+			<-timer.C
+			var debug = fmt.Sprintf("Streaming Status:Remove temporary files (%s)", stream.Folder)
+			showDebug(debug, 1)
+
+			debug = fmt.Sprintf("Remove tmp folder:%s", stream.Folder)
+			showDebug(debug, 1)
+
+			if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
+				ShowError(err, 4005)
+			}
+		}()
 	}
 }
 
@@ -1078,7 +1033,7 @@ func getCurrentlyUsedChannels(response *APIResponseStruct) (error) {
 		} else if response.ActiveStreams.Playlists == nil {
 			response.ActiveStreams.Playlists = make(map[string]*PlaylistStruct)
 		}
-		response.ActiveStreams.Playlists[playlistID] = createPlaylistStruct(playlist.PlaylistName, playlist.Streams)
+		response.ActiveStreams.Playlists[playlistID] = createPlaylistStruct(playlist.PlaylistName, playlistID, playlist.Streams)
 		return true
 	})
 	return nil
@@ -1087,13 +1042,18 @@ func getCurrentlyUsedChannels(response *APIResponseStruct) (error) {
 /*
 	This function will extract the info from the ThisStrem Struct
 */
-func createPlaylistStruct(name string, streams map[int]ThisStream) *PlaylistStruct{
+func createPlaylistStruct(name string, playlistID string, streams map[int]ThisStream) *PlaylistStruct{
 	var playlist = &PlaylistStruct{}
 	playlist.PlaylistName = name
 	playlist.ActiveChannels = &[]string{}
+	playlist.ClientConnections = 0
 
 	for _, stream := range streams {
 		*playlist.ActiveChannels = append(*playlist.ActiveChannels, stream.ChannelName)
+		if c, ok := BufferClients.Load(playlistID + stream.MD5); ok {
+			var clients = c.(ClientConnection)
+			playlist.ClientConnections += clients.Connection
+		}
 	}
 	return playlist
 }

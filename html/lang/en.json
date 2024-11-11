@@ -375,7 +375,7 @@
     },
     "api": {
       "title": "API Interface",
-      "description": "Via API interface it is possible to send commands to Threadfin. API documentation is <a href='https://github.com/Threadfin/Threadfin-Documentation/blob/master/en/configuration.md#api'>here</a>"
+      "description": "Via API interface it is possible to send commands to Threadfin. API documentation is <a href='https://github.com/marcelGoerentz/Threadfin/wiki/API'>here</a>"
     },
     "ssdp": {
       "title": "SSDP",
