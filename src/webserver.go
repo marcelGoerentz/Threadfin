@@ -19,6 +19,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var streamManager = NewStreamManager()
+
 // StartWebserver : Startet den Webserver
 func StartWebserver() (err error) {
 
@@ -320,7 +322,8 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		}
 
 	default:
-		bufferingStream(streamInfo, w, r)
+		streamManager.ServeStream(streamInfo, w, r)
+		//bufferingStream(streamInfo, w, r)
 	}
 }
 

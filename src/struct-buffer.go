@@ -1,6 +1,12 @@
 package src
 
-import "time"
+import (
+	"context"
+	"net/http"
+	"os/exec"
+	"sync"
+	"time"
+)
 
 // Playlist : Enthält allen Playlistinformationen, die der Buffer benötigr
 type Playlist struct {
@@ -22,6 +28,8 @@ type ThisClient struct {
 
 // ThisStream : Enthält Informationen zu dem abzuspielenden Stream einer Playlist
 type ThisStream struct {
+	StreamID		  int
+	ClientCounter	  int
 	ChannelName       string
 	Error             string
 	Folder            string
@@ -81,4 +89,37 @@ type BandwidthCalculation struct {
 	Start            time.Time
 	Stop             time.Time
 	TimeDiff         float64
+}
+
+
+// StreamManager verwaltet die Streams und ffmpeg-Prozesse
+type StreamManager struct {
+    streams map[string]*NewStream
+	playlists map[string]*NewPlaylist
+    mu      sync.Mutex
+}
+
+type NewPlaylist struct {
+	streams map[string]*NewStream
+}
+
+// Stream repräsentiert einen einzelnen Stream
+type NewStream struct {
+	clients map[string]Client
+    cmd     *exec.Cmd
+    ctx     context.Context
+    cancel  context.CancelFunc
+
+	Status bool
+	Folder string
+	OldSegments []string
+	URL string
+	BackupChannel1URL string
+	BackupChannel2URL string
+	BackupChannel3URL string
+}
+
+type Client struct{
+	w http.ResponseWriter
+	r *http.Request
 }
