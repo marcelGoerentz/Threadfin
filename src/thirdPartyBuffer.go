@@ -36,7 +36,7 @@ func getBufferConfig() (bufferType, path, options string) {
 	}
 }
 
-func buffer(stream *NewStream, useBackup bool, backupNumber int) *exec.Cmd {
+func buffer(stream *NewStream, useBackup bool, backupNumber int, errorChan chan int) *exec.Cmd {
 	if useBackup {
 		updateStreamURLForBackup(stream, backupNumber)
 	}
@@ -47,16 +47,15 @@ func buffer(stream *NewStream, useBackup bool, backupNumber int) *exec.Cmd {
 	}
 
 	if err := prepareBufferFolder(stream.Folder); err != nil {
-		newHandleBufferError(err, backupNumber, useBackup, stream)
+		newHandleBufferError(err, backupNumber, useBackup, stream, errorChan)
 		return nil
 	}
 
 	showInfo(fmt.Sprintf("%s path:%s", bufferType, path))
 	showInfo("Streaming URL:" + stream.URL)
 
-	if cmd, err := runBufferCommand(bufferType, path, options, stream); err != nil {
-		newHandleBufferError(err, backupNumber, useBackup, stream)
-		return nil
+	if cmd, err := runBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
+		return newHandleBufferError(err, backupNumber, useBackup, stream, errorChan)
 	} else {
 		return cmd
 	}
@@ -79,14 +78,15 @@ func updateStreamURLForBackup(stream *NewStream, backupNumber int) {
 	}
 }
 
-func newHandleBufferError(err error, backupNumber int, useBackup bool, stream *NewStream) {
+func newHandleBufferError(err error, backupNumber int, useBackup bool, stream *NewStream, errorChan chan int) (*exec.Cmd){
 	ShowError(err, 0)
 	if !useBackup || (useBackup && backupNumber >= 0 && backupNumber <= 3) {
 		backupNumber++
 		if stream.BackupChannel1URL != "" || stream.BackupChannel2URL != "" || stream.BackupChannel3URL != "" {
-			buffer(stream, true, backupNumber)
+			return buffer(stream, true, backupNumber, errorChan)
 		}
 	}
+	return nil
 }
 
 func prepareBufferFolder(folder string) error {
@@ -101,7 +101,7 @@ func prepareBufferFolder(folder string) error {
 	return nil
 }
 
-func runBufferCommand(bufferType string, path, options string, stream *NewStream) (*exec.Cmd, error) {
+func runBufferCommand(bufferType string, path, options string, stream *NewStream, errorChan chan int) (*exec.Cmd, error) {
 	args := prepareBufferArguments(options, stream.URL)
 
 	cmd := exec.Command(path, args...)
@@ -120,7 +120,7 @@ func runBufferCommand(bufferType string, path, options string, stream *NewStream
 
 	var streamStatus = make(chan bool)
 	go showCommandLogOutputInConsole(bufferType, logOut, streamStatus)
-	go handleCommandOutput(stdOut, stream)
+	go handleCommandOutput(stdOut, stream, errorChan)
 
 	return cmd, nil
 }
@@ -172,7 +172,7 @@ func showCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, stre
 	}
 }
 
-func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream) {
+func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream, errorChan chan int) {
 	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
 	buffer := make([]byte, bufferSize)
 	var fileSize int
@@ -191,6 +191,7 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream) {
 			if err != nil {
 				f.Close()
 				ShowError(err, 0)
+				errorChan <- 3
 				return
 			}
 			init = false
@@ -198,16 +199,19 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream) {
 		n, err := reader.Read(buffer)
 		if err == io.EOF {
 			f.Close()
+			errorChan <- 4
 			return
 		}
 		if err != nil {
 			ShowError(err, 0)
 			f.Close()
+			errorChan <- 5
 			return
 		}
 		if _, err := f.Write(buffer[:n]); err != nil {
 			ShowError(err, 0)
 			f.Close()
+			errorChan <- 6
 			return
 		}
 		fileSize += n
@@ -221,6 +225,7 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream) {
 			if err != nil {
 				f.Close()
 				ShowError(err, 0)
+				errorChan <- 3
 				return
 			}
 			fileSize = 0

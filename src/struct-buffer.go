@@ -94,8 +94,8 @@ type BandwidthCalculation struct {
 
 // StreamManager verwaltet die Streams und ffmpeg-Prozesse
 type StreamManager struct {
-    streams map[string]*NewStream
 	playlists map[string]*NewPlaylist
+	errorChan chan int
     mu      sync.Mutex
 }
 
@@ -123,3 +123,13 @@ type Client struct{
 	w http.ResponseWriter
 	r *http.Request
 }
+
+const (
+	NoError = 0
+    BufferError = 1
+    SendFileError   = 2
+	CreateFileError = 3
+	EndOfFileError = 4
+	ReadIntoBufferError = 5
+	WriteToBufferError = 6
+)

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/net/http2"
 	"threadfin/src/internal/authentication"
 
 	"github.com/gorilla/websocket"
@@ -58,7 +59,14 @@ func StartWebserver() (err error) {
 			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
 			if Settings.UseHttps {
 				go func(address string) {
-					if err = http.ListenAndServeTLS(address + ":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", serverMux); err != nil {
+					srv := &http.Server{
+						Addr: port,
+						Handler: serverMux,
+					}
+				
+					//activate HTTP2
+					http2.ConfigureServer(srv, &http2.Server{})
+					if err = srv.ListenAndServeTLS(System.Folder.Config + "server.crt", System.Folder.Config + "server.key"); err != nil {
 						ShowError(err, 1001)
 						return
 					}
@@ -85,7 +93,14 @@ func StartWebserver() (err error) {
 		}
 		if Settings.UseHttps {
 			go func() {
-				if err = http.ListenAndServeTLS(":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", serverMux); err != nil {
+				srv := &http.Server{
+					Addr: port,
+					Handler: serverMux,
+				}
+			
+				//activate HTTP2
+				http2.ConfigureServer(srv, &http2.Server{})
+				if err = srv.ListenAndServeTLS(System.Folder.Config + "server.crt", System.Folder.Config + "server.key"); err != nil {
 					ShowError(err, 1001)
 					return
 				}
