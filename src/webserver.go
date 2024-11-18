@@ -1094,7 +1094,7 @@ func API(w http.ResponseWriter, r *http.Request) {
     case "status":
         populateStatusResponse(&response)
     case "getCurrentlyUsedChannels":
-        err = getCurrentlyUsedChannels(&response)
+        err = getCurrentlyUsedChannels(streamManager, &response)
         if err != nil {
             responseAPIError(err, http.StatusInternalServerError)
             return

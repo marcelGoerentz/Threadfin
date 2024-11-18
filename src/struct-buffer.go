@@ -100,11 +100,13 @@ type StreamManager struct {
 }
 
 type NewPlaylist struct {
+	name string
 	streams map[string]*NewStream
 }
 
 // Stream repräsentiert einen einzelnen Stream
 type NewStream struct {
+	name 	string
 	clients map[string]Client
     cmd     *exec.Cmd
     ctx     context.Context

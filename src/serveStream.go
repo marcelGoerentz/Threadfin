@@ -33,6 +33,7 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 	_, exists := sm.playlists[playlistID]
 	if !exists {
 		playlist := &NewPlaylist{
+			name: getProviderParameter(playlistID, getPlaylistType(playlistID), "name"),
 			streams: make(map[string]*NewStream),
 		}
 		sm.playlists[playlistID] = playlist
@@ -62,6 +63,7 @@ func createStream(streamInfo StreamInfo, errorChan chan int) *NewStream {
 	ctx, cancel := context.WithCancel(context.Background())
 	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid + string(os.PathSeparator)
 	stream := &NewStream{
+		name: 			   streamInfo.Name,
 		cmd:               nil,
 		ctx:               ctx,
 		cancel:            cancel,
@@ -405,7 +407,7 @@ func sendFileToClient(stream *NewStream, fileName string) bool {
 	return true
 }
 
-func getCurrentlyUsedChannels(response *APIResponseStruct) error {
+func getCurrentlyUsedChannels(sm *StreamManager, response *APIResponseStruct) error {
 	// should be nil but its always better to check
 	if response.ActiveStreams == nil {
 		response.ActiveStreams = &ActiveStreamsStruct{
@@ -414,42 +416,29 @@ func getCurrentlyUsedChannels(response *APIResponseStruct) error {
 	} else if response.ActiveStreams.Playlists == nil {
 		response.ActiveStreams.Playlists = make(map[string]*PlaylistStruct)
 	}
-	BufferInformation.Range(func(_, value interface{}) bool {
-		playlist, ok := value.(Playlist)
-		if !ok {
-			return true // Skip if the type assertion fails
-		}
-
-		var playlistID = playlist.PlaylistID
-		// should be nil but its always better to check
+	for playlistID, playlist := range sm.playlists {
 		if response.ActiveStreams == nil {
 			response.ActiveStreams = &ActiveStreamsStruct{
 				Playlists: make(map[string]*PlaylistStruct),
 			}
-		} else if response.ActiveStreams.Playlists == nil {
-			response.ActiveStreams.Playlists = make(map[string]*PlaylistStruct)
 		}
-		response.ActiveStreams.Playlists[playlistID] = createPlaylistStruct(playlist.PlaylistName, playlistID, playlist.Streams)
-		return true
-	})
+		response.ActiveStreams.Playlists[playlistID] = createPlaylistStruct(playlist.name, sm.playlists[playlistID].streams)
+	}
 	return nil
 }
 
 /*
 This function will extract the info from the ThisStrem Struct
 */
-func createPlaylistStruct(name string, playlistID string, streams map[int]ThisStream) *PlaylistStruct {
+func createPlaylistStruct(name string, streams map[string]*NewStream) *PlaylistStruct {
 	var playlist = &PlaylistStruct{}
 	playlist.PlaylistName = name
 	playlist.ActiveChannels = &[]string{}
 	playlist.ClientConnections = 0
 
 	for _, stream := range streams {
-		*playlist.ActiveChannels = append(*playlist.ActiveChannels, stream.ChannelName)
-		if c, ok := BufferClients.Load(playlistID + stream.MD5); ok {
-			var clients = c.(ClientConnection)
-			playlist.ClientConnections += clients.Connection
-		}
+		*playlist.ActiveChannels = append(*playlist.ActiveChannels, stream.name)
+		playlist.ClientConnections += len(stream.clients)
 	}
 	return playlist
 }
