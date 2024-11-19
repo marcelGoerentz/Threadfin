@@ -213,6 +213,8 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 
 	stream, exists := sm.playlists[playlistID].streams[streamID]
 	if exists {
+		client := stream.clients[clientID]
+		closeClientConnection(client.w)
 		delete(stream.clients, clientID)
 		showInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.clients)))
 		if len(stream.clients) == 0 {
@@ -232,6 +234,23 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 			}
 		}
 	}
+}
+
+func closeClientConnection(w http.ResponseWriter) {
+	// Set the header
+    w.Header().Set("Connection", "close")
+	w.WriteHeader(http.StatusNotFound)
+    fmt.Fprintf(w, "Die Verbindung wird geschlossen.")
+    // Close the connection explicitly
+    if flusher, ok := w.(http.Flusher); ok {
+        flusher.Flush()
+    }
+    if hijacker, ok := w.(http.Hijacker); ok {
+        conn, _, err := hijacker.Hijack()
+        if err == nil {
+            conn.Close()
+        }
+    }
 }
 
 func (sm *StreamManager) stopStreamForAllClients(streamID string) {
@@ -271,9 +290,6 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 		}
 		stream := sm.playlists[playlistID].streams[streamInfo.URLid]
 		stream.clients[clientID] = *client
-		// Ab hier die Daten an den Client senden
-		serveStream(stream, r, sm.errorChan)
-
 		go func() {
 			for errorCode := range sm.errorChan {
 				if errorCode != 0 {
@@ -289,6 +305,8 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 				}
 			}
 		}()
+		// Ab hier die Daten an den Client senden
+		serveStream(stream, r, sm.errorChan)
 	}
 
 }
