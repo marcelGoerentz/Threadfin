@@ -397,7 +397,7 @@ func serveStream(stream *Stream, errorChan chan ErrorInfo) {
 			}
 		}
 		if len(tmpFiles) == 0 {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond) // This will ensure that streams will synchronize over the time
 		}
 	}
 }
