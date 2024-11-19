@@ -36,7 +36,7 @@ func getBufferConfig() (bufferType, path, options string) {
 	}
 }
 
-func buffer(stream *NewStream, useBackup bool, backupNumber int, errorChan chan int) *exec.Cmd {
+func buffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *exec.Cmd {
 	if useBackup {
 		updateStreamURLForBackup(stream, backupNumber)
 	}
@@ -61,7 +61,7 @@ func buffer(stream *NewStream, useBackup bool, backupNumber int, errorChan chan 
 	}
 }
 
-func updateStreamURLForBackup(stream *NewStream, backupNumber int) {
+func updateStreamURLForBackup(stream *Stream, backupNumber int) {
 	switch backupNumber {
 	case 1:
 		stream.URL = stream.BackupChannel1URL
@@ -78,7 +78,7 @@ func updateStreamURLForBackup(stream *NewStream, backupNumber int) {
 	}
 }
 
-func newHandleBufferError(err error, backupNumber int, useBackup bool, stream *NewStream, errorChan chan int) (*exec.Cmd){
+func newHandleBufferError(err error, backupNumber int, useBackup bool, stream *Stream, errorChan chan ErrorInfo) *exec.Cmd {
 	ShowError(err, 0)
 	if !useBackup || (useBackup && backupNumber >= 0 && backupNumber <= 3) {
 		backupNumber++
@@ -101,7 +101,7 @@ func prepareBufferFolder(folder string) error {
 	return nil
 }
 
-func runBufferCommand(bufferType string, path, options string, stream *NewStream, errorChan chan int) (*exec.Cmd, error) {
+func runBufferCommand(bufferType string, path, options string, stream *Stream, errorChan chan ErrorInfo) (*exec.Cmd, error) {
 	args := prepareBufferArguments(options, stream.URL)
 
 	cmd := exec.Command(path, args...)
@@ -172,7 +172,7 @@ func showCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, stre
 	}
 }
 
-func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream, errorChan chan int) {
+func handleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan ErrorInfo) {
 	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
 	buffer := make([]byte, bufferSize)
 	var fileSize int
@@ -190,8 +190,9 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream, errorChan chan
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
+				showInfo("DEBUG: Creating File did not work!")
 				ShowError(err, 0)
-				errorChan <- 3
+				errorChan <- ErrorInfo{CreateFileError, stream, ""}
 				return
 			}
 			init = false
@@ -199,19 +200,22 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream, errorChan chan
 		n, err := reader.Read(buffer)
 		if err == io.EOF {
 			f.Close()
-			errorChan <- 4
+			showInfo("DEBUG: Reached EOF!")
+			errorChan <- ErrorInfo{EndOfFileError, stream, ""}
 			return
 		}
 		if err != nil {
+			showInfo("DEBUG: Other error when trying to read into buffer!")
 			ShowError(err, 0)
 			f.Close()
-			errorChan <- 5
+			errorChan <- ErrorInfo{ReadIntoBufferError, stream, ""}
 			return
 		}
 		if _, err := f.Write(buffer[:n]); err != nil {
+			showInfo("DEBUG: Write file not working!")
 			ShowError(err, 0)
 			f.Close()
-			errorChan <- 6
+			errorChan <- ErrorInfo{WriteToBufferError, stream, ""}
 			return
 		}
 		fileSize += n
@@ -225,7 +229,7 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *NewStream, errorChan chan
 			if err != nil {
 				f.Close()
 				ShowError(err, 0)
-				errorChan <- 3
+				errorChan <- ErrorInfo{CreateFileError, stream, ""}
 				return
 			}
 			fileSize = 0

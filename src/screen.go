@@ -365,6 +365,18 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Server connection timeout"
 	case 4007:
 		errMsg = "Old temporary buffer file could not be deleted"
+	case 4008:
+		errMsg = "Could not create buffer folder"
+	case 4009:
+		errMsg = "Could not send file to client"
+	case 4010:
+		errMsg = "Could not create buffer file"
+	case 4011:
+		errMsg = "End of file while streaming"
+	case 4012:
+		errMsg = "Error reading bytes for buffered file"
+	case 4013:
+		errMsg = "Error writing to bufferd file"
 
 	// Buffer (M3U8)
 	case 4050:

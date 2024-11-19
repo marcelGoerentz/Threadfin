@@ -29,7 +29,7 @@ func StartWebserver() (err error) {
 	var serverMux = http.NewServeMux()
 
 	serverMux.HandleFunc("/", Index)
-	serverMux.HandleFunc("/stream/", Stream)
+	serverMux.HandleFunc("/stream/", stream)
 	serverMux.HandleFunc("/xmltv/", Threadfin)
 	serverMux.HandleFunc("/m3u/", Threadfin)
 	serverMux.HandleFunc("/ws/", WS)
@@ -173,8 +173,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	httpStatusError(w, http.StatusInternalServerError)
 }
 
-// Stream : Web Server /stream/
-func Stream(w http.ResponseWriter, r *http.Request) {
+// stream : Web Server /stream/
+func stream(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -338,7 +338,6 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		streamManager.ServeStream(streamInfo, w, r)
-		//bufferingStream(streamInfo, w, r)
 	}
 }
 
