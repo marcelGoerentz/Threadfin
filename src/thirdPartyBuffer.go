@@ -14,7 +14,10 @@ import (
 	"github.com/avfs/avfs/vfs/osfs"
 )
 
-func initBufferVFS(virtual bool) {
+/*
+InitBufferVFS will set the bufferVFS variable
+*/
+func InitBufferVFS(virtual bool) {
 
 	if virtual {
 		bufferVFS = memfs.New()
@@ -24,7 +27,10 @@ func initBufferVFS(virtual bool) {
 
 }
 
-func getBufferConfig() (bufferType, path, options string) {
+/*
+GetBufferConfig reutrns the the arguments from the buffer settings
+*/
+func GetBufferConfig() (bufferType, path, options string) {
 	bufferType = strings.ToUpper(Settings.Buffer)
 	switch bufferType {
 	case "FFMPEG":
@@ -36,32 +42,39 @@ func getBufferConfig() (bufferType, path, options string) {
 	}
 }
 
-func buffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *exec.Cmd {
+/*
+Buffer starts the third party tool and capture its output
+*/
+func Buffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *exec.Cmd {
 	if useBackup {
-		updateStreamURLForBackup(stream, backupNumber)
+		UpdateStreamURLForBackup(stream, backupNumber)
 	}
 
-	bufferType, path, options := getBufferConfig()
+	bufferType, path, options := GetBufferConfig()
 	if bufferType == "" {
 		return nil
 	}
 
-	if err := prepareBufferFolder(stream.Folder); err != nil {
-		newHandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+	if err := PrepareBufferFolder(stream.Folder); err != nil {
+		ShowError(err, 4008)
+		HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
 		return nil
 	}
 
 	showInfo(fmt.Sprintf("%s path:%s", bufferType, path))
 	showInfo("Streaming URL:" + stream.URL)
 
-	if cmd, err := runBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
-		return newHandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+	if cmd, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
+		return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
 	} else {
 		return cmd
 	}
 }
 
-func updateStreamURLForBackup(stream *Stream, backupNumber int) {
+/*
+UpdateStreamURLForBackup will set the ther stream url when a backup will be used
+*/
+func UpdateStreamURLForBackup(stream *Stream, backupNumber int) {
 	switch backupNumber {
 	case 1:
 		stream.URL = stream.BackupChannel1URL
@@ -78,18 +91,24 @@ func updateStreamURLForBackup(stream *Stream, backupNumber int) {
 	}
 }
 
-func newHandleBufferError(err error, backupNumber int, useBackup bool, stream *Stream, errorChan chan ErrorInfo) *exec.Cmd {
-	ShowError(err, 0)
+/*
+HandleBufferError will retry running the Buffer function with the next backup number
+*/
+func HandleBufferError(err error, backupNumber int, useBackup bool, stream *Stream, errorChan chan ErrorInfo) *exec.Cmd {
+	ShowError(err, 4011)
 	if !useBackup || (useBackup && backupNumber >= 0 && backupNumber <= 3) {
 		backupNumber++
 		if stream.BackupChannel1URL != "" || stream.BackupChannel2URL != "" || stream.BackupChannel3URL != "" {
-			return buffer(stream, true, backupNumber, errorChan)
+			return Buffer(stream, true, backupNumber, errorChan)
 		}
 	}
 	return nil
 }
 
-func prepareBufferFolder(folder string) error {
+/*
+PrepareBufferFolder will clean the buffer folder and check if the folder exists
+*/
+func PrepareBufferFolder(folder string) error {
 	if err := bufferVFS.RemoveAll(getPlatformPath(folder)); err != nil {
 		return fmt.Errorf("failed to remove buffer folder: %w", err)
 	}
@@ -101,14 +120,17 @@ func prepareBufferFolder(folder string) error {
 	return nil
 }
 
-func runBufferCommand(bufferType string, path, options string, stream *Stream, errorChan chan ErrorInfo) (*exec.Cmd, error) {
-	args := prepareBufferArguments(options, stream.URL)
+/*
+RunBufferCommand starts the third party tool process
+*/
+func RunBufferCommand(bufferType string, path, options string, stream *Stream, errorChan chan ErrorInfo) (*exec.Cmd, error) {
+	args := PrepareBufferArguments(options, stream.URL)
 
 	cmd := exec.Command(path, args...)
 	debug := fmt.Sprintf("%s:%s %s", strings.ToUpper(Settings.Buffer), path, args)
 	showDebug(debug, 1)
 
-	stdOut, logOut, err := getCommandPipes(cmd)
+	stdOut, logOut, err := GetCommandPipes(cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -116,16 +138,19 @@ func runBufferCommand(bufferType string, path, options string, stream *Stream, e
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start buffer command: %w", err)
 	}
-	writePIDtoDisk(fmt.Sprintf("%d", cmd.Process.Pid))
+	WritePIDtoDisk(fmt.Sprintf("%d", cmd.Process.Pid))
 
 	var streamStatus = make(chan bool)
-	go showCommandLogOutputInConsole(bufferType, logOut, streamStatus)
-	go handleCommandOutput(stdOut, stream, errorChan)
+	go ShowCommandLogOutputInConsole(bufferType, logOut, streamStatus)
+	go HandleCommandOutput(stdOut, stream, errorChan)
 
 	return cmd, nil
 }
 
-func prepareBufferArguments(options, url string) []string {
+/*
+PrepareBufferArguments
+*/
+func PrepareBufferArguments(options, url string) []string {
 	args := []string{}
 	for i, a := range strings.Split(options, " ") {
 		a = strings.Replace(a, "[URL]", url, -1)
@@ -137,7 +162,10 @@ func prepareBufferArguments(options, url string) []string {
 	return args
 }
 
-func getCommandPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
+/*
+Get the output pipes of the given command
+*/
+func GetCommandPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
 	stdOut, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get stdout pipe: %w", err)
@@ -151,7 +179,10 @@ func getCommandPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
 	return stdOut, logOut, nil
 }
 
-func showCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, streamStatus chan bool) {
+/*
+ShowCommandLogOutputInConsole prints the log output of the given pipe
+*/
+func ShowCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, streamStatus chan bool) {
 	// Log Daten vom Prozess im Debug Mode 1 anzeigen.
 	scanner := bufio.NewScanner(logOut)
 	scanner.Split(bufio.ScanLines)
@@ -172,7 +203,10 @@ func showCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, stre
 	}
 }
 
-func handleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan ErrorInfo) {
+/*
+HandleCommandOutput save the byte ouptut of the command as files
+*/
+func HandleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan ErrorInfo) {
 	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
 	buffer := make([]byte, bufferSize)
 	var fileSize int
@@ -190,8 +224,7 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Er
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
-				showInfo("DEBUG: Creating File did not work!")
-				ShowError(err, 0)
+				ShowError(err, 4010)
 				errorChan <- ErrorInfo{CreateFileError, stream, ""}
 				return
 			}
@@ -200,20 +233,18 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Er
 		n, err := reader.Read(buffer)
 		if err == io.EOF {
 			f.Close()
-			showInfo("DEBUG: Reached EOF!")
+			showDebug("Buffer pipe reached EOF!", 3)
 			errorChan <- ErrorInfo{EndOfFileError, stream, ""}
 			return
 		}
 		if err != nil {
-			showInfo("DEBUG: Other error when trying to read into buffer!")
-			ShowError(err, 0)
+			ShowError(err, 4012)
 			f.Close()
 			errorChan <- ErrorInfo{ReadIntoBufferError, stream, ""}
 			return
 		}
 		if _, err := f.Write(buffer[:n]); err != nil {
-			showInfo("DEBUG: Write file not working!")
-			ShowError(err, 0)
+			ShowError(err, 4013)
 			f.Close()
 			errorChan <- ErrorInfo{WriteToBufferError, stream, ""}
 			return
@@ -228,7 +259,7 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Er
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
-				ShowError(err, 0)
+				ShowError(err, 4010)
 				errorChan <- ErrorInfo{CreateFileError, stream, ""}
 				return
 			}
@@ -237,24 +268,31 @@ func handleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Er
 	}
 }
 
-func writePIDtoDisk(pid string) {
+/*
+WritePIDtoDisk saves the PID of the buffering process
+*/
+func WritePIDtoDisk(pid string) {
 	// Open the file in append mode (create it if it doesn't exist)
 	file, err := os.OpenFile(System.Folder.Temp+"PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
 	if err != nil {
-		ShowError(err, 0) // TODO: Add new error code
+		ShowError(err, 4040)
 	}
 	defer file.Close()
 
 	// Write your text to the file
 	_, err = file.WriteString(pid + "\n")
 	if err != nil {
-		ShowError(err, 0) // TODO: Add new error code
+		ShowError(err, 4041)
 	}
 }
 
-func deletPIDfromDisc(delete_pid string) error {
+/*
+DeletPIDfromDisc deletes the PID from the disk
+*/
+func DeletPIDfromDisc(delete_pid string) error {
 	file, err := os.OpenFile(System.Folder.Temp+"PIDs", os.O_RDWR, 0660)
 	if err != nil {
+		ShowError(err, 4042)
 		return err
 	}
 	// Create a scanner
@@ -270,6 +308,7 @@ func deletPIDfromDisc(delete_pid string) error {
 	// Rewind the file to the beginning
 	_, err = file.Seek(0, 0)
 	if err != nil {
+		ShowError(err, 4043)
 		return err
 	}
 
@@ -279,6 +318,7 @@ func deletPIDfromDisc(delete_pid string) error {
 			// Create a new slice by excluding the element at the specified index
 			_, err = file.WriteString(pid + "\n")
 			if err != nil {
+				ShowError(err, 4044)
 				return err
 			}
 		} else {
@@ -290,6 +330,7 @@ func deletPIDfromDisc(delete_pid string) error {
 	if len(updatedPIDs) < len(pids) {
 		err = file.Truncate(int64(len(updatedPIDs)))
 		if err != nil {
+			ShowError(err, 4045)
 			return err
 		}
 	}

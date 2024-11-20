@@ -372,11 +372,33 @@ func getErrMsg(errCode int) (errMsg string) {
 	case 4010:
 		errMsg = "Could not create buffer file"
 	case 4011:
-		errMsg = "End of file while streaming"
+		errMsg = "Error when trying to run buffer process"
 	case 4012:
 		errMsg = "Error reading bytes for buffered file"
 	case 4013:
 		errMsg = "Error writing to bufferd file"
+	case 4014:
+		errMsg = "Not able to open buffered file"
+	case 4015:
+		errMsg = "Could not get file statics of buffered file"
+	case 4016:
+		errMsg = "Could not read buffered file before sending to clients"
+
+	
+	// PID saving and deleting
+	case 4040:
+		errMsg = "Could not open file to write PID to disk"
+	case 4041:
+		errMsg = "Could not write PID to file on disk"
+	case 4042:
+		errMsg = "Could not open file to read PIDs from disk"
+	case 4043:
+		errMsg = "Could not seek to the start of the file"
+	case 4044:
+		errMsg = "Could not write old PID to the file"
+	case 4045:
+		errMsg = "Could not truncate the rewritten PID file"
+
 
 	// Buffer (M3U8)
 	case 4050:
