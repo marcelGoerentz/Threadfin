@@ -49,7 +49,6 @@ func NewStreamManager() *StreamManager {
 			case <-sm.stopChan:
 				return
 			}
-
 		}
 	}()
 	return sm
@@ -307,10 +306,10 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 				DeletPIDfromDisc(fmt.Sprintf("%d", stream.cmd.Process.Pid)) // Delet
 				delete(sm.playlists[playlistID].streams, streamID)
 				showInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
-				var debug = fmt.Sprintf("Streaming Status:Remove temporary files (%s)", stream.Folder)
+				var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
 				showDebug(debug, 1)
 
-				debug = fmt.Sprintf("Remove tmp folder:%s", stream.Folder)
+				debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
 				showDebug(debug, 1)
 
 				if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
@@ -359,9 +358,9 @@ func (sm *StreamManager) StopStreamForAllClients(streamID string) {
 			DeletPIDfromDisc(fmt.Sprintf("%d", stream.cmd.Process.Pid))
 			delete(playlist.streams, streamID)
 			showInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
-			var debug = fmt.Sprintf("Streaming Status:Remove temporary files (%s)", stream.Folder)
+			var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
 			showDebug(debug, 1)
-			debug = fmt.Sprintf("Remove tmp folder:%s", stream.Folder)
+			debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
 			showDebug(debug, 1)
 			if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
 				ShowError(err, 4005)
@@ -412,7 +411,7 @@ func (sm *StreamManager) GetPlaylistIDandStreamID(stream *Stream) (string, strin
 			}
 		}
 	}
-	showDebug("Could not get playlist ID and stream ID", 3)
+	showDebug("Streaming:Could not get playlist ID and stream ID", 3)
 	return "", ""
 }
 
@@ -434,7 +433,7 @@ func SendData(stream *Stream, errorChan chan ErrorInfo) {
 			if !SendFileToClients(stream, f, errorChan) {
 				return
 			}
-			if len(oldSegments) > 10 {
+			if len(oldSegments) > 5 {
 				DeleteOldestSegment(stream, oldSegments[0])
 				oldSegments = oldSegments[1:]
 			}
@@ -462,7 +461,7 @@ func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 			return
 		}
 
-		if len(files) > 2 {
+		if len(files) > 1 {
 
 			for _, file := range files {
 
@@ -538,9 +537,9 @@ func SendFileToClients(stream *Stream, fileName string, errorChan chan ErrorInfo
 		return false
 	}
 	for clientID, client := range stream.clients {
-		showDebug(fmt.Sprintf("Sending file to client %s", fileName), 3)
+		showDebug(fmt.Sprintf("Streaming:Sending file %s to client %s", fileName, clientID), 3)
 		if _, err := client.w.Write(buffer); err != nil {
-			showDebug(fmt.Sprintf("Error when trying to send file to client %s", clientID), 1)
+			showDebug(fmt.Sprintf("Streaming:Error when trying to send file to client %s", clientID), 1)
 			errorChan <- ErrorInfo{SendFileError, stream, clientID}
 		}
 	}
