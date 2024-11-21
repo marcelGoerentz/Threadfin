@@ -36,7 +36,7 @@ func GetBufferConfig() (bufferType, path, options string) {
 	case "FFMPEG":
 		return bufferType, Settings.FFmpegPath, Settings.FFmpegOptions
 	case "VLC":
-		return bufferType, Settings.VLCPath, fmt.Sprintf("%s meta-title=Threadfin", Settings.VLCOptions)
+		return bufferType, Settings.VLCPath, Settings.VLCOptions
 	default:
 		return "", "", ""
 	}
@@ -153,9 +153,16 @@ PrepareBufferArguments
 func PrepareBufferArguments(options, url string) []string {
 	args := []string{}
 	for i, a := range strings.Split(options, " ") {
-		a = strings.Replace(a, "[URL]", url, -1)
-		if i == 0 && len(Settings.UserAgent) != 0 {
-			args = append(args, "-user_agent", Settings.UserAgent)
+		if strings.Contains(a, "[URL]") {
+			a = strings.Replace(a, "[URL]", url, 1)
+			args = append(args, a)
+			if Settings.Buffer == "vlc" {
+				args = append(args, fmt.Sprintf("--http-user-agent=\"%s\"", Settings.UserAgent))
+			}
+			continue
+		}
+		if i == 0 && len(Settings.UserAgent) != 0  && Settings.Buffer == "ffmpeg" {
+			args = append(args, "-user_agent", Settings.UserAgent)			
 		}
 		args = append(args, a)
 	}

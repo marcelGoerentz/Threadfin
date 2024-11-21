@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -36,14 +37,20 @@ func NewStreamManager() *StreamManager {
 					if errorInfo.ClientID != "" {
 						// Client specifc errors
 						sm.StopStream(playlistID, streamID, errorInfo.ClientID)
+					/*} else {
+						if streamID != "" {
+							// Buffer errors
+							if errorInfo.ErrorCode != EndOfFileError {
+								ShowError(fmt.Errorf("stopping all clients because of error while buffering"), errorInfo.ErrorCode)
+							} else {
+								showInfo("Streaming:Stopping all clients as the stream has ended or was terminated!")
+							}
+							sm.StopStreamForAllClients(streamID)
+						}*/
 					} else {
-						// Buffer errors
-						if errorInfo.ErrorCode != EndOfFileError {
-							ShowError(fmt.Errorf("stopping all clients because of error while buffering"), errorInfo.ErrorCode)
-						} else {
-							showInfo("Streaming: Stopping all clients as the stream has ended or was terminated!")
+						for clientID,_ := range errorInfo.Stream.clients {
+							sm.StopStream(playlistID, streamID, clientID)
 						}
-						sm.StopStreamForAllClients(streamID)
 					}
 				}
 			case <-sm.stopChan:
@@ -297,6 +304,9 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 	if exists {
 		stream, exists := playlist.streams[streamID]
 		if exists {
+			//client := stream.clients[clientID]
+			//client.w.Header().Set("Connection", "Close")
+			//client.w.Write(nil)
 			delete(stream.clients, clientID)
 			showInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.clients)))
 			if len(stream.clients) == 0 {
@@ -346,7 +356,7 @@ func CloseClientConnection(w http.ResponseWriter) {
 /*
 StopStreamForAllClient stops the third paryt tool process and will delete all clients from the given stream
 */
-func (sm *StreamManager) StopStreamForAllClients(streamID string) {
+/*func (sm *StreamManager) StopStreamForAllClients(streamID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	for playlistID, playlist := range sm.playlists {
@@ -396,8 +406,8 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 		go SendData(stream, sm.errorChan)
 	}
 
-	// Wait for the stream to close the context
-	<-stream.ctx.Done()
+	// Wait for the client context to get closed
+	<-r.Context().Done()
 }
 
 /*
@@ -430,6 +440,7 @@ func SendData(stream *Stream, errorChan chan ErrorInfo) {
 				return
 			}
 			oldSegments = append(oldSegments, f)
+			showDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 2)
 			if !SendFileToClients(stream, f, errorChan) {
 				return
 			}
@@ -461,37 +472,34 @@ func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 			return
 		}
 
+		// Check if more then one file is available
 		if len(files) > 1 {
-
+			// Iterate over the files and collect the IDs
 			for _, file := range files {
-
-				var fileID = strings.Replace(file.Name(), ".ts", "", -1)
-				var f, err = strconv.ParseFloat(fileID, 64)
-
-				if err == nil {
-					fileIDs = append(fileIDs, f)
+				if !file.IsDir() && filepath.Ext(file.Name()) == ".ts" {
+					fileID := strings.TrimSuffix(file.Name(), ".ts")
+					if f, err := strconv.ParseFloat(fileID, 64); err == nil {
+						fileIDs = append(fileIDs, f)
+					}
 				}
-
 			}
 
 			sort.Float64s(fileIDs)
-			fileIDs = fileIDs[:len(fileIDs)-1]
+			if len(fileIDs) > 0 {
+				fileIDs = fileIDs[:len(fileIDs)-1]
+			}
 
+			// Create the return array with the sorted files
 			for _, file := range fileIDs {
-
-				var fileName = fmt.Sprintf("%d.ts", int64(file))
-
-				if indexOfString(fileName, stream.OldSegments) == -1 {
+				fileName := fmt.Sprintf("%.0f.ts", file)
+				// Check if the file is already within old segments array
+				if !ContainsString(stream.OldSegments, fileName) {
 					tmpFiles = append(tmpFiles, fileName)
 					stream.OldSegments = append(stream.OldSegments, fileName)
 				}
-
 			}
-
 		}
-
 	}
-
 	return
 }
 
