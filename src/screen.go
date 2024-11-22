@@ -383,6 +383,8 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Could not get file statics of buffered file"
 	case 4016:
 		errMsg = "Could not read buffered file before sending to clients"
+	case 4017:
+		errMsg = "Cannot stream from M3U file, please use ffmpeg"
 
 	
 	// PID saving and deleting

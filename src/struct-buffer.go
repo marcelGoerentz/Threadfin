@@ -11,7 +11,7 @@ import (
 type StreamManager struct {
 	playlists map[string]*Playlist
 	errorChan chan ErrorInfo
-	stopChan chan bool
+	stopChan  chan bool
 	mu        sync.Mutex
 }
 
@@ -24,7 +24,7 @@ type Playlist struct {
 type Stream struct {
 	name    string
 	clients map[string]Client
-	cmd     *exec.Cmd
+	Buffer  *Buffer
 	ctx     context.Context
 	cancel  context.CancelFunc
 
@@ -36,15 +36,21 @@ type Stream struct {
 	BackupChannel3URL string
 }
 
+type Buffer struct {
+	isThirdPartyBuffer bool
+	cmd                *exec.Cmd
+	stopChan           chan struct{}
+}
+
 type Client struct {
 	w http.ResponseWriter
 	r *http.Request
 }
 
 type ErrorInfo struct {
-	ErrorCode  int
-	Stream     *Stream
-	ClientID   string
+	ErrorCode int
+	Stream    *Stream
+	ClientID  string
 }
 
 const (

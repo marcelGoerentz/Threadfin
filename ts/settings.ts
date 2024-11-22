@@ -117,34 +117,6 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-      case "vlc.path":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.vlcPath.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createInput("text", "vlc.path", data)
-        input.setAttribute("placeholder", "{{.settings.vlcPath.placeholder}}")
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "vlc.options":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.vlcOptions.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createInput("text", "vlc.options", data)
-        input.setAttribute("placeholder", "{{.settings.vlcOptions.placeholder}}")
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
       case "bindingIPs":
         var tdLeft = document.createElement("TD")
         tdLeft.innerHTML = "{{.settings.bindingIPs.title}}" + ":"
@@ -591,8 +563,8 @@ class SettingsCategory {
         tdLeft.innerHTML = "{{.settings.streamBuffering.title}}" + ":"
 
         var tdRight = document.createElement("TD")
-        var text: any[] = ["{{.settings.streamBuffering.info_false}}", "FFmpeg: ({{.settings.streamBuffering.info_ffmpeg}})", "VLC: ({{.settings.streamBuffering.info_vlc}})"]
-        var values: any[] = ["-", "ffmpeg", "vlc"]
+        var text: any[] = ["{{.settings.streamBuffering.info_false}}", "FFmpeg: ({{.settings.streamBuffering.info_ffmpeg}})", "Threadfin: ({{.settings.streamBuffering.info_threadfin}})"]
+        var values: any[] = ["-", "ffmpeg", "threadfin"]
 
         var select = content.createSelect(text, values, data, settingsKey)
         select.setAttribute("onchange", "javascript: this.className = 'changed'")

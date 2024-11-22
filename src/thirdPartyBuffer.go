@@ -8,44 +8,12 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/avfs/avfs"
-	"github.com/avfs/avfs/vfs/memfs"
-	"github.com/avfs/avfs/vfs/osfs"
 )
 
 /*
-InitBufferVFS will set the bufferVFS variable
+StartThirdPartyBuffer starts the third party tool and capture its output
 */
-func InitBufferVFS(virtual bool) {
-
-	if virtual {
-		bufferVFS = memfs.New()
-	} else {
-		bufferVFS = osfs.New()
-	}
-
-}
-
-/*
-GetBufferConfig reutrns the the arguments from the buffer settings
-*/
-func GetBufferConfig() (bufferType, path, options string) {
-	bufferType = strings.ToUpper(Settings.Buffer)
-	switch bufferType {
-	case "FFMPEG":
-		return bufferType, Settings.FFmpegPath, Settings.FFmpegOptions
-	case "VLC":
-		return bufferType, Settings.VLCPath, Settings.VLCOptions
-	default:
-		return "", "", ""
-	}
-}
-
-/*
-Buffer starts the third party tool and capture its output
-*/
-func Buffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *exec.Cmd {
+func StartThirdPartyBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *Buffer {
 	if useBackup {
 		UpdateStreamURLForBackup(stream, backupNumber)
 	}
@@ -64,66 +32,17 @@ func Buffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan Err
 	showInfo(fmt.Sprintf("%s path:%s", bufferType, path))
 	showInfo("Streaming URL:" + stream.URL)
 
-	if cmd, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
+	if buffer, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
 		return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
 	} else {
-		return cmd
+		return buffer
 	}
-}
-
-/*
-UpdateStreamURLForBackup will set the ther stream url when a backup will be used
-*/
-func UpdateStreamURLForBackup(stream *Stream, backupNumber int) {
-	switch backupNumber {
-	case 1:
-		stream.URL = stream.BackupChannel1URL
-		showHighlight("START OF BACKUP 1 STREAM")
-		showInfo("Backup Channel 1 URL: " + stream.URL)
-	case 2:
-		stream.URL = stream.BackupChannel2URL
-		showHighlight("START OF BACKUP 2 STREAM")
-		showInfo("Backup Channel 2 URL: " + stream.URL)
-	case 3:
-		stream.URL = stream.BackupChannel3URL
-		showHighlight("START OF BACKUP 3 STREAM")
-		showInfo("Backup Channel 3 URL: " + stream.URL)
-	}
-}
-
-/*
-HandleBufferError will retry running the Buffer function with the next backup number
-*/
-func HandleBufferError(err error, backupNumber int, useBackup bool, stream *Stream, errorChan chan ErrorInfo) *exec.Cmd {
-	ShowError(err, 4011)
-	if !useBackup || (useBackup && backupNumber >= 0 && backupNumber <= 3) {
-		backupNumber++
-		if stream.BackupChannel1URL != "" || stream.BackupChannel2URL != "" || stream.BackupChannel3URL != "" {
-			return Buffer(stream, true, backupNumber, errorChan)
-		}
-	}
-	return nil
-}
-
-/*
-PrepareBufferFolder will clean the buffer folder and check if the folder exists
-*/
-func PrepareBufferFolder(folder string) error {
-	if err := bufferVFS.RemoveAll(getPlatformPath(folder)); err != nil {
-		return fmt.Errorf("failed to remove buffer folder: %w", err)
-	}
-
-	if err := checkVFSFolder(folder, bufferVFS); err != nil {
-		return fmt.Errorf("failed to check buffer folder: %w", err)
-	}
-
-	return nil
 }
 
 /*
 RunBufferCommand starts the third party tool process
 */
-func RunBufferCommand(bufferType string, path, options string, stream *Stream, errorChan chan ErrorInfo) (*exec.Cmd, error) {
+func RunBufferCommand(bufferType string, path, options string, stream *Stream, errorChan chan ErrorInfo) (*Buffer, error) {
 	args := PrepareBufferArguments(options, stream.URL)
 
 	cmd := exec.Command(path, args...)
@@ -142,9 +61,14 @@ func RunBufferCommand(bufferType string, path, options string, stream *Stream, e
 
 	var streamStatus = make(chan bool)
 	go ShowCommandLogOutputInConsole(bufferType, logOut, streamStatus)
-	go HandleCommandOutput(stdOut, stream, errorChan)
+	go HandleByteOutput(stdOut, stream, errorChan)
 
-	return cmd, nil
+	buffer := &Buffer{
+		isThirdPartyBuffer: true,
+		cmd:                cmd,
+	}
+
+	return buffer, nil
 }
 
 /*
@@ -161,8 +85,8 @@ func PrepareBufferArguments(options, url string) []string {
 			}
 			continue
 		}
-		if i == 0 && len(Settings.UserAgent) != 0  && Settings.Buffer == "ffmpeg" {
-			args = append(args, "-user_agent", Settings.UserAgent)			
+		if i == 0 && len(Settings.UserAgent) != 0 && Settings.Buffer == "ffmpeg" {
+			args = append(args, "-user_agent", Settings.UserAgent)
 		}
 		args = append(args, a)
 	}
@@ -207,71 +131,6 @@ func ShowCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, stre
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
-	}
-}
-
-/*
-HandleCommandOutput save the byte ouptut of the command as files
-*/
-func HandleCommandOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan ErrorInfo) {
-	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
-	buffer := make([]byte, bufferSize)
-	var fileSize int
-	init := true
-	tmpFolder := stream.Folder
-	tmpSegment := 1
-
-	var f avfs.File
-	var err error
-	var tmpFile string
-	reader := bufio.NewReader(stdOut)
-	for {
-		if init {
-			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
-			f, err = bufferVFS.Create(tmpFile)
-			if err != nil {
-				f.Close()
-				ShowError(err, 4010)
-				errorChan <- ErrorInfo{CreateFileError, stream, ""}
-				return
-			}
-			init = false
-		}
-		n, err := reader.Read(buffer)
-		if err == io.EOF {
-			f.Close()
-			showDebug("Buffer pipe reached EOF!", 3)
-			errorChan <- ErrorInfo{EndOfFileError, stream, ""}
-			return
-		}
-		if err != nil {
-			ShowError(err, 4012)
-			f.Close()
-			errorChan <- ErrorInfo{ReadIntoBufferError, stream, ""}
-			return
-		}
-		if _, err := f.Write(buffer[:n]); err != nil {
-			ShowError(err, 4013)
-			f.Close()
-			errorChan <- ErrorInfo{WriteToBufferError, stream, ""}
-			return
-		}
-		fileSize += n
-		// Prüfen, ob Dateigröße den Puffer überschreitet
-		if fileSize >= bufferSize {
-			tmpSegment++
-			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
-			// Datei schließen und neue Datei öffnen
-			f.Close()
-			f, err = bufferVFS.Create(tmpFile)
-			if err != nil {
-				f.Close()
-				ShowError(err, 4010)
-				errorChan <- ErrorInfo{CreateFileError, stream, ""}
-				return
-			}
-			fileSize = 0
-		}
 	}
 }
 

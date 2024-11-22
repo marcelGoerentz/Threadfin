@@ -37,7 +37,7 @@ func NewStreamManager() *StreamManager {
 					if errorInfo.ClientID != "" {
 						// Client specifc errors
 						sm.StopStream(playlistID, streamID, errorInfo.ClientID)
-					/*} else {
+						/*} else {
 						if streamID != "" {
 							// Buffer errors
 							if errorInfo.ErrorCode != EndOfFileError {
@@ -48,8 +48,9 @@ func NewStreamManager() *StreamManager {
 							sm.StopStreamForAllClients(streamID)
 						}*/
 					} else {
-						for clientID,_ := range errorInfo.Stream.clients {
+						for clientID, client := range errorInfo.Stream.clients {
 							sm.StopStream(playlistID, streamID, clientID)
+							CloseClientConnection(client.w)
 						}
 					}
 				}
@@ -123,7 +124,7 @@ func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
 	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid + string(os.PathSeparator)
 	stream := &Stream{
 		name:              streamInfo.Name,
-		cmd:               nil,
+		Buffer:            nil,
 		ctx:               ctx,
 		cancel:            cancel,
 		URL:               streamInfo.URL,
@@ -133,8 +134,8 @@ func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
 		Folder:            folder,
 		clients:           make(map[string]Client),
 	}
-	cmd := Buffer(stream, false, 0, errorChan)
-	stream.cmd = cmd
+	buffer := StartBuffer(stream, false, 0, errorChan)
+	stream.Buffer = buffer
 	return stream
 }
 
@@ -275,12 +276,20 @@ It will use the third party tool defined in the settings and starts a process fo
 */
 func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
 	cmd := new(exec.Cmd)
+	arguments := []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
 	switch Settings.Buffer {
 	case "ffmpeg":
-		cmd = exec.Command(Settings.FFmpegPath, "-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video))
-	case "vlc":
-		cmd = exec.Command(Settings.VLCPath, "--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile)
-
+		cmd = exec.Command(Settings.FFmpegPath, arguments...)
+	default:
+		if Settings.FFmpegPath != "" {
+			if _, err := os.Stat(Settings.FFmpegPath); err != nil {
+				return fmt.Errorf("ffmpeg path is not valid. Can not convert custom image to video")
+			} else {
+				cmd = exec.Command(Settings.FFmpegPath, arguments...)
+			}
+		} else {
+			return fmt.Errorf("no ffmpeg path given")
+		}
 	}
 	if len(cmd.Args) > 0 {
 		showInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
@@ -310,10 +319,14 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 			delete(stream.clients, clientID)
 			showInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.clients)))
 			if len(stream.clients) == 0 {
-				stream.cancel()                            // Tell everyone about the ending of the stream
-				stream.cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
-				stream.cmd.Wait()
-				DeletPIDfromDisc(fmt.Sprintf("%d", stream.cmd.Process.Pid)) // Delet
+				stream.cancel() // Tell everyone about the ending of the stream
+				if stream.Buffer.isThirdPartyBuffer {
+					stream.Buffer.cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+					stream.Buffer.cmd.Wait()
+					DeletPIDfromDisc(fmt.Sprintf("%d", stream.Buffer.cmd.Process.Pid)) // Delete the PID since the process has been terminated
+				} else {
+					close(stream.Buffer.stopChan)
+				}
 				delete(sm.playlists[playlistID].streams, streamID)
 				showInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
 				var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
@@ -333,14 +346,9 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 	}
 }
 
-/*
 func CloseClientConnection(w http.ResponseWriter) {
-	var once sync.Once
-    // Set the header
-    w.Header().Set("Connection", "close")
-    once.Do(func() {
-        w.WriteHeader(http.StatusNotFound) // Einmaliger Aufruf von WriteHeader
-    })
+	// Set the header
+	w.Header().Set("Connection", "close")
 	// Close the connection explicitly
 	if flusher, ok := w.(http.Flusher); ok {
 		flusher.Flush()
@@ -351,7 +359,7 @@ func CloseClientConnection(w http.ResponseWriter) {
 			conn.Close()
 		}
 	}
-} */
+}
 
 /*
 StopStreamForAllClient stops the third paryt tool process and will delete all clients from the given stream
@@ -440,7 +448,7 @@ func SendData(stream *Stream, errorChan chan ErrorInfo) {
 				return
 			}
 			oldSegments = append(oldSegments, f)
-			showDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 2)
+			showDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
 			if !SendFileToClients(stream, f, errorChan) {
 				return
 			}
