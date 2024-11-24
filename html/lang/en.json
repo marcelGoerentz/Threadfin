@@ -423,9 +423,10 @@
     },
     "streamBuffering": {
       "title": "Stream Buffer",
-      "description": "Functions of the buffer:<br>- The stream is passed from FFmpeg or Threadfin to Plex, Emby, Jellyfin or M3U Player<br>- Small jerking of the streams can be compensated<br>- HLS / M3U8 support<br>- RTP / RTPS support<br>- Re-streaming<br>- Separate tuner limit for each playlist",
+      "description": "Functions of the buffer:<br>- The stream is passed from FFmpeg, VLC or Threadfin to Plex, Emby, Jellyfin or M3U Player<br>- Small jerking of the streams can be compensated<br>- HLS / M3U8 support<br>- RTP / RTPS support<br>- Re-streaming<br>- Separate tuner limit for each playlist",
       "info_false": "No Buffer (Client connects directly to the streaming server)",
       "info_ffmpeg": "FFmpeg connects to the streaming server",
+      "info_vlc": "VLC connects to the streaming server",
       "info_threadfin": "Threadfin connects to the streaming server"
     },
     "udpxy": {

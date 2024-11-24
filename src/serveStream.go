@@ -276,16 +276,19 @@ It will use the third party tool defined in the settings and starts a process fo
 */
 func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
 	cmd := new(exec.Cmd)
-	arguments := []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
+	vlcArguments := []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
+	ffmpegArguments := []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
 	switch Settings.Buffer {
 	case "ffmpeg":
-		cmd = exec.Command(Settings.FFmpegPath, arguments...)
+		cmd = exec.Command(Settings.FFmpegPath, ffmpegArguments...)
+	case "vlc":
+		cmd = exec.Command(Settings.VLCPath, vlcArguments...)
 	default:
 		if Settings.FFmpegPath != "" {
 			if _, err := os.Stat(Settings.FFmpegPath); err != nil {
 				return fmt.Errorf("ffmpeg path is not valid. Can not convert custom image to video")
 			} else {
-				cmd = exec.Command(Settings.FFmpegPath, arguments...)
+				cmd = exec.Command(Settings.FFmpegPath, ffmpegArguments...)
 			}
 		} else {
 			return fmt.Errorf("no ffmpeg path given")
@@ -301,6 +304,8 @@ func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
 	}
 	return nil
 }
+
+// TODO: Add Function to get third party tool path and arguments
 
 /*
 StopStream stops the third party tool process when there are no more clients receiving the stream
