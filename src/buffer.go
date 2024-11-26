@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strings"
 
 	"github.com/avfs/avfs"
 	"github.com/avfs/avfs/vfs/memfs"
@@ -25,31 +24,9 @@ func InitBufferVFS(virtual bool) {
 
 }
 
-/*
-GetBufferConfig reutrns the the arguments from the buffer settings
-*/
-func GetBufferConfig() (bufferType, path, options string) {
-	bufferType = strings.ToUpper(Settings.Buffer)
-	switch bufferType {
-	case "FFMPEG":
-		return bufferType, Settings.FFmpegPath, Settings.FFmpegOptions
-	case "VLC":
-		return bufferType, Settings.VLCPath, Settings.VLCOptions
-	case "THREADFIN":
-		return bufferType, "", ""
-	default:
-		return "", "", ""
-	}
-}
-
 func StartBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *Buffer {
 	if useBackup {
 		UpdateStreamURLForBackup(stream, backupNumber)
-	}
-
-	bufferType, path, options := GetBufferConfig()
-	if bufferType == "" {
-		return nil
 	}
 
 	if err := PrepareBufferFolder(stream.Folder); err != nil {
@@ -58,12 +35,9 @@ func StartBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan cha
 		return nil
 	}
 
-	showInfo(fmt.Sprintf("%s path:%s", bufferType, path))
-	showInfo("Streaming URL:" + stream.URL)
-
 	switch Settings.Buffer {
 		case "ffmpeg", "vlc":
-			if buffer, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
+			if buffer, err := StartThirdPartyBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
 				return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
 			} else {
 				return buffer

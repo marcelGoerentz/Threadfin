@@ -11,6 +11,9 @@ import (
 
 func StartThreadfinBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) (*Buffer, error) {
     stopChan := make(chan struct{})
+	showInfo(fmt.Sprintf("Streaming:Buffer:%s", "Threadfin"))
+	showInfo("Streaming URL:" + stream.URL)
+
     go func() {
 		resp, err := http.Get(stream.URL)
 		if err != nil {
@@ -27,7 +30,7 @@ func StartThreadfinBuffer(stream *Stream, useBackup bool, backupNumber int, erro
 				}
 		
 				if videoURL != "" || audioURL != "" {
-					showInfo("Streamin: Can not stream from m3u file")
+					showInfo("Streaming: Can not stream from m3u file")
 					errorChan <- ErrorInfo{4017, stream, ""}
 					return
 				}

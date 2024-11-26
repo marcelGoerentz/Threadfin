@@ -18,24 +18,33 @@ func StartThirdPartyBuffer(stream *Stream, useBackup bool, backupNumber int, err
 		UpdateStreamURLForBackup(stream, backupNumber)
 	}
 
-
-	bufferType, path, options := Settings.Buffer, Settings.FFmpegPath, Settings.FFmpegOptions
+	bufferType, path, options := GetBufferConfig()
 	if bufferType == "" {
-		return nil, nil
+		return nil, fmt.Errorf("could not get buffer config")
 	}
 
-	if err := PrepareBufferFolder(stream.Folder); err != nil {
-		ShowError(err, 4008)
-		HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
-		return nil, nil
-	}
-
-	showInfo(fmt.Sprintf("%s path:%s", bufferType, path))
+	showInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", bufferType, path))
+	showInfo("Streaming URL:" + stream.URL)
 
 	if buffer, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
 		return HandleBufferError(err, backupNumber, useBackup, stream, errorChan), err
 	} else {
 		return buffer, nil
+	}
+}
+
+/*
+GetBufferConfig reutrns the the arguments from the buffer settings
+*/
+func GetBufferConfig() (bufferType, path, options string) {
+	bufferType = strings.ToUpper(Settings.Buffer)
+	switch bufferType {
+	case "FFMPEG":
+		return bufferType, Settings.FFmpegPath, Settings.FFmpegOptions
+	case "VLC":
+		return bufferType, Settings.VLCPath, Settings.VLCOptions
+	default:
+		return "", "", ""
 	}
 }
 

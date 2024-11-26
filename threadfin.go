@@ -42,7 +42,7 @@ var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadf
 const Name = "Threadfin"
 
 // Version : Version, die Build Nummer wird in der main func geparst.
-const Version = "1.7.10-beta"
+const Version = "1.7.11-beta"
 
 // DBVersion : Datanbank Version
 const DBVersion = "0.5.0"
