@@ -216,21 +216,20 @@ func stream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if Settings.ForceHttpsToUpstream {
-		u, err := url.Parse(streamInfo.URL)
-		if err == nil {
-			var streamURL = "https"
-			host_split := strings.Split(u.Host, ":")
-			if len(host_split) > 0 {
-				streamURL += "://" + host_split[0]
-			}
-			if len(host_split) > 1 {
-				streamURL += ":" + host_split[1]
-			}
-			if u.RawQuery != "" {
-				streamInfo.URL = fmt.Sprintf("%s%s?%s", streamURL, u.Path, u.RawQuery)
-			} else {
-				streamInfo.URL = streamURL + u.Path
-			}
+		var u *url.URL
+		u, err = url.Parse(streamInfo.URL)
+		setProtocol(&streamInfo, u, err)
+		if streamInfo.BackupChannel1URL != "" {
+			u, err = url.Parse(streamInfo.BackupChannel1URL)
+			setProtocol(&streamInfo, u, err)
+		}
+		if streamInfo.BackupChannel1URL != "" {
+			u, err = url.Parse(streamInfo.BackupChannel2URL)
+			setProtocol(&streamInfo, u, err)
+		}
+		if streamInfo.BackupChannel1URL != "" {
+			u, err = url.Parse(streamInfo.BackupChannel3URL)
+			setProtocol(&streamInfo, u, err)
 		}
 	}
 
@@ -336,6 +335,22 @@ func stream(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		streamManager.ServeStream(streamInfo, w, r)
+	}
+}
+
+func setProtocol(streamInfo *StreamInfo, u *url.URL, err error) {
+	if err == nil {
+		switch u.Scheme {
+		case "http":
+			u.Scheme = "https"
+			streamInfo.URL = u.String()
+		case "rtp":
+			u.Scheme = "rtsp"
+		case "https", "rtsp":
+			return
+		default:
+			showInfo(fmt.Sprintf("Streaming: Unknown protocol: %s", u.Scheme))
+		}
 	}
 }
 

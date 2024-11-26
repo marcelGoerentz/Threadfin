@@ -92,6 +92,9 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 		if IsNewStreamPossible(sm, streamInfo, w) {
 			// create a new buffer and add the stream to the map within the new playlist
 			sm.playlists[playlistID].streams[streamID] = CreateStream(streamInfo, sm.errorChan)
+			if sm.playlists[playlistID].streams[streamID] == nil {
+				return "", ""
+			}
 			showInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
 		} else {
 			return "", ""
@@ -135,6 +138,9 @@ func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
 		clients:           make(map[string]Client),
 	}
 	buffer := StartBuffer(stream, false, 0, errorChan)
+	if buffer == nil {
+		return nil
+	}
 	stream.Buffer = buffer
 	return stream
 }
@@ -235,14 +241,11 @@ GetTuner returns the maximum number of connections for a playlist.
 It will check if the buffer type is matching the third party buffers
 */
 func GetTuner(id, playlistType string) (tuner int) {
-
 	switch Settings.Buffer {
-
 	case "-":
 		tuner = Settings.Tuner
 
-	case "threadfin", "ffmpeg", "vlc":
-
+	case "ffmpeg", "vlc":
 		i, err := strconv.Atoi(getProviderParameter(id, playlistType, "tuner"))
 		if err == nil {
 			tuner = i
@@ -250,9 +253,7 @@ func GetTuner(id, playlistType string) (tuner int) {
 			ShowError(err, 0)
 			tuner = 1
 		}
-
 	}
-
 	return
 }
 
@@ -276,36 +277,39 @@ It will use the third party tool defined in the settings and starts a process fo
 */
 func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
 	cmd := new(exec.Cmd)
-	vlcArguments := []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
-	ffmpegArguments := []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
-	switch Settings.Buffer {
-	case "ffmpeg":
-		cmd = exec.Command(Settings.FFmpegPath, ffmpegArguments...)
-	case "vlc":
-		cmd = exec.Command(Settings.VLCPath, vlcArguments...)
-	default:
-		if Settings.FFmpegPath != "" {
-			if _, err := os.Stat(Settings.FFmpegPath); err != nil {
-				return fmt.Errorf("ffmpeg path is not valid. Can not convert custom image to video")
-			} else {
-				cmd = exec.Command(Settings.FFmpegPath, ffmpegArguments...)
-			}
-		} else {
-			return fmt.Errorf("no ffmpeg path given")
+	path, arguments := prepareArguments(pathToFile)
+	if len(arguments) == 0 {
+		if _, err := os.Stat(Settings.FFmpegPath); err != nil {
+			return fmt.Errorf("ffmpeg path is not valid. Can not convert custom image to video")
 		}
 	}
-	if len(cmd.Args) > 0 {
+
+	cmd = exec.Command(path, arguments...)
+
+	if len(cmd.Args) > 0  && path != "" {
 		showInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
 		err := cmd.Run()
 		if err != nil {
 			return err
 		}
 		showInfo("Streaming Status:Successfully created video from custom image")
+		return nil
+	} else {
+		return fmt.Errorf("path for third party tool ")
 	}
-	return nil
 }
 
-// TODO: Add Function to get third party tool path and arguments
+// TODO: Add description
+func prepareArguments(pathToFile string) (string, []string){
+	switch Settings.Buffer {
+	case "ffmpeg", "threadfin", "-":
+		return Settings.FFmpegPath, []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
+	case "vlc":
+		return Settings.VLCPath, []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
+	default:
+		return "", []string{}
+	}
+}
 
 /*
 StopStream stops the third party tool process when there are no more clients receiving the stream
@@ -401,6 +405,9 @@ ServeStream will ensure that the clients is getting the stream requested
 func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Request) {
 	clientID, playlistID := sm.StartStream(streamInfo, w)
 	if clientID == "" || playlistID == "" {
+		if sm.playlists[streamInfo.PlaylistID].streams[streamInfo.URLid] == nil {
+			delete(sm.playlists, streamInfo.PlaylistID)
+		}
 		return
 	}
 	defer sm.StopStream(playlistID, streamInfo.URLid, clientID)

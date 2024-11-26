@@ -116,7 +116,7 @@ class SettingsCategory {
         setting.appendChild(tdLeft)
         setting.appendChild(tdRight)
         break
-
+      
         case "vlc.path":
           var tdLeft = document.createElement("TD")
           tdLeft.innerHTML = "{{.settings.vlcPath.title}}" + ":"

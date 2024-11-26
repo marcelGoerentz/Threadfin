@@ -13,29 +13,29 @@ import (
 /*
 StartThirdPartyBuffer starts the third party tool and capture its output
 */
-func StartThirdPartyBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *Buffer {
+func StartThirdPartyBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) (*Buffer, error) {
 	if useBackup {
 		UpdateStreamURLForBackup(stream, backupNumber)
 	}
 
-	bufferType, path, options := GetBufferConfig()
+
+	bufferType, path, options := Settings.Buffer, Settings.FFmpegPath, Settings.FFmpegOptions
 	if bufferType == "" {
-		return nil
+		return nil, nil
 	}
 
 	if err := PrepareBufferFolder(stream.Folder); err != nil {
 		ShowError(err, 4008)
 		HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
-		return nil
+		return nil, nil
 	}
 
 	showInfo(fmt.Sprintf("%s path:%s", bufferType, path))
-	showInfo("Streaming URL:" + stream.URL)
 
 	if buffer, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
-		return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+		return HandleBufferError(err, backupNumber, useBackup, stream, errorChan), err
 	} else {
-		return buffer
+		return buffer, nil
 	}
 }
 
@@ -77,14 +77,7 @@ PrepareBufferArguments
 func PrepareBufferArguments(options, url string) []string {
 	args := []string{}
 	for i, a := range strings.Split(options, " ") {
-		if strings.Contains(a, "[URL]") {
-			a = strings.Replace(a, "[URL]", url, 1)
-			args = append(args, a)
-			if Settings.Buffer == "vlc" {
-				args = append(args, fmt.Sprintf("--http-user-agent=\"%s\"", Settings.UserAgent))
-			}
-			continue
-		}
+		a = strings.Replace(a, "[URL]", url, 1)
 		if i == 0 && len(Settings.UserAgent) != 0 && Settings.Buffer == "ffmpeg" {
 			args = append(args, "-user_agent", Settings.UserAgent)
 		}

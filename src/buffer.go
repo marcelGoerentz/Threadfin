@@ -33,6 +33,8 @@ func GetBufferConfig() (bufferType, path, options string) {
 	switch bufferType {
 	case "FFMPEG":
 		return bufferType, Settings.FFmpegPath, Settings.FFmpegOptions
+	case "VLC":
+		return bufferType, Settings.VLCPath, Settings.VLCOptions
 	case "THREADFIN":
 		return bufferType, "", ""
 	default:
@@ -60,7 +62,7 @@ func StartBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan cha
 	showInfo("Streaming URL:" + stream.URL)
 
 	switch Settings.Buffer {
-		case "ffmpeg":
+		case "ffmpeg", "vlc":
 			if buffer, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
 				return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
 			} else {

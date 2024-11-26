@@ -42,6 +42,8 @@ func StartThreadfinBuffer(stream *Stream, useBackup bool, backupNumber int, erro
 				resp.Body.Close()
 				time.Sleep(200 * time.Millisecond)  // Let the buffer stop before going on
             	return
+			default:
+				continue
 			}
         }
     }()

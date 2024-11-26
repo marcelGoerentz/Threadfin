@@ -299,7 +299,7 @@ func getErrMsg(errCode int) (errMsg string) {
 	case 1203:
 		errMsg = "Steaming URL could not be found in any playlist"
 	case 1204:
-		errMsg = "Streaming was stopped by third party transcoder (FFmpeg / VLC)"
+		errMsg = "Streaming was stopped by third party transcoder (FFmpeg)"
 
 	// Warnings
 	case 2000:
@@ -318,8 +318,6 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "No valid streaming URL"
 	case 2020:
 		errMsg = "FFmpeg binary was not found. Check the FFmpeg binary path in the Threadfin settings."
-	case 2021:
-		errMsg = "VLC binary was not found. Check the VLC path binary in the Threadfin settings."
 
 	case 2098:
 		errMsg = "Updates are disabled in the settings"
