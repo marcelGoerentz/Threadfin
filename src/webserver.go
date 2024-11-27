@@ -344,9 +344,7 @@ func setProtocol(streamInfo *StreamInfo, u *url.URL, err error) {
 		case "http":
 			u.Scheme = "https"
 			streamInfo.URL = u.String()
-		case "rtp":
-			u.Scheme = "rtsp"
-		case "https", "rtsp":
+		case "https", "rtsp", "rtp":
 			return
 		default:
 			showInfo(fmt.Sprintf("Streaming: Unknown protocol: %s", u.Scheme))

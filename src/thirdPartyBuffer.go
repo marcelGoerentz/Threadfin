@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -83,11 +84,15 @@ func RunBufferCommand(bufferType string, path, options string, stream *Stream, e
 /*
 PrepareBufferArguments
 */
-func PrepareBufferArguments(options, url string) []string {
+func PrepareBufferArguments(options, streamURL string) []string {
 	args := []string{}
+	u, err := url.Parse(streamURL)
+	if err != nil {
+		return []string{}
+	}
 	for i, a := range strings.Split(options, " ") {
-		a = strings.Replace(a, "[URL]", url, 1)
-		if i == 0 && len(Settings.UserAgent) != 0 && Settings.Buffer == "ffmpeg" {
+		a = strings.Replace(a, "[URL]", streamURL, 1)
+		if i == 0 && len(Settings.UserAgent) != 0 && Settings.Buffer == "ffmpeg" && u.Scheme != "rtp" {
 			args = append(args, "-user_agent", Settings.UserAgent)
 		}
 		args = append(args, a)
