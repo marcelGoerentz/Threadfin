@@ -785,10 +785,6 @@ interface clientInfo {
   m3uUrl: string;
   os: string;
   streams: string;
-  activeClients: number;
-  totalClients: number;
-  activePlaylist: number;
-  totalPlaylist: number;
   systemIPs: string[];
   uuid: string;
   version: string;

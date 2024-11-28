@@ -299,7 +299,7 @@ func getErrMsg(errCode int) (errMsg string) {
 	case 1203:
 		errMsg = "Steaming URL could not be found in any playlist"
 	case 1204:
-		errMsg = "Streaming was stopped by third party transcoder (FFmpeg / VLC)"
+		errMsg = "Streaming was stopped by third party transcoder (FFmpeg)"
 
 	// Warnings
 	case 2000:
@@ -318,8 +318,6 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "No valid streaming URL"
 	case 2020:
 		errMsg = "FFmpeg binary was not found. Check the FFmpeg binary path in the Threadfin settings."
-	case 2021:
-		errMsg = "VLC binary was not found. Check the VLC path binary in the Threadfin settings."
 
 	case 2098:
 		errMsg = "Updates are disabled in the settings"
@@ -365,6 +363,42 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Server connection timeout"
 	case 4007:
 		errMsg = "Old temporary buffer file could not be deleted"
+	case 4008:
+		errMsg = "Could not create buffer folder"
+	case 4009:
+		errMsg = "Could not send file to client"
+	case 4010:
+		errMsg = "Could not create buffer file"
+	case 4011:
+		errMsg = "Error when trying to run buffer process"
+	case 4012:
+		errMsg = "Error reading bytes for buffered file"
+	case 4013:
+		errMsg = "Error writing to bufferd file"
+	case 4014:
+		errMsg = "Not able to open buffered file"
+	case 4015:
+		errMsg = "Could not get file statics of buffered file"
+	case 4016:
+		errMsg = "Could not read buffered file before sending to clients"
+	case 4017:
+		errMsg = "Cannot stream from M3U file, please use ffmpeg or VLC"
+
+	
+	// PID saving and deleting
+	case 4040:
+		errMsg = "Could not open file to write PID to disk"
+	case 4041:
+		errMsg = "Could not write PID to file on disk"
+	case 4042:
+		errMsg = "Could not open file to read PIDs from disk"
+	case 4043:
+		errMsg = "Could not seek to the start of the file"
+	case 4044:
+		errMsg = "Could not write old PID to the file"
+	case 4045:
+		errMsg = "Could not truncate the rewritten PID file"
+
 
 	// Buffer (M3U8)
 	case 4050:

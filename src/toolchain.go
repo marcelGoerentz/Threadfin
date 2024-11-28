@@ -120,8 +120,8 @@ func checkFile(filename string) (err error) {
 	switch mode := fi.Mode(); {
 	case mode.IsDir():
 		err = fmt.Errorf("%s: %s", file, getErrMsg(1072))
-	//case mode.IsRegular():
-	//	break
+		//case mode.IsRegular():
+		//	break
 	}
 
 	return
@@ -380,7 +380,7 @@ func resolveHostIP() error {
 	}
 
 	if len(System.IPAddress) == 0 {
-		if len(System.IPAddressesV4) > 0  {
+		if len(System.IPAddressesV4) > 0 {
 			for _, addr := range System.IPAddressesV4 {
 				if !strings.HasPrefix(addr, "127.0.0") {
 					System.IPAddress = addr
@@ -435,6 +435,19 @@ func parseTemplate(content string, tmpMap map[string]interface{}) (result string
 	return
 }
 
+func ContainsString(slice []string, element string) bool {
+	for _, v := range slice {
+		if v == element {
+			return true
+		}
+	}
+	return false
+}
+
+/*
+indexOfString returns the index of the string within a given array.
+Is the string not within the array it will return -1
+*/
 func indexOfString(element string, data []string) int {
 
 	for k, v := range data {

@@ -26,8 +26,6 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 	var serverProtocolChanged = false
 	var debug string
 
-	// -vvv [URL] --sout '#transcode{vcodec=mp4v, acodec=mpga} :standard{access=http, mux=ogg}'
-
 	for key, value := range newSettings {
 
 		if _, ok := oldSettings[key]; ok {
@@ -103,7 +101,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 					return
 				}
 
-			case "ffmpeg.path", "vlc.path":
+			case "ffmpeg.path":
 				var path = value.(string)
 				if len(path) > 0 {
 

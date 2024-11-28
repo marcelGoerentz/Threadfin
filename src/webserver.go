@@ -15,9 +15,11 @@ import (
 	"strings"
 
 	"threadfin/src/internal/authentication"
-
+	"golang.org/x/net/http2"
 	"github.com/gorilla/websocket"
 )
+
+var streamManager = NewStreamManager()
 
 // StartWebserver : Startet den Webserver
 func StartWebserver() (err error) {
@@ -26,7 +28,7 @@ func StartWebserver() (err error) {
 	var serverMux = http.NewServeMux()
 
 	serverMux.HandleFunc("/", Index)
-	serverMux.HandleFunc("/stream/", Stream)
+	serverMux.HandleFunc("/stream/", stream)
 	serverMux.HandleFunc("/xmltv/", Threadfin)
 	serverMux.HandleFunc("/m3u/", Threadfin)
 	serverMux.HandleFunc("/ws/", WS)
@@ -56,14 +58,20 @@ func StartWebserver() (err error) {
 			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
 			if Settings.UseHttps {
 				go func(address string) {
-					if err = http.ListenAndServeTLS(address + ":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", serverMux); err != nil {
+					srv := &http.Server{
+						Addr:    port,
+						Handler: serverMux,
+					}
+					//activate HTTP2
+					http2.ConfigureServer(srv, &http2.Server{})
+					if err = srv.ListenAndServeTLS(System.Folder.Config+"server.crt", System.Folder.Config+"server.key"); err != nil {
 						ShowError(err, 1001)
 						return
 					}
 				}(address)
 			} else {
 				go func(address string) {
-					if err = http.ListenAndServe(address + ":" + port, serverMux); err != nil {
+					if err = http.ListenAndServe(address+":"+port, serverMux); err != nil {
 						ShowError(err, 1001)
 						return
 					}
@@ -83,14 +91,21 @@ func StartWebserver() (err error) {
 		}
 		if Settings.UseHttps {
 			go func() {
-				if err = http.ListenAndServeTLS(":" + port, System.Folder.Config + "server.crt", System.Folder.Config + "server.key", serverMux); err != nil {
+				srv := &http.Server{
+					Addr:    port,
+					Handler: serverMux,
+				}
+
+				//activate HTTP2
+				http2.ConfigureServer(srv, &http2.Server{})
+				if err = srv.ListenAndServeTLS(System.Folder.Config+"server.crt", System.Folder.Config+"server.key"); err != nil {
 					ShowError(err, 1001)
 					return
 				}
 			}()
 		} else {
 			go func() {
-				if err = http.ListenAndServe(":" + port, serverMux); err != nil {
+				if err = http.ListenAndServe(":"+port, serverMux); err != nil {
 					ShowError(err, 1001)
 					return
 				}
@@ -156,8 +171,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	httpStatusError(w, http.StatusInternalServerError)
 }
 
-// Stream : Web Server /stream/
-func Stream(w http.ResponseWriter, r *http.Request) {
+// stream : Web Server /stream/
+func stream(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -201,21 +216,20 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if Settings.ForceHttpsToUpstream {
-		u, err := url.Parse(streamInfo.URL)
-		if err == nil {
-			var streamURL = "https"
-			host_split := strings.Split(u.Host, ":")
-			if len(host_split) > 0 {
-				streamURL += "://" + host_split[0]
-			}
-			if len(host_split) > 1 {
-				streamURL += ":" + host_split[1]
-			}
-			if u.RawQuery != "" {
-				streamInfo.URL = fmt.Sprintf("%s%s?%s", streamURL, u.Path, u.RawQuery)
-			} else {
-				streamInfo.URL = streamURL + u.Path
-			}
+		var u *url.URL
+		u, err = url.Parse(streamInfo.URL)
+		setProtocol(&streamInfo, u, err)
+		if streamInfo.BackupChannel1URL != "" {
+			u, err = url.Parse(streamInfo.BackupChannel1URL)
+			setProtocol(&streamInfo, u, err)
+		}
+		if streamInfo.BackupChannel1URL != "" {
+			u, err = url.Parse(streamInfo.BackupChannel2URL)
+			setProtocol(&streamInfo, u, err)
+		}
+		if streamInfo.BackupChannel1URL != "" {
+			u, err = url.Parse(streamInfo.BackupChannel3URL)
+			setProtocol(&streamInfo, u, err)
 		}
 	}
 
@@ -320,7 +334,21 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		}
 
 	default:
-		bufferingStream(streamInfo, w, r)
+		streamManager.ServeStream(streamInfo, w, r)
+	}
+}
+
+func setProtocol(streamInfo *StreamInfo, u *url.URL, err error) {
+	if err == nil {
+		switch u.Scheme {
+		case "http":
+			u.Scheme = "https"
+			streamInfo.URL = u.String()
+		case "https", "rtsp", "rtp":
+			return
+		default:
+			showInfo(fmt.Sprintf("Streaming: Unknown protocol: %s", u.Scheme))
+		}
 	}
 }
 
@@ -569,7 +597,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if Settings.StoreBufferInRAM != previousStoreBufferInRAM {
-					initBufferVFS(Settings.StoreBufferInRAM)
+					InitBufferVFS(Settings.StoreBufferInRAM)
 				}
 
 				if Settings.BindingIPs != previousBindingIPs || Settings.UseHttps != previousUseHttps {
@@ -704,6 +732,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					ShowError(err, 1017)
 				}
+				showDebug("Sucessfully uploaded custom image", 1)
 			}
 
 		case "saveWizard":
@@ -757,7 +786,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func uploadCustomImage(input string, filename string) (error) {
+func uploadCustomImage(input string, filename string) error {
 	b64data := input[strings.IndexByte(input, ',')+1:]
 
 	// decode Base64 string into bytes and save them to disk
@@ -1026,113 +1055,113 @@ func API(w http.ResponseWriter, r *http.Request) {
 			}
 	*/
 
-    var request APIRequestStruct
-    var response APIResponseStruct
+	var request APIRequestStruct
+	var response APIResponseStruct
 
-    responseAPIError := func(err error, statusCode int) {
-        response.Error = err.Error()
-        w.WriteHeader(statusCode)
-        w.Write([]byte(mapToJSON(response)))
-    }
+	responseAPIError := func(err error, statusCode int) {
+		response.Error = err.Error()
+		w.WriteHeader(statusCode)
+		w.Write([]byte(mapToJSON(response)))
+	}
 
-    if !Settings.API {
-        httpStatusError(w, http.StatusLocked)
-        return
-    }
+	if !Settings.API {
+		httpStatusError(w, http.StatusLocked)
+		return
+	}
 
-    if r.Method == "GET" {
-        httpStatusError(w, http.StatusNotFound)
-        return
-    }
+	if r.Method == "GET" {
+		httpStatusError(w, http.StatusNotFound)
+		return
+	}
 
-    b, err := io.ReadAll(r.Body)
-    defer r.Body.Close()
-    if err != nil {
-        responseAPIError(err, http.StatusBadRequest)
-        return
-    }
+	b, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		responseAPIError(err, http.StatusBadRequest)
+		return
+	}
 
-    err = json.Unmarshal(b, &request)
-    if err != nil {
-        responseAPIError(err, http.StatusBadRequest)
-        return
-    }
+	err = json.Unmarshal(b, &request)
+	if err != nil {
+		responseAPIError(err, http.StatusBadRequest)
+		return
+	}
 
-    w.Header().Set("content-type", "application/json")
+	w.Header().Set("content-type", "application/json")
 
-    if Settings.AuthenticationAPI {
-        token, err := handleAuthentication(request)
-        if err != nil {
-            responseAPIError(err, http.StatusUnauthorized)
-            return
-        }
-        response.Token = token
-    }
+	if Settings.AuthenticationAPI {
+		token, err := handleAuthentication(request)
+		if err != nil {
+			responseAPIError(err, http.StatusUnauthorized)
+			return
+		}
+		response.Token = token
+	}
 
-    switch request.Cmd {
-    case "login":
-        // No additional action needed
-    case "status":
-        populateStatusResponse(&response)
-    case "getCurrentlyUsedChannels":
-        err = getCurrentlyUsedChannels(&response)
-        if err != nil {
-            responseAPIError(err, http.StatusInternalServerError)
-            return
-        }
-    case "update.m3u":
-        err = updateM3U()
-        if err != nil {
-            responseAPIError(err, http.StatusInternalServerError)
-            return
-        }
-    case "update.hdhr":
-        err = updateHDHR()
-        if err != nil {
-            responseAPIError(err, http.StatusInternalServerError)
-            return
-        }
-    case "update.xmltv":
-        err = updateXMLTV()
-        if err != nil {
-            responseAPIError(err, http.StatusInternalServerError)
-            return
-        }
-    case "update.xepg":
-        buildXEPG(false)
-    default:
-        responseAPIError(errors.New(getErrMsg(5000)), http.StatusBadRequest)
-        return
-    }
+	switch request.Cmd {
+	case "login":
+		// No additional action needed
+	case "status":
+		populateStatusResponse(&response)
+	case "getCurrentlyUsedChannels":
+		err = GetCurrentlyUsedChannels(streamManager, &response)
+		if err != nil {
+			responseAPIError(err, http.StatusInternalServerError)
+			return
+		}
+	case "updateM3U":
+		err = updateM3U()
+		if err != nil {
+			responseAPIError(err, http.StatusInternalServerError)
+			return
+		}
+	case "updateHDHR":
+		err = updateHDHR()
+		if err != nil {
+			responseAPIError(err, http.StatusInternalServerError)
+			return
+		}
+	case "updateXMLTV":
+		err = updateXMLTV()
+		if err != nil {
+			responseAPIError(err, http.StatusInternalServerError)
+			return
+		}
+	case "updateXEPG":
+		buildXEPG(false)
+	default:
+		responseAPIError(errors.New(getErrMsg(5000)), http.StatusBadRequest)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte(mapToJSON(response)))
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(mapToJSON(response)))
 }
 
 func handleAuthentication(request APIRequestStruct) (string, error) {
-    var token string
-    var err error
+	var token string
+	var err error
 
-    if request.Token == "" {
-        if request.Cmd == "login" {
-            token, err = authentication.UserAuthentication(request.Username, request.Password)
-        } else {
-            err = errors.New("login incorrect")
-        }
-    } else {
-        token, err = tokenAuthentication(request.Token)
-    }
+	if request.Token == "" {
+		if request.Cmd == "login" {
+			token, err = authentication.UserAuthentication(request.Username, request.Password)
+		} else {
+			err = errors.New("login incorrect")
+		}
+	} else {
+		token, err = tokenAuthentication(request.Token)
+	}
 
-    if err != nil {
-        return "", err
-    }
+	if err != nil {
+		return "", err
+	}
 
-    err = checkAuthorizationLevel(token, "authentication.api")
-    if err != nil {
-        return "", err
-    }
+	err = checkAuthorizationLevel(token, "authentication.api")
+	if err != nil {
+		return "", err
+	}
 
-    return token, nil
+	return token, nil
 }
 
 func populateStatusResponse(response *APIResponseStruct) {
@@ -1148,8 +1177,8 @@ func populateSystemInfo() *SystemInfoStruct {
 	systemInfo.ChannelInfo = populateChannelInfo()
 	return &systemInfo
 }
- 
-func populateSystemURLs() SystemURLsStruct{
+
+func populateSystemURLs() SystemURLsStruct {
 	var systemURLs SystemURLsStruct
 	systemURLs.DVR = System.Domain
 	systemURLs.M3U = System.ServerProtocol + "://" + System.Domain + "/m3u/threadfin.m3u"
@@ -1166,25 +1195,24 @@ func populateChannelInfo() ChannelInfoStruct {
 }
 
 func updateM3U() error {
-    err := getProviderData("m3u", "")
-    if err != nil {
-        return err
-    }
-    return buildDatabaseDVR()
+	err := getProviderData("m3u", "")
+	if err != nil {
+		return err
+	}
+	return buildDatabaseDVR()
 }
 
 func updateHDHR() error {
-    err := getProviderData("hdhr", "")
-    if err != nil {
-        return err
-    }
-    return buildDatabaseDVR()
+	err := getProviderData("hdhr", "")
+	if err != nil {
+		return err
+	}
+	return buildDatabaseDVR()
 }
 
 func updateXMLTV() error {
-    return getProviderData("xmltv", "")
+	return getProviderData("xmltv", "")
 }
-
 
 // Download : Datei Download
 func Download(w http.ResponseWriter, r *http.Request) {
@@ -1207,31 +1235,6 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 
 	defaults = response
 
-	// Total connections for all playlists
-	totalPlaylistCount := 0
-	if len(Settings.Files.M3U) > 0 {
-		for _, value := range Settings.Files.M3U {
-
-			// Assert that value is a map[string]interface{}
-			nestedMap, ok := value.(map[string]interface{})
-			if !ok {
-				fmt.Printf("Error asserting nested value as map: %v\n", value)
-				continue
-			}
-
-			// Get the tuner count
-			if tuner, exists := nestedMap["tuner"]; exists {
-				switch v := tuner.(type) {
-				case float64:
-					totalPlaylistCount += int(v)
-				case int:
-					totalPlaylistCount += v
-				default:
-				}
-			}
-		}
-	}
-
 	// Folgende Daten immer an den Client übergeben
 	defaults.ClientInfo.ARCH = System.ARCH
 	defaults.ClientInfo.EpgSource = Settings.EpgSource
@@ -1243,10 +1246,6 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 	defaults.ClientInfo.UUID = Settings.UUID
 	defaults.ClientInfo.Errors = WebScreenLog.Errors
 	defaults.ClientInfo.Warnings = WebScreenLog.Warnings
-	defaults.ClientInfo.ActiveClients = getActiveClientCount()
-	defaults.ClientInfo.ActivePlaylist = getActivePlaylistCount()
-	defaults.ClientInfo.TotalClients = Settings.Tuner
-	defaults.ClientInfo.TotalPlaylist = totalPlaylistCount
 	defaults.ClientInfo.SystemIPs = System.IPAddressesList
 	defaults.Notification = System.Notification
 	defaults.Log = WebScreenLog

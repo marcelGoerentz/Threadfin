@@ -1,84 +1,64 @@
 package src
 
-import "time"
+import (
+	"context"
+	"net/http"
+	"os/exec"
+	"sync"
+)
 
-// Playlist : Enthält allen Playlistinformationen, die der Buffer benötigr
+// StreamManager verwaltet die Streams und ffmpeg-Prozesse
+type StreamManager struct {
+	playlists map[string]*Playlist
+	errorChan chan ErrorInfo
+	stopChan  chan bool
+	mu        sync.Mutex
+}
+
 type Playlist struct {
-	Folder        string
-	PlaylistID    string
-	PlaylistName  string
-	Tuner         int
-	HttpProxyIP   string
-	HttpProxyPort string
-
-	Clients map[int]ThisClient
-	Streams map[int]ThisStream
+	name    string
+	streams map[string]*Stream
 }
 
-// ThisClient : Clientinfos
-type ThisClient struct {
-	Connection int
-}
+// Stream repräsentiert einen einzelnen Stream
+type Stream struct {
+	name    string
+	clients map[string]Client
+	Buffer  *Buffer
+	ctx     context.Context
+	cancel  context.CancelFunc
 
-// ThisStream : Enthält Informationen zu dem abzuspielenden Stream einer Playlist
-type ThisStream struct {
-	ChannelName       string
-	Error             string
 	Folder            string
-	MD5               string
-	NetworkBandwidth  int
-	PlaylistID        string
-	PlaylistName      string
-	Status            bool
+	OldSegments       []string
 	URL               string
 	BackupChannel1URL string
 	BackupChannel2URL string
 	BackupChannel3URL string
-
-	Segment []Segment
-	// Lokale Temp Datein
-	OldSegments []string
 }
 
-// Segment : URL Segmente (HLS / M3U8)
-type Segment struct {
-	Duration     float64
-	Info         bool
-	PlaylistType string
-	Sequence     int64
-	URL          string
-	Version      int
-	Wait         float64
-
-	StreamInf struct {
-		AverageBandwidth int
-		Bandwidth        int
-		Framerate        float64
-		Resolution       string
-		SegmentURL       string
-	}
+type Buffer struct {
+	isThirdPartyBuffer bool
+	cmd                *exec.Cmd
+	stopChan           chan struct{}
 }
 
-// DynamicStream : Streaminformationen bei dynamischer Bandbreite
-type DynamicStream struct {
-	AverageBandwidth int
-	Bandwidth        int
-	Framerate        float64
-	Resolution       string
-	URL              string
+type Client struct {
+	w http.ResponseWriter
+	r *http.Request
 }
 
-// ClientConnection : Client Verbindungen
-type ClientConnection struct {
-	Connection int
-	Error      error
+type ErrorInfo struct {
+	ErrorCode int
+	Stream    *Stream
+	ClientID  string
 }
 
-// BandwidthCalculation : Bandbreitenberechnung für den Stream
-type BandwidthCalculation struct {
-	NetworkBandwidth int
-	Size             int
-	Start            time.Time
-	Stop             time.Time
-	TimeDiff         float64
-}
+const (
+	NoError             = 0
+	BufferFolderError   = 4008
+	SendFileError       = 4009
+	CreateFileError     = 4010
+	EndOfFileError      = 4011
+	ReadIntoBufferError = 4012
+	WriteToBufferError  = 4013
+)

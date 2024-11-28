@@ -150,7 +150,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["ssdp"] = true
 	defaults["storeBufferInRAM"] = true
 	defaults["omitPorts"] = false
-	defaults["bindingIPs"]= ""
+	defaults["bindingIPs"] = ""
 	defaults["forceHttps"] = false
 	defaults["useHttps"] = false
 	defaults["threadfinDomain"] = ""
@@ -203,7 +203,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	}
 
 	// Initialze virutal filesystem for the Buffer
-	initBufferVFS(settings.StoreBufferInRAM)
+	InitBufferVFS(settings.StoreBufferInRAM)
 
 	settings.Version = System.DBVersion
 
@@ -226,7 +226,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	var domain = ""
 	var port = ""
 	if settings.UseHttps || settings.ForceClientHttps {
-		System.ServerProtocol = "https"	
+		System.ServerProtocol = "https"
 	} else {
 		System.ServerProtocol = "http"
 	}
@@ -240,7 +240,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 		} else {
 			port = Settings.Port
 		}
-		
+
 	} else {
 		domain = System.IPAddress
 		port = Settings.Port
