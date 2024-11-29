@@ -15,14 +15,17 @@ import (
 	"strings"
 
 	"threadfin/src/internal/authentication"
-	"golang.org/x/net/http2"
+
 	"github.com/gorilla/websocket"
+	"golang.org/x/net/http2"
 )
 
 var streamManager = NewStreamManager()
 
 // StartWebserver : Startet den Webserver
-func StartWebserver() (err error) {
+func StartWebserver() (webServer *WebServer, err error) {
+
+	webServer = &WebServer{SM: streamManager}
 
 	var port = Settings.Port
 	var serverMux = http.NewServeMux()
@@ -41,38 +44,43 @@ func StartWebserver() (err error) {
 	serverMux.HandleFunc("/ppv/disable", disablePPV)
 	//serverMux.HandleFunc("/auto/", Auto)
 
+	// Create server structure
+	srv := &http.Server{
+		Addr:    port,
+		Handler: serverMux,
+	}
+
+	webServer.Server = srv
+
 	regexIpV4, _ := regexp.Compile(`(?:\d{1,3}\.){3}\d{1,3}`)
 	regexIpV6, _ := regexp.Compile(`(?:[A-Fa-f0-9]{0,4}:){3,7}[a-fA-F0-9]{1,4}`)
 	var customIps []string
 	var customIpsV4 = regexIpV4.FindAllString(Settings.BindingIPs, -1)
 	var customIpsV6 = regexIpV6.FindAllString(Settings.BindingIPs, -1)
 	if customIpsV4 != nil || customIpsV6 != nil {
-		customIps = make([]string, len(customIpsV4) + len(customIpsV6))
+		customIps = make([]string, len(customIpsV4)+len(customIpsV6))
 		copy(customIps, customIpsV4)
 		copy(customIps[len(customIpsV4):], customIpsV6)
 	}
 
 	if customIps != nil {
 		for _, address := range customIps {
-			showInfo("DVR IP:" + address + ":" + Settings.Port)
-			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
+			ShowInfo("DVR IP:" + address + ":" + Settings.Port)
+			ShowHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
 			if Settings.UseHttps {
 				go func(address string) {
-					srv := &http.Server{
-						Addr:    port,
-						Handler: serverMux,
-					}
 					//activate HTTP2
 					http2.ConfigureServer(srv, &http2.Server{})
 					if err = srv.ListenAndServeTLS(System.Folder.Config+"server.crt", System.Folder.Config+"server.key"); err != nil {
-						ShowError(err, 1001)
+						//ShowError(err, 1001)
 						return
 					}
 				}(address)
 			} else {
 				go func(address string) {
-					if err = http.ListenAndServe(address+":"+port, serverMux); err != nil {
-						ShowError(err, 1001)
+					srv.Addr = address + ":" + port
+					if err = srv.ListenAndServe(); err != nil {
+						//ShowError(err, 1001)
 						return
 					}
 				}(address)
@@ -81,39 +89,35 @@ func StartWebserver() (err error) {
 		}
 	} else {
 		for _, ip := range System.IPAddressesV4 {
-			showInfo("DVR IP:" + ip + ":" + Settings.Port)
-			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+			ShowInfo("DVR IP:" + ip + ":" + Settings.Port)
+			ShowHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 
 		for _, ip := range System.IPAddressesV6 {
-			showInfo("DVR IP:" + ip + ":" + Settings.Port)
-			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+			ShowInfo("DVR IP:" + ip + ":" + Settings.Port)
+			ShowHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 		if Settings.UseHttps {
 			go func() {
-				srv := &http.Server{
-					Addr:    port,
-					Handler: serverMux,
-				}
-
 				//activate HTTP2
 				http2.ConfigureServer(srv, &http2.Server{})
 				if err = srv.ListenAndServeTLS(System.Folder.Config+"server.crt", System.Folder.Config+"server.key"); err != nil {
-					ShowError(err, 1001)
+					//ShowError(err, 1001)
 					return
 				}
 			}()
 		} else {
 			go func() {
-				if err = http.ListenAndServe(":"+port, serverMux); err != nil {
-					ShowError(err, 1001)
+				srv.Addr = ":" + port
+				if err = srv.ListenAndServe(); err != nil {
+					//ShowError(err, 1001)
 					return
 				}
+				fmt.Println("Ich bin hier!")
 			}()
 		}
 	}
-
-	select {}
+	return
 }
 
 // Index : Web Server /
@@ -124,7 +128,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	var path = r.URL.Path
 	var debug = fmt.Sprintf("Web Server Request:Path: %s", path)
 
-	showDebug(debug, 2)
+	ShowDebug(debug, 2)
 
 	switch path {
 
@@ -242,36 +246,36 @@ func stream(w http.ResponseWriter, r *http.Request) {
 	switch Settings.Buffer {
 
 	case "-":
-		showInfo(fmt.Sprintf("Buffer:false [%s]", Settings.Buffer))
+		ShowInfo(fmt.Sprintf("Buffer:false [%s]", Settings.Buffer))
 
 	case "threadfin":
 		if strings.Contains(streamInfo.URL, "rtsp://") || strings.Contains(streamInfo.URL, "rtp://") {
 			err = errors.New("RTSP and RTP streams are not supported")
 			ShowError(err, 2004)
 
-			showInfo("Streaming URL:" + streamInfo.URL)
+			ShowInfo("Streaming URL:" + streamInfo.URL)
 			http.Redirect(w, r, streamInfo.URL, http.StatusFound)
 
-			showInfo("Streaming Info:URL was passed to the client")
+			ShowInfo("Streaming Info:URL was passed to the client")
 			return
 		}
 
-		showInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
+		ShowInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
 
 	default:
-		showInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
+		ShowInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
 
 	}
 
 	if Settings.Buffer != "-" {
-		showInfo(fmt.Sprintf("Buffer Size:%d KB", Settings.BufferSize))
+		ShowInfo(fmt.Sprintf("Buffer Size:%d KB", Settings.BufferSize))
 	}
 
 	log.Println("Stream Info: ", streamInfo)
 	log.Println("M3U Info: ", Settings.Files.M3U)
 
-	showInfo(fmt.Sprintf("Channel Name:%s", streamInfo.Name))
-	showInfo(fmt.Sprintf("Client User-Agent:%s", r.Header.Get("User-Agent")))
+	ShowInfo(fmt.Sprintf("Channel Name:%s", streamInfo.Name))
+	ShowInfo(fmt.Sprintf("Client User-Agent:%s", r.Header.Get("User-Agent")))
 
 	// Prüfen ob der Buffer verwendet werden soll
 	switch Settings.Buffer {
@@ -293,7 +297,7 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if proxyIP != "" && proxyPort != "" {
-			showInfo("Streaming Info: Streaming through proxy.")
+			ShowInfo("Streaming Info: Streaming through proxy.")
 
 			proxyURL, err := url.Parse(fmt.Sprintf("http://%s:%s", proxyIP, proxyPort))
 			if err != nil {
@@ -325,12 +329,12 @@ func stream(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			showInfo("Streaming URL:" + streamInfo.URL)
+			ShowInfo("Streaming URL:" + streamInfo.URL)
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			http.Redirect(w, r, streamInfo.URL, http.StatusFound)
 
-			showInfo("Streaming Info:URL was passed to the client.")
-			showInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
+			ShowInfo("Streaming Info:URL was passed to the client.")
+			ShowInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
 		}
 
 	default:
@@ -347,7 +351,7 @@ func setProtocol(streamInfo *StreamInfo, u *url.URL, err error) {
 		case "https", "rtsp", "rtp":
 			return
 		default:
-			showInfo(fmt.Sprintf("Streaming: Unknown protocol: %s", u.Scheme))
+			ShowInfo(fmt.Sprintf("Streaming: Unknown protocol: %s", u.Scheme))
 		}
 	}
 }
@@ -582,7 +586,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 
 		// Daten schreiben
 		case "saveSettings":
-			showInfo("WEB:Saving settings")
+			ShowInfo("WEB:Saving settings")
 			var authenticationUpdate = Settings.AuthenticationWEB
 			var previousStoreBufferInRAM = Settings.StoreBufferInRAM
 			var previousBindingIPs = Settings.BindingIPs
@@ -601,7 +605,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if Settings.BindingIPs != previousBindingIPs || Settings.UseHttps != previousUseHttps {
-					showInfo("WEB:Restart program since listening IP option has been changed!")
+					ShowInfo("WEB:Restart program since listening IP option has been changed!")
 					os.Exit(0)
 				}
 
@@ -705,7 +709,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 						response.Alert = "Backup was successfully restored."
 						response.Reload = true
 					}
-					showInfo("Threadfin:" + "Backup successfully restored.")
+					ShowInfo("Threadfin:" + "Backup successfully restored.")
 				}
 
 			}
@@ -732,7 +736,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					ShowError(err, 1017)
 				}
-				showDebug("Sucessfully uploaded custom image", 1)
+				ShowDebug("Sucessfully uploaded custom image", 1)
 			}
 
 		case "saveWizard":

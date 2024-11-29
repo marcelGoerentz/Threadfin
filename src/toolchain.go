@@ -35,7 +35,7 @@ func checkFolder(path string) (err error) {
 		if err == nil {
 
 			debug = fmt.Sprintf("Create Folder:%s", path)
-			showDebug(debug, 1)
+			ShowDebug(debug, 1)
 
 		} else {
 			return err
@@ -69,7 +69,7 @@ func checkVFSFolder(path string, vfs avfs.VFS) (err error) {
 			if err == nil {
 
 				debug = fmt.Sprintf("Create virtual filesystem Folder:%s", path)
-				showDebug(debug, 1)
+				ShowDebug(debug, 1)
 
 			} else {
 				return err
@@ -78,7 +78,7 @@ func checkVFSFolder(path string, vfs avfs.VFS) (err error) {
 			err = os.MkdirAll(path, 0755)
 			if err == nil {
 				debug = fmt.Sprintf("Created folder on disk: %s", path)
-				showDebug(debug, 1)
+				ShowDebug(debug, 1)
 			} else {
 				return err
 			}

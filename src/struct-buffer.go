@@ -9,24 +9,24 @@ import (
 
 // StreamManager verwaltet die Streams und ffmpeg-Prozesse
 type StreamManager struct {
-	playlists map[string]*Playlist
+	Playlists map[string]*Playlist
 	errorChan chan ErrorInfo
 	stopChan  chan bool
 	mu        sync.Mutex
 }
 
 type Playlist struct {
-	name    string
-	streams map[string]*Stream
+	Name    string
+	Streams map[string]*Stream
 }
 
 // Stream repräsentiert einen einzelnen Stream
 type Stream struct {
-	name    string
-	clients map[string]Client
+	Name    string
+	Clients map[string]Client
 	Buffer  *Buffer
-	ctx     context.Context
-	cancel  context.CancelFunc
+	Ctx     context.Context
+	Cancel  context.CancelFunc
 
 	Folder            string
 	OldSegments       []string

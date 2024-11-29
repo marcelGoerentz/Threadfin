@@ -71,7 +71,7 @@ func buildXEPG(background bool) {
 				createXMLTVFile()
 				createM3UFile()
 
-				showInfo("XEPG:" + "Ready to use")
+				ShowInfo("XEPG:" + "Ready to use")
 
 				if Settings.CacheImages && System.ImageCachingInProgress == 0 {
 
@@ -79,12 +79,12 @@ func buildXEPG(background bool) {
 
 						System.ImageCachingInProgress = 1
 						Data.Cache.Images.WaitForDownloads()
-						showInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.Images.GetNumCachedImages()))
+						ShowInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.Images.GetNumCachedImages()))
 
 						//Data.Cache.Images.Image.Caching()
 						//Data.Cache.Images.Image.Remove()
 
-						showInfo("Image Caching:Done")
+						ShowInfo("Image Caching:Done")
 
 						createXMLTVFile()
 						createM3UFile()
@@ -124,11 +124,11 @@ func buildXEPG(background bool) {
 
 						System.ImageCachingInProgress = 1
 						Data.Cache.Images.WaitForDownloads()
-						showInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.Images.GetNumCachedImages()))
+						ShowInfo(fmt.Sprintf("Image Caching:Images are cached (%d)", Data.Cache.Images.GetNumCachedImages()))
 
 						//Data.Cache.Images.Image.Caching()
 						//Data.Cache.Images.Image.Remove()
-						showInfo("Image Caching:Done")
+						ShowInfo("Image Caching:Done")
 
 						createXMLTVFile()
 						createM3UFile()
@@ -139,7 +139,7 @@ func buildXEPG(background bool) {
 
 				}
 
-				showInfo("XEPG:" + "Ready to use")
+				ShowInfo("XEPG:" + "Ready to use")
 
 				System.ScanInProgress = 0
 
@@ -238,7 +238,7 @@ func createXEPGMapping() {
 
 			var err error
 			var fileID = strings.TrimSuffix(getFilenameFromPath(file), path.Ext(getFilenameFromPath(file)))
-			showInfo("XEPG:" + "Parse XMLTV file: " + getProviderParameter(fileID, "xmltv", "name"))
+			ShowInfo("XEPG:" + "Parse XMLTV file: " + getProviderParameter(fileID, "xmltv", "name"))
 
 			//xmltv, err = getLocalXMLTV(file)
 			var xmltv XMLTV
@@ -282,7 +282,7 @@ func createXEPGMapping() {
 	} else {
 
 		if !System.ConfigurationWizard {
-			showWarning(1007)
+			ShowWarning(1007)
 		}
 
 	}
@@ -366,7 +366,7 @@ func createXEPGDatabase() (err error) {
 		return hex.EncodeToString(hash[:])
 	}
 
-	showInfo("XEPG:" + "Update database")
+	ShowInfo("XEPG:" + "Update database")
 
 	// Kanal mit fehlenden Kanalnummern löschen.  Delete channel with missing channel numbers
 	for id, dxc := range Data.XEPG.Channels {
@@ -559,7 +559,7 @@ func createXEPGDatabase() (err error) {
 		}
 
 	}
-	showInfo("XEPG:" + "Save DB file")
+	ShowInfo("XEPG:" + "Save DB file")
 	err = saveMapToJSONFile(System.File.XEPG, Data.XEPG.Channels)
 	if err != nil {
 		return
@@ -570,7 +570,7 @@ func createXEPGDatabase() (err error) {
 
 // Kanäle automatisch zuordnen und das Mapping überprüfen
 func mapping() (err error) {
-	showInfo("XEPG:" + "Map channels")
+	ShowInfo("XEPG:" + "Map channels")
 
 	for xepg, dxc := range Data.XEPG.Channels {
 
@@ -729,7 +729,7 @@ func mapping() (err error) {
 					} else {
 
 						ShowError(fmt.Errorf(fmt.Sprintf("Missing EPG data: %s", xepgChannel.Name)), 0)
-						showWarning(2302)
+						ShowWarning(2302)
 						// xepgChannel.XActive = false
 
 					}
@@ -739,7 +739,7 @@ func mapping() (err error) {
 					var fileID = strings.TrimSuffix(getFilenameFromPath(file), path.Ext(getFilenameFromPath(file)))
 
 					ShowError(fmt.Errorf("missing XMLTV file: %s", getProviderParameter(fileID, "xmltv", "name")), 0)
-					showWarning(2301)
+					ShowWarning(2301)
 					// xepgChannel.XActive = false
 
 				}
@@ -800,7 +800,7 @@ func createXMLTVFile() (err error) {
 		return
 	}
 
-	showInfo("XEPG:" + fmt.Sprintf("Create XMLTV file (%s)", System.File.XML))
+	ShowInfo("XEPG:" + fmt.Sprintf("Create XMLTV file (%s)", System.File.XML))
 
 	var xepgXML XMLTV
 
@@ -852,7 +852,7 @@ func createXMLTVFile() (err error) {
 	var xmlOutput = []byte(xml.Header + string(content))
 	writeByteToFile(System.File.XML, xmlOutput)
 
-	showInfo("XEPG:" + fmt.Sprintf("Compress XMLTV file (%s)", System.Compressed.GZxml))
+	ShowInfo("XEPG:" + fmt.Sprintf("Compress XMLTV file (%s)", System.Compressed.GZxml))
 	err = compressGZIP(&xmlOutput, System.Compressed.GZxml)
 
 	xepgXML = XMLTV{}
@@ -1001,7 +1001,7 @@ func createLiveProgram(xepgChannel XEPGChannelStruct, channelId string) *Program
 		year := currentTime.Year()
 		startTimeParsed, err := time.ParseInLocation(layout, fmt.Sprintf("%d.%s", year, matches[0]), nyLocation)
 		if err != nil {
-			showInfo("TIME PARSE ERROR: " + err.Error())
+			ShowInfo("TIME PARSE ERROR: " + err.Error())
 		} else {
 			localTime := startTimeParsed.In(currentTime.Location())
 			startTime = localTime.Format("20060102150405 -0700")
@@ -1042,7 +1042,7 @@ func createDummyProgram(xepgChannel XEPGChannelStruct) (dummyXMLTV XMLTV) {
 	var currentDay = currentTime.Format("20060102")
 	var startTime, _ = time.Parse("20060102150405", currentDay+"000000")
 
-	showInfo("Create Dummy Guide:" + "Time offset" + offset + " - " + xepgChannel.XName)
+	ShowInfo("Create Dummy Guide:" + "Time offset" + offset + " - " + xepgChannel.XName)
 
 	var dummyLength int
 	var err error
@@ -1226,12 +1226,12 @@ func getLocalXMLTV(file string, xmltv *XMLTV) (err error) {
 // M3U Datei erstellen
 func createM3UFile() {
 
-	showInfo("XEPG:" + fmt.Sprintf("Create M3U file (%s)", System.File.M3U))
+	ShowInfo("XEPG:" + fmt.Sprintf("Create M3U file (%s)", System.File.M3U))
 	_, err := buildM3U([]string{})
 	if err != nil {
 		ShowError(err, 000)
 	} else {
-		showInfo("XEPG:Created M3U file")
+		ShowInfo("XEPG:Created M3U file")
 	}
 }
 
@@ -1250,7 +1250,7 @@ func cleanupXEPG() {
 		sourceIDs = append(sourceIDs, source)
 	}
 
-	showInfo("XEPG: Cleanup database")
+	ShowInfo("XEPG: Cleanup database")
 	Data.XEPG.XEPGCount = 0
 
 	for id, dxc := range Data.XEPG.Channels {
@@ -1285,10 +1285,10 @@ func cleanupXEPG() {
 		return
 	}
 
-	showInfo("XEPG Channels:" + fmt.Sprintf("%d", Data.XEPG.XEPGCount))
+	ShowInfo("XEPG Channels:" + fmt.Sprintf("%d", Data.XEPG.XEPGCount))
 
 	if len(Data.Streams.Active) > 0 && Data.XEPG.XEPGCount == 0 {
-		showWarning(2005)
+		ShowWarning(2005)
 	}
 }
 

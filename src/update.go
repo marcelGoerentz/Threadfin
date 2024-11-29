@@ -20,12 +20,12 @@ import (
 func BinaryUpdate() (err error) {
 
 	if !System.GitHub.Update {
-		showWarning(2099)
+		ShowWarning(2099)
 		return
 	}
 
 	if !Settings.ThreadfinAutoUpdate {
-		showWarning(2098)
+		ShowWarning(2098)
 		return
 	}
 
@@ -37,7 +37,7 @@ func BinaryUpdate() (err error) {
 
 	up2date.Init()
 
-	showInfo("BRANCH:" + System.Branch)
+	ShowInfo("BRANCH:" + System.Branch)
 	switch System.Branch {
 
 	// Update von GitHub
@@ -91,7 +91,7 @@ func BinaryUpdate() (err error) {
 			}
 		}
 
-		showInfo("TAG LATEST:" + updater.Response.Version)
+		ShowInfo("TAG LATEST:" + updater.Response.Version)
 
 		for _, asset := range updater.Response.Assets {
 			if strings.Contains(asset.DownloadUrl, System.OS) && strings.Contains(asset.DownloadUrl, System.ARCH) {
@@ -100,7 +100,7 @@ func BinaryUpdate() (err error) {
 			}
 		}
 
-		showInfo("FILE:" + updater.Response.UpdateBIN)
+		ShowInfo("FILE:" + updater.Response.UpdateBIN)
 
 	// Update vom eigenen Server
 	default:
@@ -108,11 +108,11 @@ func BinaryUpdate() (err error) {
 		updater.URL = Settings.UpdateURL
 
 		if len(updater.URL) == 0 {
-			showInfo(fmt.Sprintf("Update URL:No server URL specified, update will not be performed. Branch: %s", System.Branch))
+			ShowInfo(fmt.Sprintf("Update URL:No server URL specified, update will not be performed. Branch: %s", System.Branch))
 			return
 		}
 
-		showInfo("Update URL:" + updater.URL)
+		ShowInfo("Update URL:" + updater.URL)
 		fmt.Println("-----------------")
 
 		// Versionsinformationen vom Server laden
@@ -120,7 +120,7 @@ func BinaryUpdate() (err error) {
 		if err != nil {
 
 			debug = fmt.Sprint(err.Error())
-			showDebug(debug, 1)
+			ShowDebug(debug, 1)
 
 			return nil
 		}
@@ -171,21 +171,21 @@ func BinaryUpdate() (err error) {
 			// Update durchführen
 			var fileType, url string
 
-			showInfo(fmt.Sprintf("Update Available:Version: %s", updater.Response.Version))
+			ShowInfo(fmt.Sprintf("Update Available:Version: %s", updater.Response.Version))
 
 			switch System.Branch {
 
 			// Update von GitHub
 			case "Master", "Beta":
-				showInfo("Update Server:GitHub")
+				ShowInfo("Update Server:GitHub")
 
 			// Update vom eigenen Server
 			default:
-				showInfo(fmt.Sprintf("Update Server:%s", Settings.UpdateURL))
+				ShowInfo(fmt.Sprintf("Update Server:%s", Settings.UpdateURL))
 
 			}
 
-			showInfo(fmt.Sprintf("Start Update:Branch: %s", updater.Branch))
+			ShowInfo(fmt.Sprintf("Start Update:Branch: %s", updater.Branch))
 
 			// Neue Version als BIN Datei herunterladen
 			if len(updater.Response.UpdateBIN) > 0 {
@@ -214,11 +214,11 @@ func BinaryUpdate() (err error) {
 
 		} else {
 			// Hinweis ausgeben
-			showWarning(6004)
+			ShowWarning(6004)
 		}
 
 	} else {
-		showInfo("BIN:Update omitted")
+		ShowInfo("BIN:Update omitted")
 	}
 
 	return nil
@@ -235,8 +235,8 @@ checkVersion:
 	if settingsVersion, ok := settingsMap["version"].(string); ok {
 
 		if settingsVersion > System.DBVersion {
-			showInfo("Settings DB Version:" + settingsVersion)
-			showInfo("System DB Version:" + System.DBVersion)
+			ShowInfo("Settings DB Version:" + settingsVersion)
+			ShowInfo("System DB Version:" + System.DBVersion)
 			err = errors.New(getErrMsg(1031))
 			return
 		}

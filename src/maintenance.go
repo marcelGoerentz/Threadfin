@@ -30,7 +30,7 @@ func maintenance() {
 
 				if schedule == t.Format("1504") {
 
-					showInfo("Update:" + schedule)
+					ShowInfo("Update:" + schedule)
 
 					// Backup erstellen
 					err := ThreadfinAutoBackup()

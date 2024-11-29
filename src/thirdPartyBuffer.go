@@ -24,8 +24,8 @@ func StartThirdPartyBuffer(stream *Stream, useBackup bool, backupNumber int, err
 		return nil, fmt.Errorf("could not get buffer config")
 	}
 
-	showInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", bufferType, path))
-	showInfo("Streaming URL:" + stream.URL)
+	ShowInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", bufferType, path))
+	ShowInfo("Streaming URL:" + stream.URL)
 
 	if buffer, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
 		return HandleBufferError(err, backupNumber, useBackup, stream, errorChan), err
@@ -57,7 +57,7 @@ func RunBufferCommand(bufferType string, path, options string, stream *Stream, e
 
 	cmd := exec.Command(path, args...)
 	debug := fmt.Sprintf("%s:%s %s", strings.ToUpper(Settings.Buffer), path, args)
-	showDebug(debug, 1)
+	ShowDebug(debug, 1)
 
 	stdOut, logOut, err := GetCommandPipes(cmd)
 	if err != nil {
@@ -131,9 +131,9 @@ func ShowCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, stre
 
 		select {
 		case <-streamStatus:
-			showDebug(debug, 1)
+			ShowDebug(debug, 1)
 		default:
-			showInfo(debug)
+			ShowInfo(debug)
 		}
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
