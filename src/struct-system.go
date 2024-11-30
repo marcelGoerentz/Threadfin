@@ -14,6 +14,7 @@ type SystemStruct struct {
 	AppName                string
 	ARCH                   string
 	BackgroundProcess      bool
+	Beta                   bool
 	Branch                 string
 	Build                  string
 	Compatibility          string

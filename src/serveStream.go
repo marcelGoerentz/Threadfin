@@ -37,19 +37,31 @@ func NewStreamManager() *StreamManager {
 					if errorInfo.ClientID != "" {
 						// Client specifc errors
 						sm.StopStream(playlistID, streamID, errorInfo.ClientID)
-						/*} else {
-						if streamID != "" {
-							// Buffer errors
-							if errorInfo.ErrorCode != EndOfFileError {
-								ShowError(fmt.Errorf("stopping all clients because of error while buffering"), errorInfo.ErrorCode)
-							} else {
-								showInfo("Streaming:Stopping all clients as the stream has ended or was terminated!")
-							}
-							sm.StopStreamForAllClients(streamID)
-						}*/
 					} else {
-						for clientID := range errorInfo.Stream.Clients {
-							sm.StopStream(playlistID, streamID, clientID)
+						var err error
+						playlist, exists := sm.Playlists[playlistID]
+						if exists{
+							stream, exists := playlist.Streams[streamID]
+							if exists {
+								bufferType, bufferPath, bufferOptions := GetBufferConfig()
+								buffer, err := RunBufferCommand(bufferType, bufferPath, bufferOptions, stream, sm.errorChan)
+								if err == nil {
+									if buffer != nil {
+										sm.Playlists[playlistID].Streams[streamID].Buffer = buffer
+									} else {
+										err = fmt.Errorf("buffer is nil")
+									}
+								}
+							} else {
+								err = fmt.Errorf("stream does not exist anymore")
+							}
+						} else {
+							err = fmt.Errorf("playlist does not exist anymore")
+						}
+						if err != nil {
+							for clientID := range errorInfo.Stream.Clients {
+								sm.StopStream(playlistID, streamID, clientID)
+							}
 						}
 					}
 				}

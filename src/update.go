@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	up2date "threadfin/src/internal/up2date/client"
-	"time"
 
 	"github.com/hashicorp/go-version"
 
@@ -17,7 +16,7 @@ import (
 )
 
 // BinaryUpdate : Binary Update Prozess. Git Branch master und beta wird von GitHub geladen.
-func BinaryUpdate() (err error) {
+func BinaryUpdate(betaFlag *bool) (err error) {
 
 	if !System.GitHub.Update {
 		ShowWarning(2099)
@@ -29,139 +28,94 @@ func BinaryUpdate() (err error) {
 		return
 	}
 
-	var debug string
-
 	var updater = &up2date.Updater
 	updater.Name = System.Update.Name
 	updater.Branch = System.Branch
 
 	up2date.Init()
 
-	ShowInfo("BRANCH:" + System.Branch)
-	switch System.Branch {
-
-	// Update von GitHub
-	case "Main", "Beta":
-		var releaseInfo = fmt.Sprintf("%s/releases", System.Update.Github)
-		//var latest string
-		//var bin_name string
-		var body []byte
-
-		var git []*GithubReleaseInfo
-
-		resp, err := http.Get(releaseInfo)
-		if err != nil {
-			ShowError(err, 6003)
-			return nil
-		}
-
-		body, _ = io.ReadAll(resp.Body)
-
-		err = json.Unmarshal(body, &git)
-		if err != nil {
-			return err
-		}
-
-		// Get latest prerelease tag name
-		if System.Branch == "Beta" {
-			for _, release := range git {
-				if release.Prerelease {
-					updater.Response.Version = release.TagName
-					updater.Response.UpdatedAt = release.Assets[0].UpdatetAt
-					for _, asset := range release.Assets {
-						new_asset := up2date.AssetsStruct{DownloadUrl: asset.DownloadUrl, UpdatetAt: asset.UpdatetAt}
-						updater.Response.Assets = append(updater.Response.Assets, new_asset)
-					}
-					break
-				}
-			}
-		}
-
-		// Latest main tag name
-		if System.Branch == "Main" {
-			for _, release := range git {
-				if !release.Prerelease {
-					updater.Response.Version = release.TagName
-					for _, asset := range release.Assets {
-						new_asset := up2date.AssetsStruct{DownloadUrl: asset.DownloadUrl, UpdatetAt: asset.UpdatetAt}
-						updater.Response.Assets = append(updater.Response.Assets, new_asset)
-					}
-					break
-				}
-			}
-		}
-
-		ShowInfo("TAG LATEST:" + updater.Response.Version)
-
-		for _, asset := range updater.Response.Assets {
-			if strings.Contains(asset.DownloadUrl, System.OS) && strings.Contains(asset.DownloadUrl, System.ARCH) {
-				updater.Response.Status = true
-				updater.Response.UpdateBIN = asset.DownloadUrl
-			}
-		}
-
-		ShowInfo("FILE:" + updater.Response.UpdateBIN)
-
-	// Update vom eigenen Server
-	default:
-
-		updater.URL = Settings.UpdateURL
-
-		if len(updater.URL) == 0 {
-			ShowInfo(fmt.Sprintf("Update URL:No server URL specified, update will not be performed. Branch: %s", System.Branch))
-			return
-		}
-
-		ShowInfo("Update URL:" + updater.URL)
-		fmt.Println("-----------------")
-
-		// Versionsinformationen vom Server laden
-		err = up2date.GetVersion()
-		if err != nil {
-
-			debug = fmt.Sprint(err.Error())
-			ShowDebug(debug, 1)
-
-			return nil
-		}
-
-		if len(updater.Response.Reason) > 0 {
-
-			err = fmt.Errorf(fmt.Sprintf("Update Server: %s", updater.Response.Reason))
-			ShowError(err, 6002)
-
-			return nil
-		}
-
+	if *betaFlag {
+		updater.Branch = "Beta"
+	} else {
+		updater.Branch = "Main"
 	}
+
+	ShowInfo("BRANCH:" + updater.Branch)
+	var releaseInfo = fmt.Sprintf("%s/releases", System.Update.Github)
+	//var latest string
+	//var bin_name string
+	var body []byte
+
+	var git []*GithubReleaseInfo
+
+	resp, err := http.Get(releaseInfo)
+	if err != nil {
+		ShowError(err, 6003)
+		return nil
+	}
+
+	body, _ = io.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &git)
+	if err != nil {
+		return err
+	}
+
+	// Get latest prerelease tag name
+	if updater.Branch == "Beta" {
+		for _, release := range git {
+			if release.Prerelease {
+				updater.Response.Version = release.TagName
+				updater.Response.UpdatedAt = release.Assets[0].UpdatetAt
+				for _, asset := range release.Assets {
+					new_asset := up2date.AssetsStruct{DownloadUrl: asset.DownloadUrl, UpdatetAt: asset.UpdatetAt}
+					updater.Response.Assets = append(updater.Response.Assets, new_asset)
+				}
+				break
+			}
+		}
+	}
+
+	// Latest main tag name
+	if updater.Branch == "Main" {
+		for _, release := range git {
+			if !release.Prerelease {
+				updater.Response.Version = release.TagName
+				for _, asset := range release.Assets {
+					new_asset := up2date.AssetsStruct{DownloadUrl: asset.DownloadUrl, UpdatetAt: asset.UpdatetAt}
+					updater.Response.Assets = append(updater.Response.Assets, new_asset)
+				}
+				break
+			}
+		}
+	}
+
+	ShowInfo("TAG LATEST:" + updater.Response.Version)
+
+	for _, asset := range updater.Response.Assets {
+		if strings.Contains(asset.DownloadUrl, System.OS) && strings.Contains(asset.DownloadUrl, System.ARCH) {
+			updater.Response.Status = true
+			updater.Response.UpdateBIN = asset.DownloadUrl
+		}
+	}
+
+	ShowInfo("FILE:" + updater.Response.UpdateBIN)
 
 	var path_to_file string
 	do_upgrade := false
-	if System.Branch == "Beta" {
-		path_to_file = System.Folder.Config + "latest_beta_update"
-		// If update file does not exits then update the binary to make sure that the latest version is installed
-		if _, err := os.Stat(path_to_file); errors.Is(err, os.ErrNotExist) {
-			do_upgrade = true
+	if updater.Branch == "Beta" {
+		if System.Beta {
+			existsNewerVersion(updater.Response.Version, updater.Response.Status)
 		} else {
-			// If the file exists check if the latest-release is newer then the last update
-			saved_last_update_date, err := os.ReadFile(path_to_file)
-			if err != nil {
-				ShowError(err, 0)
-				do_upgrade = true
-			}
-			last_time_date, _ := time.Parse(time.RFC3339, string(saved_last_update_date))
-			latest_beta_date, _ := time.Parse(time.RFC3339, updater.Response.UpdatedAt)
-
-			if last_time_date.Before(latest_beta_date) {
-				do_upgrade = true
-			}
+			do_upgrade = true
 		}
 	} else {
-		var currentVersion = System.Version + "." + System.Build
-		current_version, _ := version.NewVersion(currentVersion)
-		response_version, _ := version.NewVersion(updater.Response.Version)
-		if response_version.GreaterThan(current_version) && updater.Response.Status {
+		if System.Beta {
 			do_upgrade = true
+		} else {
+			if existsNewerVersion(updater.Response.Version, updater.Response.Status) {
+				do_upgrade = true
+			}
 		}
 	}
 
@@ -222,6 +176,16 @@ func BinaryUpdate() (err error) {
 	}
 
 	return nil
+}
+
+func existsNewerVersion(downloadableVersion string, status bool) bool {
+	var currentVersion = System.Version + "." + System.Build
+	current_version, _ := version.NewVersion(currentVersion)
+	response_version, _ := version.NewVersion(downloadableVersion)
+	if response_version.GreaterThan(current_version) && status {
+		return true
+	}
+	return false
 }
 
 func conditionalUpdateChanges() (err error) {

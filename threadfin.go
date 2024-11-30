@@ -46,7 +46,7 @@ var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadf
 const Name = "Threadfin"
 
 // Version : Version, die Build Nummer wird in der main func geparst.
-const Version = "1.8.0-dev"
+const Version = "1.8.0"
 
 // DBVersion : Datanbank Version
 const DBVersion = "0.5.0"
@@ -63,7 +63,7 @@ var port = flag.Int("port", 34400, ": Server port")
 var useHttps = flag.Bool("useHttps", false, ": Use Https Webserver [place server.crt and server.key in config folder]")
 var restore = flag.String("restore", "", ": Restore from backup  ["+sampleRestore+"threadfin_backup.zip]")
 
-var gitBranch = flag.String("branch", "", ": Git Branch           [main|beta] (default: main)")
+var betaFlag = flag.Bool("beta", false, ": Beta flag           [true|false] (default: false)")
 var debug = flag.Int("debug", 0, ": Debug level          [0 - 3] (default: 0)")
 var info = flag.Bool("info", false, ": Show system info")
 var h = flag.Bool("h", false, ": Show help")
@@ -92,6 +92,11 @@ func main() {
 	system.GitHub = GitHub
 	system.Name = Name
 	system.Version = strings.Join(build[0:len(build)-1], ".")
+
+	// Check which version has been build
+	if BetaVersion {
+		system.Beta = true
+	}
 
 	// Panic !!!
 	defer func() {
@@ -139,7 +144,7 @@ func main() {
 
 	system.Dev = *dev
 
-	// Systeminformationen anzeigen
+	// Show system information
 	if *info {
 
 		system.Flag.Info = true
@@ -155,31 +160,16 @@ func main() {
 
 	}
 
-	// Webserver Port
+	// Webserver port
 	if *port != 0 {
 		system.Flag.Port = fmt.Sprintf("%d", *port)
 	}
 
-	// Https Webserver
+	// Https webserver
 	system.Flag.UseHttps = *useHttps
 
 	// Kill all remaining processes and remove PIDs file
-	tempFolder := getTempFolder()
-	if tempFolder != "" {
-		pids, err := getPIDsFromFile(tempFolder)
-		if err == nil {
-			for _, pid := range pids {
-				fmt.Printf("Killing process: %s\n", pid)
-				killProcess(pid)
-			}
-		}
-	}
-
-	// Branch
-	system.Flag.Branch = *gitBranch
-	if len(system.Flag.Branch) > 0 {
-		src.ShowInfo(fmt.Sprintf("Threadfin:Git Branch is now: %s", system.Flag.Branch))
-	}
+	killAllProcesses()
 
 	// Debug Level
 	system.Flag.Debug = *debug
@@ -188,12 +178,12 @@ func main() {
 		return
 	}
 
-	// Speicherort für die Konfigurationsdateien
+	// Config folder place
 	if len(*configFolder) > 0 {
 		system.Folder.Config = *configFolder
 	}
 
-	// Backup wiederherstellen
+	// Restore from backup
 	if len(*restore) > 0 {
 
 		system.Flag.Restore = *restore
@@ -208,33 +198,37 @@ func main() {
 		if err != nil {
 			src.ShowError(err, 0)
 		}
-
 		os.Exit(0)
 	}
 
+	// Initialize threadfin
 	err := src.Init()
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
 
-	err = src.BinaryUpdate()
+	// Update binary
+	err = src.BinaryUpdate(betaFlag)
 	if err != nil {
 		src.ShowError(err, 0)
 	}
 
+	// Build the database
 	err = src.StartSystem(false)
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
 
-	err = src.InitMaintenance()
+	// Update playlists and xml files
+	err = src.InitMaintenance(betaFlag)
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
 
+	// Start the Webserver
 	srv, err := src.StartWebserver()
 	if err != nil {
 		src.ShowError(err, 0)
@@ -245,6 +239,7 @@ func main() {
 	webserver.Server = srv.Server
 	webserver.SM = srv.SM
 
+	// Wait for the Signal to end the program
 	<-done
 	src.ShowInfo("Threadfin:Exiting Threadfin")
 }
@@ -283,11 +278,15 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 }
 
 func stopAllStreams(webserver *src.WebServer) {
-	if webserver.SM.Playlists != nil {
-		for playlistID, playlist := range webserver.SM.Playlists {
-			for streamID, stream := range playlist.Streams {
-				for clientID := range stream.Clients {
-					webserver.SM.StopStream(playlistID, streamID, clientID)
+	if webserver != nil {
+		if webserver.SM != nil {
+			if webserver.SM.Playlists != nil {
+				for playlistID, playlist := range webserver.SM.Playlists {
+					for streamID, stream := range playlist.Streams {
+						for clientID := range stream.Clients {
+							webserver.SM.StopStream(playlistID, streamID, clientID)
+						}
+					}
 				}
 			}
 		}
@@ -359,10 +358,12 @@ func killAllProcesses() {
 }
 
 func shutdownWebserver(webserver *src.WebServer) {
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	defer cancel()
-	err := webserver.Server.Shutdown(ctx)
-	if err != nil {
-		src.ShowError(err, 0) // TODO: Add error code
+	if webserver.Server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+		err := webserver.Server.Shutdown(ctx)
+		if err != nil {
+			src.ShowError(err, 0) // TODO: Add error code
+		}
 	}
 }
