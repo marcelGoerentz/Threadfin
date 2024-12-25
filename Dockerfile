@@ -26,7 +26,6 @@ RUN echo "Build ${BRANCH} version"
 # -----------------------------------------------------------------------------
 FROM alpine:3.18
 
-ARG BRANCH=master
 ARG BUILD_DATE
 ARG VCS_REF
 ARG THREADFIN_PORT=34400
@@ -51,7 +50,6 @@ ENV THREADFIN_CACHE=/home/threadfin/cache
 ENV THREADFIN_UID=31337
 ENV THREADFIN_GID=31337
 ENV THREADFIN_USER=threadfin
-ENV THREADFIN_BRANCH=${BRANCH}
 ENV THREADFIN_DEBUG=0
 ENV THREADFIN_PORT=${THREADFIN_PORT}
 ENV THREADFIN_LOG=/var/log/threadfin.log
@@ -85,4 +83,4 @@ VOLUME ${THREADFIN_CONF} ${THREADFIN_TEMP}
 
 EXPOSE ${THREADFIN_PORT}
 
-ENTRYPOINT ["/bin/sh", "-c", "threadfin -port=${THREADFIN_PORT} -config=${THREADFIN_CONF} -debug=${THREADFIN_DEBUG} -branch=${THREADFIN_BRANCH}"]
+ENTRYPOINT ["/bin/sh", "-c", "threadfin -port=${THREADFIN_PORT} -config=${THREADFIN_CONF} -debug=${THREADFIN_DEBUG}"]
