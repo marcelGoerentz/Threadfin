@@ -7,16 +7,16 @@ import (
 )
 
 // InitMaintenance : Wartungsprozess initialisieren
-func InitMaintenance(betaFlag *bool) (err error) {
+func InitMaintenance() (err error) {
 
 	System.TimeForAutoUpdate = fmt.Sprintf("0%d%d", randomTime(0, 2), randomTime(10, 59))
 
-	go maintenance(betaFlag)
+	go maintenance()
 
 	return
 }
 
-func maintenance(betaFlag *bool) {
+func maintenance() {
 
 	for {
 
@@ -65,7 +65,7 @@ func maintenance(betaFlag *bool) {
 
 			// Update Threadfin (Binary)
 			if System.TimeForAutoUpdate == t.Format("1504") {
-				BinaryUpdate(betaFlag)
+				BinaryUpdate()
 			}
 
 		}

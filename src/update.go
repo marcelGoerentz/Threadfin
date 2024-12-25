@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	up2date "threadfin/src/internal/up2date/client"
+	"time"
 
 	"github.com/hashicorp/go-version"
 
@@ -16,7 +17,7 @@ import (
 )
 
 // BinaryUpdate : Binary Update Prozess. Git Branch master und beta wird von GitHub geladen.
-func BinaryUpdate(betaFlag *bool) (err error) {
+func BinaryUpdate() (err error) {
 
 	if !System.GitHub.Update {
 		ShowWarning(2099)
@@ -34,7 +35,7 @@ func BinaryUpdate(betaFlag *bool) (err error) {
 
 	up2date.Init()
 
-	if *betaFlag {
+	if System.Beta {
 		updater.Branch = "Beta"
 	} else {
 		updater.Branch = "Main"
@@ -105,7 +106,7 @@ func BinaryUpdate(betaFlag *bool) (err error) {
 	do_upgrade := false
 	if updater.Branch == "Beta" {
 		if System.Beta {
-			existsNewerVersion(updater.Response.Version, updater.Response.Status)
+			existsNewerVersion(updater.Response)
 		} else {
 			do_upgrade = true
 		}
@@ -113,7 +114,7 @@ func BinaryUpdate(betaFlag *bool) (err error) {
 		if System.Beta {
 			do_upgrade = true
 		} else {
-			if existsNewerVersion(updater.Response.Version, updater.Response.Status) {
+			if existsNewerVersion(updater.Response) {
 				do_upgrade = true
 			}
 		}
@@ -178,14 +179,36 @@ func BinaryUpdate(betaFlag *bool) (err error) {
 	return nil
 }
 
-func existsNewerVersion(downloadableVersion string, status bool) bool {
+func existsNewerVersion(response up2date.ServerResponse) bool {
 	var currentVersion = System.Version + "." + System.Build
 	current_version, _ := version.NewVersion(currentVersion)
-	response_version, _ := version.NewVersion(downloadableVersion)
-	if response_version.GreaterThan(current_version) && status {
+	response_version, _ := version.NewVersion(response.Version)
+	if response_version == nil {
+		current_date := getBinaryTime()
+		layout := time.RFC3339
+		response_date, err := time.Parse(layout ,response.UpdatedAt)
+		if err != nil {
+			return false
+		}
+		if current_date.Before(response_date) {
+			return true
+		}
+	} else if response_version.GreaterThan(current_version) && response.Status {
 		return true
 	}
 	return false
+}
+
+func getBinaryTime() time.Time {
+	executablePath, err := os.Executable()
+	if err != nil {
+		return time.Now()
+	}
+	binaryInfo, err := os.Stat(executablePath)
+	if err != nil {
+		return time.Now()
+	}
+	return binaryInfo.ModTime()
 }
 
 func conditionalUpdateChanges() (err error) {

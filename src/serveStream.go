@@ -193,12 +193,12 @@ func GetStreamLimitContent() ([]byte, bool) {
 				ShowError(err, 0)
 				return nil, false
 			}
+			content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
+			if err != nil {
+				ShowError(err, 0)
+			}
+			contentOk = true
 		}
-		content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
-		if err != nil {
-			ShowError(err, 0)
-		}
-		contentOk = true
 	}
 	if !contentOk {
 		if value, ok := webUI["html/video/stream-limit.ts"]; ok && !contentOk {
@@ -256,7 +256,7 @@ func GetTuner(id, playlistType string) (tuner int) {
 	case "-":
 		tuner = Settings.Tuner
 
-	case "ffmpeg", "vlc":
+	case "ffmpeg", "vlc", "threadfin":
 		i, err := strconv.Atoi(getProviderParameter(id, playlistType, "tuner"))
 		if err == nil {
 			tuner = i

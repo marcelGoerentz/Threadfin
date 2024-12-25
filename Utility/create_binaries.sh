@@ -16,6 +16,10 @@ for os in "${os_list[@]}"; do
             bin_string="${bin_string}.exe"
         fi
         echo "Building ${bin_string}"
-        go build -o "dist/${bin_string}"
+        if [ "$1" = "beta" ]; then
+            go build -o "dist/${bin_string}" -tags beta
+        else
+            go build -o "dist/${bin_string}"
+        fi
     done
 done

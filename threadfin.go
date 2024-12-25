@@ -94,7 +94,7 @@ func main() {
 	system.Version = strings.Join(build[0:len(build)-1], ".")
 
 	// Check which version has been build
-	if BetaVersion {
+	if Beta {
 		system.Beta = true
 	}
 
@@ -209,7 +209,7 @@ func main() {
 	}
 
 	// Update binary
-	err = src.BinaryUpdate(betaFlag)
+	err = src.BinaryUpdate()
 	if err != nil {
 		src.ShowError(err, 0)
 	}
@@ -222,7 +222,7 @@ func main() {
 	}
 
 	// Update playlists and xml files
-	err = src.InitMaintenance(betaFlag)
+	err = src.InitMaintenance()
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)

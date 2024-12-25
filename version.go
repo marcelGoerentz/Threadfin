@@ -2,4 +2,4 @@
 
 package main
 
-const BetaVersion = false
+const Beta = false

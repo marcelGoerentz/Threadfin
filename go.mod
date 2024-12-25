@@ -3,6 +3,7 @@ module threadfin
 go 1.23
 
 require (
+	github.com/asticode/go-astits v1.13.0
 	github.com/avfs/avfs v0.35.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
@@ -12,4 +13,7 @@ require (
 	golang.org/x/text v0.20.0
 )
 
-require golang.org/x/sys v0.27.0 // indirect
+require (
+	github.com/asticode/go-astikit v0.30.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+)
