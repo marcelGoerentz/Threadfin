@@ -36,9 +36,9 @@ func BinaryUpdate() (err error) {
 	up2date.Init()
 
 	if System.Beta {
-		updater.Branch = "Beta"
+		updater.Branch = "beta"
 	} else {
-		updater.Branch = "Main"
+		updater.Branch = "master"
 	}
 
 	ShowInfo("BRANCH:" + updater.Branch)
@@ -63,7 +63,7 @@ func BinaryUpdate() (err error) {
 	}
 
 	// Get latest prerelease tag name
-	if updater.Branch == "Beta" {
+	if updater.Branch == "beta" {
 		for _, release := range git {
 			if release.Prerelease {
 				updater.Response.Version = release.TagName
@@ -78,7 +78,7 @@ func BinaryUpdate() (err error) {
 	}
 
 	// Latest main tag name
-	if updater.Branch == "Main" {
+	if updater.Branch == "master" {
 		for _, release := range git {
 			if !release.Prerelease {
 				updater.Response.Version = release.TagName
@@ -104,7 +104,7 @@ func BinaryUpdate() (err error) {
 
 	var path_to_file string
 	do_upgrade := false
-	if updater.Branch == "Beta" {
+	if updater.Branch == "beta" {
 		if System.Beta {
 			existsNewerVersion(updater.Response)
 		} else {
@@ -131,7 +131,7 @@ func BinaryUpdate() (err error) {
 			switch System.Branch {
 
 			// Update von GitHub
-			case "Master", "Beta":
+			case "master", "beta":
 				ShowInfo("Update Server:GitHub")
 
 			// Update vom eigenen Server
@@ -160,7 +160,7 @@ func BinaryUpdate() (err error) {
 				if err != nil {
 					ShowError(err, 6002)
 				}
-				if System.Branch == "Beta" {
+				if System.Branch == "beta" {
 					if err := os.WriteFile(path_to_file, []byte(updater.Response.UpdatedAt), 0666); err != nil {
 						ShowError(err, 6005)
 					}

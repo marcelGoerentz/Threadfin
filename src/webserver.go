@@ -1260,8 +1260,9 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 		defaults.ClientInfo.Version = System.Version
 
 	default:
-		defaults.ClientInfo.Version = fmt.Sprintf("%s (%s)", System.Version, System.Build)
-		defaults.ClientInfo.Branch = System.Branch
+		defaults.ClientInfo.Version = System.Version
+		defaults.ClientInfo.Build = System.Build
+		defaults.ClientInfo.Beta = System.Beta
 
 	}
 

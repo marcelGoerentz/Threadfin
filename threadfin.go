@@ -33,7 +33,7 @@ type GitHubStruct struct {
 
 // GitHub : GitHub Account
 // If you want to fork this project, enter your Github account here. This prevents a newer version of Threadfin from updating your version.
-var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadfin", Update: true}
+var GitHub = GitHubStruct{Branch: "master", User: "marcelGoerentz", Repo: "Threadfin", Update: true}
 
 /*
 	Branch: GitHub Branch
@@ -46,7 +46,7 @@ var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadf
 const Name = "Threadfin"
 
 // Version : Version, die Build Nummer wird in der main func geparst.
-const Version = "1.8.0"
+const Version = "1.8.0.1"
 
 // DBVersion : Datanbank Version
 const DBVersion = "0.5.0"

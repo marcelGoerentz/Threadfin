@@ -94,7 +94,7 @@ type RequestStruct struct {
 type ResponseStruct struct {
 	ClientInfo struct {
 		ARCH      string   `json:"arch"`
-		Branch    string   `json:"branch,omitempty"`
+		Beta      bool     `json:"beta,omitempty"`
 		DVR       string   `json:"DVR"`
 		EpgSource string   `json:"epgSource"`
 		Errors    int      `json:"errors"`
@@ -104,6 +104,7 @@ type ResponseStruct struct {
 		SystemIPs []string `json:"systemIPs"`
 		UUID      string   `json:"uuid"`
 		Version   string   `json:"version"`
+		Build	  string   `json:"build"`
 		Warnings  int      `json:"warnings"`
 		XEPGCount int64    `json:"xepg"`
 		XML       string   `json:"xepg-url"`
