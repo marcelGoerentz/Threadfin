@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  gluetun:
+    container_name: gluetun
+    image: qmcgaw/gluetun
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8000:8000
+      - 34400:34400
+    volumes:
+      - ./gluetun/data:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=private internet access # Visit https://github.com/qdm12/gluetun-wiki to apply settings from your provider
+      - OPENVPN_USER=<username>
+      - OPENVPN_PASSWORD=<password>
+      - SERVER_REGIONS=Netherlands
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_PROVIDE=private internet access
+    restart: unless-stopped
+  threadfin:
+    image: mgoerentz/threadfin:latest
+    container_name: threadfin
+    environment:
+      - PUID=1000 # Add your HOST User ID
+      - PGID=1000 # Add your HOST User GROUP
+      - THREADFIN_PORT=34400
+      - TZ=Europe/Berlin
+    volumes:
+      - ./data/conf:/home/threadfin/conf
+      - ./data/tmp:/tmp/threadfin
+    restart: unless-stopped
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    network_mode: service:gluetun
+networks: {}

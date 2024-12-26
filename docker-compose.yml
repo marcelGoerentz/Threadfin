@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  threadfin:
+    image: mgoerentz/threadfin:latest
+    container_name: threadfin
+    environment:
+      - PUID=1000 # Add your HOST User ID
+      - PGID=1000 # Add your HOST User GROUP
+      - THREADFIN_PORT=34400
+      - TZ=Europe/Berlin
+    volumes:
+      - ./data/conf:/home/threadfin/conf
+      - ./data/tmp:/tmp/threadfin
+    restart: unless-stopped
+networks: {}
