@@ -104,7 +104,6 @@ type ResponseStruct struct {
 		SystemIPs []string `json:"systemIPs"`
 		UUID      string   `json:"uuid"`
 		Version   string   `json:"version"`
-		Build	  string   `json:"build"`
 		Warnings  int      `json:"warnings"`
 		XEPGCount int64    `json:"xepg"`
 		XML       string   `json:"xepg-url"`

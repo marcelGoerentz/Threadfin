@@ -37,7 +37,7 @@ function parseVersion(version: string): number[] {
     if (match) {
         const major = parseInt(match[1], 10);
         const minor = parseInt(match[2], 10);
-        const patch = match[3] ? parseInt(match[3], 10) : (match[4] ? parseInt(match[4], 10) : 0); // Default to 0 if patch is not present
+        const patch = parseInt(match[3], 10); // Default to 0 if patch is not present
         return [major, minor, patch];
     } else {
         throw new Error("Invalid version format");
