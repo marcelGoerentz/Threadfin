@@ -18,7 +18,7 @@ jobs:
 
       - name: Set build number
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${vars.BUILD_NUMBER}
+          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${env.BUILD_NUMBER}
   
       - name: Update repo variable
         run: |
