@@ -1143,13 +1143,18 @@ function resetCheckboxes(checkboxes: NodeListOf<Element>, initialStates: boolean
 
 function createLayout() {
 
-  // Client Info
+  // Client Info (Server Information)
   var obj = SERVER["clientInfo"]
   var keys = getObjKeys(obj);
   for (var i = 0; i < keys.length; i++) {
-
     if (document.getElementById(keys[i])) {
       (<HTMLInputElement>document.getElementById(keys[i])).value = obj[keys[i]];
+      if (keys[i] === "version") {
+        if (obj["beta"]) {
+          const version = document.getElementById(keys[i]) as HTMLInputElement
+          version.value += " Beta"
+        }
+      }
     }
 
   }

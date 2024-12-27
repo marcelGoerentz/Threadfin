@@ -36,20 +36,20 @@ func StartBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan cha
 	}
 
 	switch Settings.Buffer {
-		case "ffmpeg", "vlc":
-			if buffer, err := StartThirdPartyBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
-				return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
-			} else {
-				return buffer
-			}
-		case "threadfin":
-			if buffer, err := StartThreadfinBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
-				return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
-			} else {
-				return buffer
-			}
-		default:
-			return nil
+	case "ffmpeg", "vlc":
+		if buffer, err := StartThirdPartyBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
+			return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+		} else {
+			return buffer
+		}
+	case "threadfin":
+		if buffer, err := StartThreadfinBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
+			return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+		} else {
+			return buffer
+		}
+	default:
+		return nil
 	}
 }
 
@@ -97,12 +97,12 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 		n, err := reader.Read(buffer)
 		if err == io.EOF {
 			f.Close()
-			showDebug("Buffer reached EOF!", 3)
+			ShowDebug("Buffer reached EOF!", 3)
 			errorChan <- ErrorInfo{EndOfFileError, stream, ""}
 			return
 		}
 		if err != nil {
-			if  _, ok := err.(*net.OpError); !ok || stream.Buffer.isThirdPartyBuffer {
+			if _, ok := err.(*net.OpError); !ok || stream.Buffer.isThirdPartyBuffer {
 				ShowError(err, 4012)
 			}
 			f.Close()
@@ -141,16 +141,16 @@ func UpdateStreamURLForBackup(stream *Stream, backupNumber int) {
 	switch backupNumber {
 	case 1:
 		stream.URL = stream.BackupChannel1URL
-		showHighlight("START OF BACKUP 1 STREAM")
-		showInfo("Backup Channel 1 URL: " + stream.URL)
+		ShowHighlight("START OF BACKUP 1 STREAM")
+		ShowInfo("Backup Channel 1 URL: " + stream.URL)
 	case 2:
 		stream.URL = stream.BackupChannel2URL
-		showHighlight("START OF BACKUP 2 STREAM")
-		showInfo("Backup Channel 2 URL: " + stream.URL)
+		ShowHighlight("START OF BACKUP 2 STREAM")
+		ShowInfo("Backup Channel 2 URL: " + stream.URL)
 	case 3:
 		stream.URL = stream.BackupChannel3URL
-		showHighlight("START OF BACKUP 3 STREAM")
-		showInfo("Backup Channel 3 URL: " + stream.URL)
+		ShowHighlight("START OF BACKUP 3 STREAM")
+		ShowInfo("Backup Channel 3 URL: " + stream.URL)
 	}
 }
 

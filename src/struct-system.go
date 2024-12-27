@@ -14,6 +14,7 @@ type SystemStruct struct {
 	AppName                string
 	ARCH                   string
 	BackgroundProcess      bool
+	Beta                   bool
 	Branch                 string
 	Build                  string
 	Compatibility          string
@@ -50,13 +51,13 @@ type SystemStruct struct {
 	}
 
 	Flag struct {
-		Branch    string
-		Debug     int
-		Info      bool
-		Port      string
-		UseHttps  bool
-		Restore   string
-		SSDP      bool
+		Branch   string
+		Debug    int
+		Info     bool
+		Port     string
+		UseHttps bool
+		Restore  string
+		SSDP     bool
 	}
 
 	Folder struct {
@@ -128,8 +129,8 @@ type AssetsStruct struct {
 // DataStruct : Alle Daten werden hier abgelegt. (Lineup, XMLTV)
 type DataStruct struct {
 	Cache struct {
-		Images   *imgcache.ImageCache
-		PMS         map[string]string
+		Images *imgcache.ImageCache
+		PMS    map[string]string
 
 		StreamingURLS map[string]StreamInfo
 		XMLTV         map[string]XMLTV

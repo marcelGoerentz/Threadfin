@@ -8,7 +8,7 @@ async function getNewestReleaseFromGithub() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (SERVER.clientInfo) {
-        if (SERVER.clientInfo.branch == 'Beta') {
+        if (SERVER.clientInfo.beta) {
             return
         }
         const releasesData = await getReleases();

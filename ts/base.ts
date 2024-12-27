@@ -778,7 +778,7 @@ interface Server {
 
 interface clientInfo {
   arch: string;
-  branch: string;
+  beta: boolean;
   DVR: string;
   epgSource: string;
   errors: string;
@@ -788,6 +788,7 @@ interface clientInfo {
   systemIPs: string[];
   uuid: string;
   version: string;
+  build: string;
   warnings: string;
   xepg: string;
   xepgUrl: string;

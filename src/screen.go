@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func showInfo(str string) {
+func ShowInfo(str string) {
 
 	if System.Flag.Info {
 		return
@@ -40,7 +40,7 @@ func showInfo(str string) {
 	}
 }
 
-func showDebug(str string, level int) {
+func ShowDebug(str string, level int) {
 
 	if System.Flag.Debug < level {
 		return
@@ -72,7 +72,7 @@ func showDebug(str string, level int) {
 	}
 }
 
-func showHighlight(str string) {
+func ShowHighlight(str string) {
 
 	var max = 23
 	var msg = strings.SplitN(str, ":", 2)
@@ -108,7 +108,7 @@ func showHighlight(str string) {
 	addNotification(notification)
 }
 
-func showWarning(errCode int) {
+func ShowWarning(errCode int) {
 
 	var errMsg = getErrMsg(errCode)
 	var logMsg = fmt.Sprintf("[%s] [WARNING] %s", System.Name, errMsg)
@@ -384,7 +384,6 @@ func getErrMsg(errCode int) (errMsg string) {
 	case 4017:
 		errMsg = "Cannot stream from M3U file, please use ffmpeg or VLC"
 
-	
 	// PID saving and deleting
 	case 4040:
 		errMsg = "Could not open file to write PID to disk"
@@ -398,7 +397,6 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Could not write old PID to the file"
 	case 4045:
 		errMsg = "Could not truncate the rewritten PID file"
-
 
 	// Buffer (M3U8)
 	case 4050:

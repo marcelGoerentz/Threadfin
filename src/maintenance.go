@@ -9,7 +9,6 @@ import (
 // InitMaintenance : Wartungsprozess initialisieren
 func InitMaintenance() (err error) {
 
-	rand.Seed(time.Now().Unix())
 	System.TimeForAutoUpdate = fmt.Sprintf("0%d%d", randomTime(0, 2), randomTime(10, 59))
 
 	go maintenance()
@@ -30,7 +29,7 @@ func maintenance() {
 
 				if schedule == t.Format("1504") {
 
-					showInfo("Update:" + schedule)
+					ShowInfo("Update:" + schedule)
 
 					// Backup erstellen
 					err := ThreadfinAutoBackup()
@@ -77,6 +76,6 @@ func maintenance() {
 }
 
 func randomTime(min, max int) int {
-	rand.Seed(time.Now().Unix())
+	rand.NewSource(time.Now().Unix())
 	return rand.Intn(max-min) + min
 }

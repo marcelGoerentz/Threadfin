@@ -216,7 +216,7 @@ func buildM3U(groups []string) (m3u string, err error) {
 
 	// M3U Inhalt erstellen
 	sort.Float64s(channelNumbers)
-  
+
 	m3u = fmt.Sprintf(`#EXTM3U url-tvg="%s" x-tvg-url="%s"`+"\n", System.BaseURL, System.BaseURL)
 
 	for _, channelNumber := range channelNumbers {

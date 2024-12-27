@@ -3,8 +3,7 @@ on:
   push:
     branches:
       - beta
-    paths: 
-      - 'threadfin.go'
+
 permissions:
   contents: write
 jobs:
@@ -17,15 +16,18 @@ jobs:
         with:
           ref: beta
 
-      - name: Delete release and Tag
-        run: gh release --cleanup-tag --yes delete latest-beta
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set build number
+        run: |
+          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${vars.BUILD_NUMBER}
+  
+      - name: Update repo variable
+        run: |
+          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh
 
       - name: Set up and Build
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.23
         id: go
 
       - name: Build binaries
@@ -38,8 +40,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: Latest Devolopment Build (Beta)
-          tag_name: latest-beta
+          name: ${{ env.NEW_VERSION }} (Beta)
+          tag_name: ${{ env.NEW_VERSION }}
           files: dist/*
   
   buildDockerImages:
@@ -59,10 +61,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Build and Push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
-          build-args: BRANCH=beta
+          build-args: |
+            BRANCH=beta
+            VERSION=${{ env.NEW_VERSION }}
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
