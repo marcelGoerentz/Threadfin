@@ -4,6 +4,10 @@ GITHUB_TOKEN=$1
 REPOSITORY=$2
 NEW_BUILD=$3
 
+echo "$GITHUB_TOKEN"
+echo "$REPOSITORY"
+echo "$NEW_BUILD"
+
 curl -X PATCH \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
