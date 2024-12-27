@@ -40,8 +40,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: ${{ env.NEW_VERSION }} (Beta)
-          tag_name: ${{ env.NEW_VERSION }}
+          name: v${{ env.NEW_VERSION }} (Beta)
+          tag_name: v${{ env.NEW_VERSION }}
           files: dist/*
   
   buildDockerImages:
