@@ -22,7 +22,7 @@ jobs:
 
       - name: Update repo variable
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh
+          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.NEW_BUILD }}
 
       - name: Set up and Build
         uses: actions/setup-go@v5
