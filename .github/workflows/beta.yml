@@ -41,7 +41,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
           name: v${{ env.NEW_VERSION }} (Beta)
-          tag_name: v${{ env.NEW_VERSION }}
+          tag_name: v${{ env.NEW_VERSION }}-beta
           files: dist/*
   
   buildDockerImages:
@@ -71,4 +71,4 @@ jobs:
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
-            mgoerentz/threadfin:${{  github.ref_name }}
+            mgoerentz/threadfin:${{  github.ref_name }}-beta
