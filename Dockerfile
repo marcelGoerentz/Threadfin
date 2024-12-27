@@ -3,6 +3,8 @@
 ARG BRANCH=master
 FROM golang:1.23-alpine AS base
 
+ARG VERSION
+
 # Download the source code
 RUN apk --no-cache add git
 RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
@@ -10,8 +12,9 @@ RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
 WORKDIR /src
 
 RUN git checkout ${BRANCH} && git pull \
-    && go mod tidy && go mod vendor
-
+    && sed -i "s/const Version = \".*\"/const Version = \"${VERSION}\"/" threadfin.go \
+    && go mod tidy \
+    && go mod vendor
 
 FROM base AS master
 RUN go build .
@@ -47,8 +50,8 @@ ENV THREADFIN_CONF=/home/threadfin/conf
 ENV THREADFIN_HOME=/home/threadfin
 ENV THREADFIN_TEMP=/tmp/threadfin
 ENV THREADFIN_CACHE=/home/threadfin/cache
-ENV THREADFIN_UID=31337
-ENV THREADFIN_GID=31337
+ENV THREADFIN_UID=1000
+ENV THREADFIN_GID=1000
 ENV THREADFIN_USER=threadfin
 ENV THREADFIN_DEBUG=0
 ENV THREADFIN_PORT=${THREADFIN_PORT}
