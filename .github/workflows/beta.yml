@@ -22,7 +22,7 @@ jobs:
 
       - name: Update repo variable
         env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
           REPOSITORY: ${{ github.repository }}
           NEW_BUILD: ${{ env.NEW_BUILD }}
         run: |
