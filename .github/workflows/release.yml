@@ -21,10 +21,6 @@ jobs:
           bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
 
       - name: Update repo variable
-        env: 
-          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          NEW_BUILD: ${{ env.NEW_BUILD }}
         run: |
           bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh
 
