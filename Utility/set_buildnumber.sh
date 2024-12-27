@@ -30,4 +30,4 @@ sed -i "s/const Version = \".*\"/const Version = \"$new_version\"/" threadfin.go
 echo "NEW_BUILD=$new_build" >> $GITHUB_ENV
 
 # Export the new Version to the GitHub environment
-echoe "NEW_VERSION=$new_version" >> $GITHUB_ENV
+echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
