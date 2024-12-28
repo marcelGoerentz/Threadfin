@@ -3,14 +3,13 @@
 ARG BRANCH=master
 FROM golang:1.23-alpine AS base
 
-ARG VERSION
-
 # Download the source code
 RUN apk --no-cache add git
 RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
 
 WORKDIR /src
 
+ARG VERSION
 RUN git checkout ${BRANCH} && git pull \
     && sed -i "s/const Version = \".*\"/const Version = \"${VERSION}\"/" threadfin.go \
     && go mod tidy \
@@ -23,6 +22,7 @@ FROM base AS beta
 RUN go build -tags beta .
 
 FROM ${BRANCH} AS builder
+ARG BRANCH
 RUN echo "Build ${BRANCH} version"
 
 # Second stage. Creating an image
@@ -32,7 +32,7 @@ FROM alpine:3.18
 ARG BUILD_DATE
 ARG VCS_REF
 ARG THREADFIN_PORT=34400
-ARG THREADFIN_VERSION
+ARG VERSION
 
 LABEL org.label-schema.build-date="${BUILD_DATE}" \
       org.label-schema.name="Threadfin" \
@@ -41,7 +41,7 @@ LABEL org.label-schema.build-date="${BUILD_DATE}" \
       org.label-schema.vcs-ref="${VCS_REF}" \
       org.label-schema.vcs-url="https://github.com/marcelGoerentz/Threadfin" \
       org.label-schema.vendor="Threadfin" \
-      org.label-schema.version="${THREADFIN_VERSION}" \
+      org.label-schema.version="${VERSION}" \
       org.label-schema.schema-version="1.0" \
       DISCORD_URL="https://discord.gg/hrqg9tgcMZ"
 

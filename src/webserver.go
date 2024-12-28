@@ -1175,7 +1175,7 @@ func populateStatusResponse(response *APIResponseStruct) {
 func populateSystemInfo() *SystemInfoStruct {
 	var systemInfo SystemInfoStruct
 	systemInfo.APIVersion = System.APIVersion
-	systemInfo.ThreadfinVersion = System.Version
+	systemInfo.ThreadfinVersion = System.Version + "(" + System.Build + ")"
 	systemInfo.EpgSource = Settings.EpgSource
 	systemInfo.SystemURLs = populateSystemURLs()
 	systemInfo.ChannelInfo = populateChannelInfo()
@@ -1253,18 +1253,8 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 	defaults.ClientInfo.SystemIPs = System.IPAddressesList
 	defaults.Notification = System.Notification
 	defaults.Log = WebScreenLog
-
-	switch System.Branch {
-
-	case "master":
-		defaults.ClientInfo.Version = System.Version
-
-	default:
-		defaults.ClientInfo.Version = System.Version
-		defaults.ClientInfo.Build = System.Build
-		defaults.ClientInfo.Beta = System.Beta
-
-	}
+	defaults.ClientInfo.Version = System.Version + " (" + System.Build + ")"
+	defaults.ClientInfo.Beta = System.Beta
 
 	if data {
 
