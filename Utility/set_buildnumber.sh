@@ -31,6 +31,3 @@ echo "NEW_BUILD=$new_build" >> $GITHUB_ENV
 
 # Export the new Version to the GitHub environment
 echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
-
-# Export variable for docker images
-echo "::set-output name=new_version::$new_version"
