@@ -788,6 +788,7 @@ interface clientInfo {
   systemIPs: string[];
   uuid: string;
   version: string;
+  build: string;
   warnings: string;
   xepg: string;
   xepgUrl: string;
