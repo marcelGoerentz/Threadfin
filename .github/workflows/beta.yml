@@ -67,9 +67,9 @@ jobs:
           context: .
           build-args: |
             BRANCH=beta
-            VERSION=${{ env.NEW_VERSION }}
+            VERSION=${{ needs.buildBinaries.outputs.new_version }}
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
-            mgoerentz/threadfin:${{ env.NEW_VERSION }}-beta
+            mgoerentz/threadfin:${{ needs.buildBinaries.outputs.new_version }}-beta
