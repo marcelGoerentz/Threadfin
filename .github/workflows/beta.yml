@@ -19,6 +19,7 @@ jobs:
       - name: Set build number
         run: |
           bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
+          echo "::set-output name=new_version::$new_version"
 
       - name: Update repo variable
         run: |
@@ -51,6 +52,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set NEW_VERSION
+        run: echo "NEW_BUILD=${{ needs.buildBinaries.outputs.new_version }}" >> $GITHUB_ENV
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -67,9 +71,9 @@ jobs:
           context: .
           build-args: |
             BRANCH=beta
-            VERSION=${{ needs.buildBinaries.outputs.new_version }}
+            VERSION=${{ env.NEW_VERSION }}
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
-            mgoerentz/threadfin:${{ needs.buildBinaries.outputs.new_version }}-beta
+            mgoerentz/threadfin:${{ env.NEW_VERSION }}-beta
