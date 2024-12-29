@@ -38,30 +38,8 @@ func NewStreamManager() *StreamManager {
 						// Client specifc errors
 						sm.StopStream(playlistID, streamID, errorInfo.ClientID)
 					} else {
-						var err error
-						playlist, exists := sm.Playlists[playlistID]
-						if exists{
-							stream, exists := playlist.Streams[streamID]
-							if exists {
-								bufferType, bufferPath, bufferOptions := GetBufferConfig()
-								buffer, err := RunBufferCommand(bufferType, bufferPath, bufferOptions, stream, sm.errorChan)
-								if err == nil {
-									if buffer != nil {
-										sm.Playlists[playlistID].Streams[streamID].Buffer = buffer
-									} else {
-										err = fmt.Errorf("buffer is nil")
-									}
-								}
-							} else {
-								err = fmt.Errorf("stream does not exist anymore")
-							}
-						} else {
-							err = fmt.Errorf("playlist does not exist anymore")
-						}
-						if err != nil {
-							for clientID := range errorInfo.Stream.Clients {
-								sm.StopStream(playlistID, streamID, clientID)
-							}
+						for clientID := range errorInfo.Stream.Clients {
+							sm.StopStream(playlistID, streamID, clientID)
 						}
 					}
 				}
@@ -135,7 +113,7 @@ CreateStream will create and return a new Stream struct, it will also start the 
 */
 func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
 	ctx, cancel := context.WithCancel(context.Background())
-	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid + string(os.PathSeparator)
+	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid
 	stream := &Stream{
 		Name:              streamInfo.Name,
 		Buffer:            nil,
@@ -491,7 +469,7 @@ and returns a sorted list with the file names
 */
 func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 
-	var tmpFolder = stream.Folder
+	var tmpFolder = stream.Folder + string(os.PathSeparator)
 	var fileIDs []float64
 
 	if _, err := bufferVFS.Stat(tmpFolder); !fsIsNotExistErr(err) {
@@ -537,7 +515,7 @@ func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 DeleteOldesSegment will delete the file provided in the buffer
 */
 func DeleteOldestSegment(stream *Stream, oldSegment string) {
-	fileToRemove := stream.Folder + oldSegment
+	fileToRemove := stream.Folder + string(os.PathSeparator) + oldSegment
 	if err := bufferVFS.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
 		ShowError(err, 4007)
 	}
@@ -558,7 +536,7 @@ SendFileToClients reports whether sending the File to the clients was successful
 It will also use the errorChan to report to the StreamManager if there is an error sending the file to a specifc client
 */
 func SendFileToClients(stream *Stream, fileName string, errorChan chan ErrorInfo) bool {
-	file, err := bufferVFS.Open(stream.Folder + fileName)
+	file, err := bufferVFS.Open(stream.Folder + string(os.PathSeparator) + fileName)
 	if err != nil {
 		ShowError(err, 4014)
 		return false
