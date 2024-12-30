@@ -75,12 +75,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
 	buffer := make([]byte, bufferSize)
 	var fileSize int
-	init := true
-<<<<<<< HEAD
-	tmpFolder := stream.Folder
-=======
-	tmpFolder := stream.Folder + string(os.PathSeparator)
->>>>>>> development
+	init := truetmpFolder := stream.Folder + string(os.PathSeparator)
 	tmpSegment := 1
 
 	var f avfs.File

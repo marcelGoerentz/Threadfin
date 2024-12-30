@@ -45,23 +45,14 @@ var GitHub = GitHubStruct{Branch: "master", User: "marcelGoerentz", Repo: "Threa
 // Name : Program name
 const Name = "Threadfin"
 
-<<<<<<< HEAD
-// Version : Version, die Build Nummer wird in der main func geparst.
-=======
 // Version : Major, Minor, Patch, Build
->>>>>>> development
 const Version = "1.8.0.0"
 
 // DBVersion : Database version
 const DBVersion = "0.5.0"
 
-<<<<<<< HEAD
-// APIVersion : API Version
-const APIVersion = "2.0.0-beta"
-=======
 // APIVersion : API version
 const APIVersion = "2.0.0"
->>>>>>> development
 
 var homeDirectory = fmt.Sprintf("%s%s.%s%s", src.GetUserHomeDirectory(), string(os.PathSeparator), strings.ToLower(Name), string(os.PathSeparator))
 var samplePath = fmt.Sprintf("%spath%sto%sthreadfin%s", string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator), string(os.PathSeparator))
@@ -72,10 +63,6 @@ var port = flag.Int("port", 34400, ": Server port")
 var useHttps = flag.Bool("useHttps", false, ": Use Https Webserver [place server.crt and server.key in config folder]")
 var restore = flag.String("restore", "", ": Restore from backup  ["+sampleRestore+"threadfin_backup.zip]")
 
-<<<<<<< HEAD
-var betaFlag = flag.Bool("beta", false, ": Beta flag           [true|false] (default: false)")
-=======
->>>>>>> development
 var debug = flag.Int("debug", 0, ": Debug level          [0 - 3] (default: 0)")
 var info = flag.Bool("info", false, ": Show system info")
 var h = flag.Bool("h", false, ": Show help")
@@ -94,11 +81,7 @@ func main() {
 	go handleSignals(sigs, done, webserver)
 
 	// Split build from version string
-<<<<<<< HEAD
-	var build = strings.Split(Version, ".")
-=======
 	var versionParts = strings.Split(Version, ".")
->>>>>>> development
 
 	var system = &src.System
 	system.APIVersion = APIVersion
@@ -106,22 +89,15 @@ func main() {
 	system.DBVersion = DBVersion
 	system.GitHub = GitHub
 	system.Name = Name
-<<<<<<< HEAD
-	system.Version = strings.Join(build[:len(build)-1], ".")
-=======
 	system.Version = strings.Join(versionParts[:len(versionParts)-1], ".")
->>>>>>> development
 
 	// Check which version has been build
 	if Beta {
 		system.Beta = true
-<<<<<<< HEAD
-=======
 		system.Branch = "beta"
 	} else {
 		system.Beta = false
 		system.Branch = "master"
->>>>>>> development
 	}
 
 	// Panic !!!
@@ -303,10 +279,7 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 	}
 }
 
-<<<<<<< HEAD
-=======
 // stopAllStreams will stop all existing streams and buffers
->>>>>>> development
 func stopAllStreams(webserver *src.WebServer) {
 	if webserver != nil {
 		if webserver.SM != nil {
@@ -373,11 +346,7 @@ func killProcess(pid string) error {
 	return cmd.Run()
 }
 
-<<<<<<< HEAD
-//
-=======
 // killAllProcesses kills processes that had been saved in PID
->>>>>>> development
 func killAllProcesses() {
 	tempFolder := getTempFolder()
 	if tempFolder != "" {
@@ -391,10 +360,7 @@ func killAllProcesses() {
 	}
 }
 
-<<<<<<< HEAD
-=======
 // shutdownWebserver will stop the webserer
->>>>>>> development
 func shutdownWebserver(webserver *src.WebServer) {
 	if webserver.Server != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
