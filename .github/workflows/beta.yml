@@ -21,13 +21,13 @@ jobs:
       - name: Set build number
         id: set-build-number
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
-          echo "new_version=${{ env.NEW_VERSION }}" >> $GITHUB_ENV
-          echo "new_version=$new_version" >> $GITHUB_ENV
+          new_version=$(bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }})
+          echo "new_version=${new_version}" >> $GITHUB_ENV
+          echo "::set-output name=new_version::${new_version}"
 
       - name: Update repo variable
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.NEW_BUILD }}
+          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.new_version }}
 
       - name: Set up and Build
         uses: actions/setup-go@v5
@@ -45,8 +45,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: v${{ env.NEW_VERSION }} (Beta)
-          tag_name: v${{ env.NEW_VERSION }}-beta
+          name: v${{ env.new_version }} (Beta)
+          tag_name: v${{ env.new_version }}-beta
           files: dist/*
   
   buildDockerImages:
@@ -81,3 +81,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
             mgoerentz/threadfin:${{ env.NEW_VERSION }}-beta
+            mgoerentz/threadfin:latest-beta
