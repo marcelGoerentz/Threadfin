@@ -21,9 +21,7 @@ jobs:
       - name: Set build number
         id: set-build-number
         run: |
-          new_version=$(bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }})
-          echo "new_version=${new_version}" >> $GITHUB_ENV
-          echo "new_version=${new_version}" >> $GITHUB_OUTPUT
+          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
 
       - name: Update repo variable
         run: |
@@ -81,5 +79,5 @@ jobs:
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
-            mgoerentz/threadfin:${{ env.NEW_VERSION }}-beta
             mgoerentz/threadfin:latest-beta
+            mgoerentz/threadfin:v${{ env.NEW_VERSION }}-beta
