@@ -25,7 +25,7 @@ jobs:
 
       - name: Update repo variable
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/update_build_number_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.new_version }}
+          bash ${GITHUB_WORKSPACE}/Utility/update_build_number_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.NEW_VERSION }}
 
       - name: Set up and Build
         uses: actions/setup-go@v5
@@ -43,8 +43,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: v${{ env.new_version }} (Beta)
-          tag_name: v${{ env.new_version }}-beta
+          name: v${{ env.NEW_VERSION }} (Beta)
+          tag_name: v${{ env.NEW_VERSION }}-beta
           files: dist/*
   
   buildDockerImages:
