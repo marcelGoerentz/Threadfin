@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 
 	"github.com/avfs/avfs"
 	"github.com/avfs/avfs/vfs/memfs"
@@ -75,7 +76,11 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 	buffer := make([]byte, bufferSize)
 	var fileSize int
 	init := true
+<<<<<<< HEAD
 	tmpFolder := stream.Folder
+=======
+	tmpFolder := stream.Folder + string(os.PathSeparator)
+>>>>>>> development
 	tmpSegment := 1
 
 	var f avfs.File
