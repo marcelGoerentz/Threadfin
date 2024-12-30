@@ -22,7 +22,7 @@ jobs:
         id: set-build-number
         run: |
           bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
-          echo "${{ env.NEW_VERSION }}" >> $GITHUB_OUTPUT
+          echo "new_version=${{ env.NEW_VERSION }}" >> $GITHUB_OUTPUT
 
       - name: Update repo variable
         run: |
