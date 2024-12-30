@@ -21,12 +21,11 @@ jobs:
       - name: Set build number
         id: set-build-number
         run: |
-          new_version=$(bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }})
-          echo "new_version=$new_version" >> $GITHUB_ENV
+          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
 
       - name: Update repo variable
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.NEW_BUILD }}
+          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.new_version }}
 
       - name: Set up and Build
         uses: actions/setup-go@v5
@@ -44,8 +43,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: v${{ steps.set-build-number.outputs.new_version }} (Beta)
-          tag_name: v${{ steps.set-build-number.outputs.new_version }}-beta
+          name: v${{ env.new_version }} (Beta)
+          tag_name: v${{ env.new_version }}-beta
           files: dist/*
   
   buildDockerImages:
@@ -58,6 +57,7 @@ jobs:
 
       - name: Set NEW_VERSION
         run: echo "NEW_VERSION=${{ needs.buildBinaries.outputs.new_version }}" >> $GITHUB_ENV
+        shell: bash
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -79,4 +79,5 @@ jobs:
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
-            mgoerentz/threadfin:${{ env.NEW_VERSION }}-beta
+            mgoerentz/threadfin:latest-beta
+            mgoerentz/threadfin:v${{ env.NEW_VERSION }}-beta
