@@ -43,6 +43,8 @@ jobs:
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           files: dist/*
+          name: v${{ env.NEW_VERSION }}
+          tag_name: v${{ env.NEW_VERSION }}
           make_latest: true
 
   buildDockerImages:
