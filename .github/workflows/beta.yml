@@ -21,11 +21,11 @@ jobs:
       - name: Set build number
         id: set-build-number
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
+          bash ${GITHUB_WORKSPACE}/Utility/set_build_number.sh ${{ vars.BUILD_NUMBER }}
 
       - name: Update repo variable
         run: |
-          bash ${GITHUB_WORKSPACE}/Utility/update_buildnumber_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.new_version }}
+          bash ${GITHUB_WORKSPACE}/Utility/update_build_number_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.new_version }}
 
       - name: Set up and Build
         uses: actions/setup-go@v5
