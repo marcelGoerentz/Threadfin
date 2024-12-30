@@ -21,7 +21,7 @@ jobs:
       - name: Set build number
         id: set-build-number
         run: |
-          new_version=$(bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }})
+          bash ${GITHUB_WORKSPACE}/Utility/set_buildnumber.sh ${{ vars.BUILD_NUMBER }}
           echo "new_version=$new_version" >> $GITHUB_ENV
 
       - name: Update repo variable
@@ -44,8 +44,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: v${{ steps.set-build-number.outputs.new_version }} (Beta)
-          tag_name: v${{ steps.set-build-number.outputs.new_version }}-beta
+          name: v${{ env.NEW_VERSION }} (Beta)
+          tag_name: v${{ env.NEW_VERSION }}-beta
           files: dist/*
   
   buildDockerImages:
