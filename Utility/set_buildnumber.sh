@@ -7,7 +7,7 @@ fi
 
 new_build=$(($1 + 1))
 
-echo "New buildnumber is: $new_build"
+echo "New build number is: $new_build"
 
 # Extract the version number
 version=$(grep 'const Version' "threadfin.go" | sed 's/.*Version = "\(.*\)"/\1/')
@@ -32,4 +32,4 @@ echo "NEW_BUILD=$new_build" >> $GITHUB_ENV
 # Export the new Version to the GitHub environment
 echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
 
-echo $new_version
+echo "$new_version"
