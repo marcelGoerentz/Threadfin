@@ -144,7 +144,10 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 
 			// Restart binary (Linux and UNIX)
 			file, _ := os.Executable()
-			os.RemoveAll(oldBinary)
+			err = os.RemoveAll(oldBinary)
+			if err != nil {
+				fmt.Println(err)
+			}
 			err = syscall.Exec(file, os.Args, os.Environ())
 			if err != nil {
 				restorOldBinary(oldBinary, newBinary)
@@ -199,8 +202,7 @@ func getFilenameFromPath(path string) string {
 
 func getPlatformPath(path string) string {
 
-	var newPath = filepath.Dir(path) + string(os.PathSeparator)
-
+	var newPath = filepath.Dir(path)
 	return newPath
 }
 

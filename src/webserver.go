@@ -609,6 +609,11 @@ func WS(w http.ResponseWriter, r *http.Request) {
 					os.Exit(0)
 				}
 
+				if Settings.ChangeVersion {
+					System.Beta = !System.Beta // Toggle Beta
+					BinaryUpdate(true)
+				}
+
 			}
 
 		case "saveFilesM3U":
