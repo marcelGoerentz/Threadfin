@@ -211,7 +211,7 @@ func main() {
 	}
 
 	// Update binary
-	err = src.BinaryUpdate()
+	err = src.BinaryUpdate(false)
 	if err != nil {
 		src.ShowError(err, 0)
 	}

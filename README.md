@@ -5,7 +5,7 @@
 
 # Threadfin
 ## Discord
-https://discord.gg/hrqg9tgcMZ
+https://discord.gg/gwkpMxepPA
 
 ## M3U Proxy for Plex DVR and Emby/Jellyfin Live TV. Based on xTeVe.
 
@@ -149,7 +149,7 @@ When the branch is changed, an update is only performed if there is a new versio
 ## Build from source code [Go / Golang]
 
 #### Requirements
-* [Go](https://golang.org) (go1.18 or newer)
+* [Go](https://golang.org) (go1.23 or newer)
 
 #### Dependencies
 * [go-ssdp](https://github.com/koron/go-ssdp)

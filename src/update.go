@@ -17,7 +17,7 @@ import (
 )
 
 // BinaryUpdate : Binary Update Prozess. Git Branch master und beta wird von GitHub geladen.
-func BinaryUpdate() (err error) {
+func BinaryUpdate(changeVersion bool) (err error) {
 
 	if !System.GitHub.Update {
 		ShowWarning(2099)
@@ -104,20 +104,10 @@ func BinaryUpdate() (err error) {
 
 	var path_to_file string
 	do_upgrade := false
-	if updater.Branch == "beta" {
-		if System.Beta {
-			existsNewerVersion(updater.Response)
-		} else {
-			do_upgrade = true
-		}
+	if !changeVersion {
+		do_upgrade = existsNewerVersion(updater.Response)
 	} else {
-		if System.Beta {
-			do_upgrade = true
-		} else {
-			if existsNewerVersion(updater.Response) {
-				do_upgrade = true
-			}
-		}
+		do_upgrade = true
 	}
 
 	// Versionsnummer überprüfen

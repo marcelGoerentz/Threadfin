@@ -67,7 +67,6 @@ func Init() (err error) {
 
 	// Ordnerpfade festlegen
 	var tempFolder = os.TempDir() + string(os.PathSeparator) + System.AppName + string(os.PathSeparator)
-	tempFolder = getPlatformPath(strings.Replace(tempFolder, "//", "/", -1))
 
 	if len(System.Folder.Config) == 0 {
 		System.Folder.Config = GetUserHomeDirectory() + string(os.PathSeparator) + "." + System.AppName + string(os.PathSeparator)
@@ -75,7 +74,7 @@ func Init() (err error) {
 		System.Folder.Config = strings.TrimRight(System.Folder.Config, string(os.PathSeparator)) + string(os.PathSeparator)
 	}
 
-	System.Folder.Config = getPlatformPath(System.Folder.Config)
+	System.Folder.Config = getPlatformPath(System.Folder.Config) + string(os.PathSeparator)
 
 	System.Folder.Backup = System.Folder.Config + "backup" + string(os.PathSeparator)
 	System.Folder.Data = System.Folder.Config + "data" + string(os.PathSeparator)

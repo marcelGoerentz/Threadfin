@@ -65,9 +65,8 @@ func checkVFSFolder(path string, vfs avfs.VFS) (err error) {
 				vm.VolumeAdd(path)
 			}
 
-			err = vfs.MkdirAll(getPlatformPath(path), 0755)
+			err = vfs.MkdirAll(getPlatformPath(path + string(os.PathSeparator)), 0755)
 			if err == nil {
-
 				debug = fmt.Sprintf("Create virtual filesystem Folder:%s", path)
 				ShowDebug(debug, 1)
 
@@ -165,7 +164,7 @@ func checkFilePermission(dir string) (err error) {
 
 // Ordnerpfad für das laufende OS generieren
 func getPlatformPath(path string) string {
-	return filepath.Dir(path) + string(os.PathSeparator)
+	return filepath.Dir(path)
 }
 
 // Dateipfad für das laufende OS generieren
