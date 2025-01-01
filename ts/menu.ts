@@ -1154,6 +1154,21 @@ function createLayout() {
           const version = document.getElementById(keys[i]) as HTMLInputElement
           version.value += " Beta"
         }
+      } else if (keys[i] === "changeVersion") {
+        const changeVersion = document.getElementById(keys[i]) as HTMLInputElement
+        if (obj["beta"]) {
+          changeVersion.value = "Change to release version"
+          changeVersion.onclick = () => {
+            changeVersion.value = "Changing..."
+            const server: Server = new Server("changeVersion")
+            server.request(new Object())
+            setTimeout(() => {
+              location.reload()
+            }, 2000);
+          }
+        } else {
+          changeVersion.value = "Change to beta version"
+        }
       }
     }
 
