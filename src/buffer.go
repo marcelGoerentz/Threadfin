@@ -96,6 +96,9 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 			init = false
 		}
 		n, err := reader.Read(buffer)
+		if n == 0 {
+			continue
+		}
 		if err == io.EOF {
 			f.Close()
 			ShowDebug("Buffer reached EOF!", 3)

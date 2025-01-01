@@ -118,7 +118,7 @@ func Init() (err error) {
 	// Menü für das Webinterface
 	System.WEB.Menu = []string{"playlist", "xmltv", "filter", "mapping", "users", "settings", "log", "logout"}
 
-	ShowInfo(fmt.Sprintf("Info:For help run: " + getPlatformFile(os.Args[0]) + " -h"))
+	ShowInfo(fmt.Sprintf("Info:For help run: %s %s", getPlatformFile(os.Args[0]), " -h"))
 
 	// Überprüfen ob Threadfin als root läuft
 	if os.Geteuid() == 0 {

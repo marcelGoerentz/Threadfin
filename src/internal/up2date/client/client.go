@@ -15,12 +15,12 @@ import (
 
 // ClientInfo : Information about the key (NAME OS, ARCH, UUID, KEY)
 type ClientInfo struct {
-	Arch   string `json:"arch,required"`
-	Branch string `json:"branch,required"`
+	Arch   string `json:"arch"`
+	Branch string `json:"branch"`
 	CMD    string `json:"cmd,omitempty"`
-	Name   string `json:"name,required"`
-	OS     string `json:"os,required"`
-	URL    string `json:"url,required"`
+	Name   string `json:"name"`
+	OS     string `json:"os"`
+	URL    string `json:"url"`
 
 	Response ServerResponse `json:"response,omitempty"`
 }
@@ -82,7 +82,7 @@ func serverRequest() (err error) {
 		}
 
 		// Check redirect 301 <---> 308
-		redirect, err := http.NewRequest("POST", Updater.URL, nil)
+		redirect, _ := http.NewRequest("POST", Updater.URL, nil)
 
 		client := &http.Client{}
 		client.CheckRedirect = func(redirect *http.Request, via []*http.Request) error {
@@ -101,7 +101,7 @@ func serverRequest() (err error) {
 		}
 		// ---
 
-		req, err := http.NewRequest("POST", Updater.URL, bytes.NewBuffer(jsonByte))
+		req, _ := http.NewRequest("POST", Updater.URL, bytes.NewBuffer(jsonByte))
 		req.Header.Set("Content-Type", "application/json")
 
 		client = &http.Client{}
@@ -113,8 +113,7 @@ func serverRequest() (err error) {
 
 		if resp.StatusCode != http.StatusOK {
 			//fmt.Println(resp.StatusCode, Updater.URL, Updater.CMD)
-			err = fmt.Errorf(fmt.Sprintf("%d: %s (%s)", resp.StatusCode, http.StatusText(resp.StatusCode), Updater.URL))
-			return err
+			return fmt.Errorf("%d: %s (%s)", resp.StatusCode, http.StatusText(resp.StatusCode), Updater.URL)
 		}
 
 		Updater.CMD = ""
