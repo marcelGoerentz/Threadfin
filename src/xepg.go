@@ -48,12 +48,7 @@ func buildXEPG(background bool) {
 
 	System.ScanInProgress = 1
 
-	var err error
-
 	Data.Cache.Images = imgcache.NewImageCache(Settings.CacheImages, System.Folder.ImagesCache, System.BaseURL)
-	if err != nil {
-		ShowError(err, 0)
-	}
 
 	if Settings.EpgSource == "XEPG" {
 
@@ -728,7 +723,7 @@ func mapping() (err error) {
 
 					} else {
 
-						ShowError(fmt.Errorf(fmt.Sprintf("Missing EPG data: %s", xepgChannel.Name)), 0)
+						ShowError(fmt.Errorf("missing EPG data: %s", xepgChannel.Name), 0)
 						ShowWarning(2302)
 						// xepgChannel.XActive = false
 
