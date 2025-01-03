@@ -277,6 +277,7 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 			continue
 		}
 	}
+	time.Sleep(100 * time.Millisecond)
 }
 
 // stopAllStreams will stop all existing streams and buffers
