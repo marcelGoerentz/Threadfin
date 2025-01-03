@@ -608,12 +608,6 @@ func WS(w http.ResponseWriter, r *http.Request) {
 					ShowInfo("WEB:Restart program since listening IP option has been changed!")
 					os.Exit(0)
 				}
-
-				if Settings.ChangeVersion {
-					System.Beta = !System.Beta // Toggle Beta
-					BinaryUpdate(true)
-				}
-
 			}
 
 		case "saveFilesM3U":
@@ -743,6 +737,10 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				}
 				ShowDebug("Sucessfully uploaded custom image", 1)
 			}
+
+		case "changeVersion":
+			System.Beta = !System.Beta // Toggle Beta
+			BinaryUpdate(true)
 
 		case "saveWizard":
 			nextStep, errNew := saveWizard(request)

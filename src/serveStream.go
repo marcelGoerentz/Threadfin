@@ -450,6 +450,7 @@ func SendData(stream *Stream, errorChan chan ErrorInfo) {
 			oldSegments = append(oldSegments, f)
 			ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
 			if !SendFileToClients(stream, f, errorChan) {
+				errorChan <- ErrorInfo{SendFileError, stream, ""}
 				return
 			}
 			if len(oldSegments) > 5 {

@@ -1146,6 +1146,16 @@ function createLayout() {
   // Client Info (Server Information)
   var obj = SERVER["clientInfo"]
   var keys = getObjKeys(obj);
+  const changeVersion = document.getElementById("changeVersion") as HTMLInputElement
+  changeVersion.value = "Change to beta version"
+  changeVersion.onclick = () => {
+    changeVersion.value = "Changing..."
+    const server: Server = new Server("changeVersion")
+    server.request(new Object())
+    setTimeout(() => {
+      location.reload()
+    }, 20000);
+  }
   for (var i = 0; i < keys.length; i++) {
     if (document.getElementById(keys[i])) {
       (<HTMLInputElement>document.getElementById(keys[i])).value = obj[keys[i]];
@@ -1153,25 +1163,10 @@ function createLayout() {
         if (obj["beta"]) {
           const version = document.getElementById(keys[i]) as HTMLInputElement
           version.value += " Beta"
-        }
-      } else if (keys[i] === "changeVersion") {
-        const changeVersion = document.getElementById(keys[i]) as HTMLInputElement
-        if (obj["beta"]) {
           changeVersion.value = "Change to release version"
-          changeVersion.onclick = () => {
-            changeVersion.value = "Changing..."
-            const server: Server = new Server("changeVersion")
-            server.request(new Object())
-            setTimeout(() => {
-              location.reload()
-            }, 2000);
-          }
-        } else {
-          changeVersion.value = "Change to beta version"
         }
       }
     }
-
   }
 
   if (!document.getElementById("main-menu")) {

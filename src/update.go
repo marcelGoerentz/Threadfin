@@ -24,9 +24,11 @@ func BinaryUpdate(changeVersion bool) (err error) {
 		return
 	}
 
-	if !Settings.ThreadfinAutoUpdate {
-		ShowWarning(2098)
-		return
+	if !changeVersion {
+		if !Settings.ThreadfinAutoUpdate {
+			ShowWarning(2098)
+			return
+		}
 	}
 
 	var updater = &up2date.Updater
@@ -41,7 +43,7 @@ func BinaryUpdate(changeVersion bool) (err error) {
 		updater.Branch = "master"
 	}
 
-	ShowInfo("BRANCH:" + updater.Branch)
+	ShowInfo("Update Version:" + updater.Branch)
 	var releaseInfo = fmt.Sprintf("%s/releases", System.Update.Github)
 	//var latest string
 	//var bin_name string
@@ -91,12 +93,13 @@ func BinaryUpdate(changeVersion bool) (err error) {
 		}
 	}
 
-	ShowInfo("TAG LATEST:" + updater.Response.Version)
+	ShowInfo("LATEST VERSION:" + updater.Response.Version)
 
 	for _, asset := range updater.Response.Assets {
 		if strings.Contains(asset.DownloadUrl, System.OS) && strings.Contains(asset.DownloadUrl, System.ARCH) {
 			updater.Response.Status = true
 			updater.Response.UpdateBIN = asset.DownloadUrl
+			break
 		}
 	}
 
@@ -112,56 +115,49 @@ func BinaryUpdate(changeVersion bool) (err error) {
 
 	// Versionsnummer überprüfen
 	if do_upgrade {
-		if Settings.ThreadfinAutoUpdate {
-			// Update durchführen
-			var fileType, url string
+		// Update durchführen
+		var fileType, url string
 
-			ShowInfo(fmt.Sprintf("Update Available:Version: %s", updater.Response.Version))
+		ShowInfo(fmt.Sprintf("Update Available:Version: %s", updater.Response.Version))
 
-			switch System.Branch {
+		switch System.Branch {
 
-			// Update von GitHub
-			case "master", "beta":
-				ShowInfo("Update Server:GitHub")
+		// Update von GitHub
+		case "master", "beta", "development":
+			ShowInfo("Update Server:GitHub")
 
-			// Update vom eigenen Server
-			default:
-				ShowInfo(fmt.Sprintf("Update Server:%s", Settings.UpdateURL))
+		// Update vom eigenen Server
+		default:
+			ShowInfo(fmt.Sprintf("Update Server:%s", Settings.UpdateURL))
 
-			}
-
-			ShowInfo(fmt.Sprintf("Start Update:Branch: %s", updater.Branch))
-
-			// Neue Version als BIN Datei herunterladen
-			if len(updater.Response.UpdateBIN) > 0 {
-				url = updater.Response.UpdateBIN
-				fileType = "bin"
-			}
-
-			// Neue Version als ZIP Datei herunterladen
-			if len(updater.Response.UpdateZIP) > 0 {
-				url = updater.Response.UpdateZIP
-				fileType = "zip"
-			}
-
-			if len(url) > 0 {
-
-				err = up2date.DoUpdate(fileType, updater.Response.Filename)
-				if err != nil {
-					ShowError(err, 6002)
-				}
-				if System.Branch == "beta" {
-					if err := os.WriteFile(path_to_file, []byte(updater.Response.UpdatedAt), 0666); err != nil {
-						ShowError(err, 6005)
-					}
-				}
-			}
-
-		} else {
-			// Hinweis ausgeben
-			ShowWarning(6004)
 		}
 
+		ShowInfo(fmt.Sprintf("Start Update:Branch: %s", updater.Branch))
+
+		// Neue Version als BIN Datei herunterladen
+		if len(updater.Response.UpdateBIN) > 0 {
+			url = updater.Response.UpdateBIN
+			fileType = "bin"
+		}
+
+		// Neue Version als ZIP Datei herunterladen
+		if len(updater.Response.UpdateZIP) > 0 {
+			url = updater.Response.UpdateZIP
+			fileType = "zip"
+		}
+
+		if len(url) > 0 {
+
+			err = up2date.DoUpdate(fileType, updater.Response.Filename)
+			if err != nil {
+				ShowError(err, 6002)
+			}
+			if System.Branch == "beta" {
+				if err := os.WriteFile(path_to_file, []byte(updater.Response.UpdatedAt), 0666); err != nil {
+					ShowError(err, 6005)
+				}
+			}
+		}
 	} else {
 		ShowInfo("BIN:Update omitted")
 	}
