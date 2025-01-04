@@ -1146,7 +1146,7 @@ function createLayout() {
   // Client Info (Server Information)
   var obj = SERVER["clientInfo"]
   var keys = getObjKeys(obj);
-  const changeVersion = document.getElementById("changeVersion") as HTMLInputElement
+  const changeVersion = document.getElementById("changeVersion") as HTMLButtonElement
   changeVersion.value = "Change to beta version"
   changeVersion.onclick = () => {
     changeVersion.value = "Changing..."

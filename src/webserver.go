@@ -742,6 +742,9 @@ func WS(w http.ResponseWriter, r *http.Request) {
 			System.Beta = !System.Beta // Toggle Beta
 			BinaryUpdate(true)
 
+		case "updateThreadfin":
+			BinaryUpdate(true)
+
 		case "saveWizard":
 			nextStep, errNew := saveWizard(request)
 

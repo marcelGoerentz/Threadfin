@@ -46,7 +46,7 @@ var GitHub = GitHubStruct{Branch: "master", User: "marcelGoerentz", Repo: "Threa
 const Name = "Threadfin"
 
 // Version : Major, Minor, Patch, Build
-const Version = "1.8.0.0"
+const Version = "1.6.0.0"
 
 // DBVersion : Database version
 const DBVersion = "0.5.0"
