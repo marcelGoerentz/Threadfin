@@ -23,7 +23,7 @@ async function getNewestReleaseFromGithub() {
 
             if (isNewerVersion(latestReleaseVersion, currentVersion)) {
                 const banner = document.getElementById('footer-banner') as HTMLElement;
-                const closeButton = document.getElementById('closeBannerButton') as HTMLButtonElement;
+                const closeButton = document.getElementById('closeNotification') as HTMLButtonElement;
                 const updateButton = document.getElementById('updateNowButton') as HTMLButtonElement;
                 closeButton.value = 'Close';
                 updateButton.value = 'Update now';
