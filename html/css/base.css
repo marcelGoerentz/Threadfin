@@ -1,4 +1,4 @@
-* {
+*{
   -webkit-appearance: none;
   -moz-appearance: none;
   -ms-appearance: none;
@@ -71,7 +71,8 @@ h5 {
   font-size: 16px;
   letter-spacing: 1px;
   line-height: 1.2em;
-  margin: 25px 0px 10px 0px;
+  margin: 0px auto;
+  margin-left: 10px;
 }
 
 hr {
@@ -126,6 +127,7 @@ select {
   background-color: #333;
   font-size: 14px;
   margin: 5px 0px 5px 0px;
+  padding-bottom: 50px;
 }
 
 select:focus {
@@ -448,19 +450,26 @@ table {
 
 }
 
-.banner {
+.footer-banner {
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  padding: 10px; /* Adjust padding as needed */
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 50%;
-  background-color: #000000;
-  color: #ffffff;
-  padding: 10px;
-  text-align: left;
-  font-size: 16px;
-  display: none;
-  z-index: 99999;
-  margin: auto;
+  bottom: 20px; /* Adjust position as needed */
+  right: 20px; /* Adjust position as needed */
+  z-index: 1000;
+  display: none; /* Initially hidden */
+  width: 300px; /* Adjust width as needed */
+  height: 130px; /* Adjust height as needed */
+  border-radius: 10px; /* Optional: rounded corners */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Optional: add shadow for better visibility */
+}
+
+.footer-banner .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 @-webkit-keyframes spin {

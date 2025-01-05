@@ -1,28 +1,44 @@
-const updateButton = document.getElementById('updateNow') as HTMLButtonElement; // Banner-Element auswählen
-const versionModal = document.getElementById('versionModal')
-updateButton.addEventListener('click', () => {
-    window.open('https://github.com/marcelGoerentz/Threadfin/releases/latest')
-})
-
 async function getNewestReleaseFromGithub() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (SERVER.clientInfo) {
-        if (SERVER.clientInfo.beta) {
+        /*if (SERVER.clientInfo.beta) {
             return
-        }
+        }*/
         const releasesData = await getReleases();
         if (releasesData) {
             const releases: Release[] = releasesData.map((release: any) => ({
                 tag_name: release.tag_name,
+                prerelease: release.prerelease,
             }));
 
             const currentVersion = parseVersion(SERVER.clientInfo.version);
-            const latestReleaseVersion = parseVersion(releases[0].tag_name);
+            var latestAvailableVersion: Release;
+            if (SERVER.clientInfo.beta) {
+                latestAvailableVersion = releases.find(release => release.prerelease == true);
+            } else {
+                latestAvailableVersion = releases.find(release => release.prerelease == false);
+            }
+            const latestReleaseVersion = parseVersion(latestAvailableVersion.tag_name);
 
             if (isNewerVersion(latestReleaseVersion, currentVersion)) {
-                const modal = new bootstrap.Modal(versionModal)
-                modal.show()
+                const banner = document.getElementById('footer-banner') as HTMLElement;
+                const closeButton = document.getElementById('closeNotification') as HTMLButtonElement;
+                const updateButton = document.getElementById('updateNowButton') as HTMLButtonElement;
+                closeButton.value = 'Close';
+                updateButton.value = 'Update now';
+                closeButton.onclick = () => {
+                    banner.style.display = 'none';
+                }
+                updateButton.onclick = () => {
+                    updateButton.innerText = 'Updating...';
+                    const server: Server = new Server("updateThreadfin")
+                    server.request(new Object())
+                    setTimeout(() => {
+                        location.reload()
+                    }, 20000);
+                }
+                banner.style.display = 'block';
             }
         } else {
             console.log('Error fetching releases or no releases found.');
@@ -31,14 +47,16 @@ async function getNewestReleaseFromGithub() {
 }
 
 function parseVersion(version: string): number[] {
-    const regex = /v?(\d+)\.(\d+)(?:\.(\d+))?(?: \((\d+)-\w+\))?/;
+    // TODO: Improve version parsing
+    const regex = /^v?(\d+)\.(\d+)(?:\.(\d+))?(?:\.(\d+))?(?: \((\d+)(?:-(\w+))?\))?(?:-(\w+))?$/;
     const match = version.match(regex);
 
     if (match) {
         const major = parseInt(match[1], 10);
         const minor = parseInt(match[2], 10);
         const patch = match[3] ? parseInt(match[3], 10) : (match[4] ? parseInt(match[4], 10) : 0); // Default to 0 if patch is not present
-        return [major, minor, patch];
+        const build = match[4] ? parseInt(match[4], 10) : (match[5] ? parseInt(match[5], 10) : 0); // Default to 0 if patch is not present
+        return [major, minor, patch, build];
     } else {
         throw new Error("Invalid version format");
     }
@@ -66,6 +84,7 @@ async function getReleases(): Promise<any> {
     }
 }
 
+// Define the Release interface
 interface Release {
     name: string;
     tag_name: string;
