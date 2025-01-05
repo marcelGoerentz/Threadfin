@@ -125,8 +125,10 @@ func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
 		BackupChannel3URL: streamInfo.BackupChannel3URL,
 		Folder:            folder,
 		Clients:           make(map[string]Client),
+		BackupNumber: 	   0,
+		UseBackup:		   false,
 	}
-	buffer := StartBuffer(stream, false, 0, errorChan)
+	buffer := StartBuffer(stream, errorChan)
 	if buffer == nil {
 		return nil
 	}

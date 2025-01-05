@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func StartThreadfinBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) (*Buffer, error) {
+func StartThreadfinBuffer(stream *Stream, errorChan chan ErrorInfo) (*Buffer, error) {
 	stopChan := make(chan struct{})
 	ShowInfo(fmt.Sprintf("Streaming:Buffer:%s", "Threadfin"))
 	ShowInfo("Streaming URL:" + stream.URL)

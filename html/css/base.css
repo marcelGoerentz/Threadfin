@@ -461,7 +461,7 @@ table {
   z-index: 1000;
   display: none; /* Initially hidden */
   width: 300px; /* Adjust width as needed */
-  height: 130px; /* Adjust height as needed */
+  height: 170px; /* Adjust height as needed */
   border-radius: 10px; /* Optional: rounded corners */
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Optional: add shadow for better visibility */
 }

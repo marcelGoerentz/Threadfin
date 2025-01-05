@@ -85,7 +85,7 @@
               <div class="card text-bg-dark mb 3">
                 <div class="card-header">Change Threadfin Version</div>
                 <div class="card-body">
-                  <input type="button" class="btn btn-primary" id="changeVersion"/>
+                  <input type="button" id="changeVersion"/>
                 </div>
               </div>
             </div>
@@ -133,9 +133,9 @@
       <h5 class="modal-title">Update notification</h5>
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="closeNotification"></button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body", style="border-radius: 10px;">
         <p id="footer-banner-text">A newer version of Threadfin is available. Please update to the latest version.</p>
-        <button type="button" class="btn btn-primary" id="updateNowButton">Update Now</button>
+        <input type="button" style="margin-bottom: 5px;" id="updateNowButton"/>
     </div>
   </div>
 

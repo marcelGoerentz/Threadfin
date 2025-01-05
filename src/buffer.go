@@ -25,27 +25,27 @@ func InitBufferVFS(virtual bool) {
 
 }
 
-func StartBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *Buffer {
-	if useBackup {
-		UpdateStreamURLForBackup(stream, backupNumber)
+func StartBuffer(stream *Stream, errorChan chan ErrorInfo) *Buffer {
+	if stream.UseBackup {
+		UpdateStreamURLForBackup(stream)
 	}
 
 	if err := PrepareBufferFolder(stream.Folder); err != nil {
 		ShowError(err, 4008)
-		HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+		HandleBufferError(err, stream, errorChan)
 		return nil
 	}
 
 	switch Settings.Buffer {
 	case "ffmpeg", "vlc":
-		if buffer, err := StartThirdPartyBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
-			return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+		if buffer, err := StartThirdPartyBuffer(stream, errorChan); err != nil {
+			return HandleBufferError(err, stream, errorChan)
 		} else {
 			return buffer
 		}
 	case "threadfin":
-		if buffer, err := StartThreadfinBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
-			return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
+		if buffer, err := StartThreadfinBuffer(stream, errorChan); err != nil {
+			return HandleBufferError(err, stream, errorChan)
 		} else {
 			return buffer
 		}
@@ -57,12 +57,13 @@ func StartBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan cha
 /*
 HandleBufferError will retry running the Buffer function with the next backup number
 */
-func HandleBufferError(err error, backupNumber int, useBackup bool, stream *Stream, errorChan chan ErrorInfo) *Buffer {
+func HandleBufferError(err error, stream *Stream, errorChan chan ErrorInfo) *Buffer {
 	ShowError(err, 4011)
-	if !useBackup || (useBackup && backupNumber >= 0 && backupNumber <= 3) {
-		backupNumber++
+	if !stream.UseBackup || (stream.UseBackup && stream.BackupNumber >= 0 && stream.BackupNumber <= 3) {
+		stream.BackupNumber++
 		if stream.BackupChannel1URL != "" || stream.BackupChannel2URL != "" || stream.BackupChannel3URL != "" {
-			return StartBuffer(stream, true, backupNumber, errorChan)
+			stream.UseBackup = true
+			return StartBuffer(stream, errorChan)
 		}
 	}
 	return nil
@@ -141,8 +142,8 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 /*
 UpdateStreamURLForBackup will set the ther stream url when a backup will be used
 */
-func UpdateStreamURLForBackup(stream *Stream, backupNumber int) {
-	switch backupNumber {
+func UpdateStreamURLForBackup(stream *Stream) {
+	switch stream.BackupNumber {
 	case 1:
 		stream.URL = stream.BackupChannel1URL
 		ShowHighlight("START OF BACKUP 1 STREAM")

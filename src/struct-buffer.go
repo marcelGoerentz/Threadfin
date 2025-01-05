@@ -34,6 +34,8 @@ type Stream struct {
 	BackupChannel1URL string
 	BackupChannel2URL string
 	BackupChannel3URL string
+	UseBackup		  bool
+	BackupNumber	  int
 }
 
 type Buffer struct {
