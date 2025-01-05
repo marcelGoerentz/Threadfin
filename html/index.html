@@ -40,44 +40,12 @@
     </div>
   </div>
 
-  <div class="modal fade" id="versionModal" tabindex="-1" aria-labelledby="versionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="versionModalLabel">New Version Available</h3>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="container-fluid">
-            <div class="row">
-              <div class="card text-bg-dark mb-3">
-                <div class="card-body" id="checkbox_container">
-                  <table>
-                    <tbody>
-                      <tr>
-                        <td>A new version of the application is available. Please update to the latest version.</td>
-                        <td>
-                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="updateNow">Update Now</button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="modal fade" id="server_information">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Server Information</h3>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="container-fluid">
@@ -157,6 +125,17 @@
       <div class="col-md-5 col-sm-12 table-responsive float-end">
         <table class="table table-dark table-bordered caption-top" id="inactiveStreams"></table>
       </div>
+    </div>
+  </div>
+
+  <div id="footer-banner" class="footer-banner">
+    <div class="header d-flex justify-content-between align-items-center">
+      <h5 class="modal-title">Update notification</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="closeNotification"></button>
+    </div>
+    <div class="modal-body">
+        <p id="footer-banner-text">A newer version of Threadfin is available. Please update to the latest version.</p>
+        <button type="button" class="btn btn-primary" id="updateNowButton">Update Now</button>
     </div>
   </div>
 
