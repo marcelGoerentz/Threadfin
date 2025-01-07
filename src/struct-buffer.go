@@ -34,14 +34,21 @@ type Stream struct {
 	BackupChannel1URL string
 	BackupChannel2URL string
 	BackupChannel3URL string
-	UseBackup		  bool
-	BackupNumber	  int
+	UseBackup         bool
+	BackupNumber      int
 }
 
 type Buffer struct {
-	isThirdPartyBuffer bool
-	cmd                *exec.Cmd
-	stopChan           chan struct{}
+	IsThirdPartyBuffer bool
+	Cmd                *exec.Cmd
+	Config             *BufferConfig
+	StopChan           chan struct{}
+}
+
+type BufferConfig struct {
+	BufferType string
+	Path       string
+	Options    string
 }
 
 type Client struct {

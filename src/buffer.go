@@ -25,48 +25,43 @@ func InitBufferVFS(virtual bool) {
 
 }
 
-func StartBuffer(stream *Stream, errorChan chan ErrorInfo) *Buffer {
+func (b *Buffer) StartBuffer(stream *Stream, errorChan chan ErrorInfo) {
 	if stream.UseBackup {
 		UpdateStreamURLForBackup(stream)
 	}
 
-	if err := PrepareBufferFolder(stream.Folder); err != nil {
+	var err error = nil
+	if err = PrepareBufferFolder(stream.Folder); err != nil {
 		ShowError(err, 4008)
-		HandleBufferError(err, stream, errorChan)
-		return nil
+		b.HandleBufferError(err, stream, errorChan)
+		return
 	}
 
 	switch Settings.Buffer {
 	case "ffmpeg", "vlc":
-		if buffer, err := StartThirdPartyBuffer(stream, errorChan); err != nil {
-			return HandleBufferError(err, stream, errorChan)
-		} else {
-			return buffer
-		}
+		err = StartThirdPartyBuffer(stream, errorChan)
 	case "threadfin":
-		if buffer, err := StartThreadfinBuffer(stream, errorChan); err != nil {
-			return HandleBufferError(err, stream, errorChan)
-		} else {
-			return buffer
-		}
+		err = StartThreadfinBuffer(stream, errorChan)
 	default:
-		return nil
+		return
+	}
+	if err != nil {
+		b.HandleBufferError(err, stream, errorChan)
 	}
 }
 
 /*
 HandleBufferError will retry running the Buffer function with the next backup number
 */
-func HandleBufferError(err error, stream *Stream, errorChan chan ErrorInfo) *Buffer {
+func (b *Buffer) HandleBufferError(err error, stream *Stream, errorChan chan ErrorInfo) {
 	ShowError(err, 4011)
 	if !stream.UseBackup || (stream.UseBackup && stream.BackupNumber >= 0 && stream.BackupNumber <= 3) {
 		stream.BackupNumber++
 		if stream.BackupChannel1URL != "" || stream.BackupChannel2URL != "" || stream.BackupChannel3URL != "" {
 			stream.UseBackup = true
-			return StartBuffer(stream, errorChan)
+			b.StartBuffer(stream, errorChan)
 		}
 	}
-	return nil
 }
 
 /*
@@ -107,7 +102,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 			return
 		}
 		if err != nil {
-			if _, ok := err.(*net.OpError); !ok || stream.Buffer.isThirdPartyBuffer {
+			if _, ok := err.(*net.OpError); !ok || stream.Buffer.IsThirdPartyBuffer {
 				ShowError(err, 4012)
 			}
 			f.Close()

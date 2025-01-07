@@ -116,7 +116,7 @@ func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
 	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid
 	stream := &Stream{
 		Name:              streamInfo.Name,
-		Buffer:            nil,
+		Buffer:            &Buffer{Config: &BufferConfig{}},
 		Ctx:               ctx,
 		Cancel:            cancel,
 		URL:               streamInfo.URL,
@@ -125,14 +125,13 @@ func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
 		BackupChannel3URL: streamInfo.BackupChannel3URL,
 		Folder:            folder,
 		Clients:           make(map[string]Client),
-		BackupNumber: 	   0,
-		UseBackup:		   false,
+		BackupNumber:      0,
+		UseBackup:         false,
 	}
-	buffer := StartBuffer(stream, errorChan)
-	if buffer == nil {
+	stream.Buffer.StartBuffer(stream, errorChan)
+	if stream.Buffer == nil {
 		return nil
 	}
-	stream.Buffer = buffer
 	return stream
 }
 
@@ -319,12 +318,12 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 			ShowInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.Clients)))
 			if len(stream.Clients) == 0 {
 				stream.Cancel() // Tell everyone about the ending of the stream
-				if stream.Buffer.isThirdPartyBuffer {
-					stream.Buffer.cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
-					stream.Buffer.cmd.Wait()
-					DeletPIDfromDisc(fmt.Sprintf("%d", stream.Buffer.cmd.Process.Pid)) // Delete the PID since the process has been terminated
+				if stream.Buffer.IsThirdPartyBuffer {
+					stream.Buffer.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+					stream.Buffer.Cmd.Wait()
+					DeletPIDfromDisc(fmt.Sprintf("%d", stream.Buffer.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
 				} else {
-					close(stream.Buffer.stopChan)
+					close(stream.Buffer.StopChan)
 				}
 				delete(sm.Playlists[playlistID].Streams, streamID)
 				ShowInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))

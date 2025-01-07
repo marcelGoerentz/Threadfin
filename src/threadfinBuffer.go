@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func StartThreadfinBuffer(stream *Stream, errorChan chan ErrorInfo) (*Buffer, error) {
+func StartThreadfinBuffer(stream *Stream, errorChan chan ErrorInfo) error {
 	stopChan := make(chan struct{})
 	ShowInfo(fmt.Sprintf("Streaming:Buffer:%s", "Threadfin"))
 	ShowInfo("Streaming URL:" + stream.URL)
@@ -50,7 +50,8 @@ func StartThreadfinBuffer(stream *Stream, errorChan chan ErrorInfo) (*Buffer, er
 			}
 		}
 	}()
-	return &Buffer{isThirdPartyBuffer: false, stopChan: stopChan}, nil
+	stream.Buffer.StopChan = stopChan
+	return nil
 }
 
 func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {
