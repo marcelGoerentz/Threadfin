@@ -8,22 +8,7 @@ import (
 	"os"
 
 	"github.com/avfs/avfs"
-	"github.com/avfs/avfs/vfs/memfs"
-	"github.com/avfs/avfs/vfs/osfs"
 )
-
-/*
-InitBufferVFS will set the bufferVFS variable
-*/
-func InitBufferVFS(virtual bool) {
-
-	if virtual {
-		bufferVFS = memfs.New()
-	} else {
-		bufferVFS = osfs.New()
-	}
-
-}
 
 func (b *Buffer) StartBuffer(stream *Stream, errorChan chan ErrorInfo) {
 	if stream.UseBackup {
@@ -31,7 +16,7 @@ func (b *Buffer) StartBuffer(stream *Stream, errorChan chan ErrorInfo) {
 	}
 
 	var err error = nil
-	if err = PrepareBufferFolder(stream.Folder); err != nil {
+	if err = PrepareBufferFolder(stream.Buffer.FileSystem, stream.Folder); err != nil {
 		ShowError(err, 4008)
 		b.HandleBufferError(err, stream, errorChan)
 		return
@@ -68,6 +53,7 @@ func (b *Buffer) HandleBufferError(err error, stream *Stream, errorChan chan Err
 HandleByteOutput save the byte ouptut of the command or http request as files
 */
 func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan ErrorInfo) {
+	TS_PACKAGE_MIN_SIZE := 188
 	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
 	buffer := make([]byte, bufferSize)
 	var fileSize int
@@ -75,6 +61,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 	tmpFolder := stream.Folder + string(os.PathSeparator)
 	tmpSegment := 1
 
+	var bufferVFS = stream.Buffer.FileSystem
 	var f avfs.File
 	var err error
 	var tmpFile string
@@ -117,7 +104,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 		}
 		fileSize += n
 		// Prüfen, ob Dateigröße den Puffer überschreitet
-		if fileSize >= bufferSize {
+		if fileSize >= TS_PACKAGE_MIN_SIZE * 1024 {
 			tmpSegment++
 			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
 			// Datei schließen und neue Datei öffnen
@@ -157,7 +144,7 @@ func UpdateStreamURLForBackup(stream *Stream) {
 /*
 PrepareBufferFolder will clean the buffer folder and check if the folder exists
 */
-func PrepareBufferFolder(folder string) error {
+func PrepareBufferFolder(bufferVFS avfs.VFS, folder string) error {
 	if err := bufferVFS.RemoveAll(getPlatformPath(folder)); err != nil {
 		return fmt.Errorf("failed to remove buffer folder: %w", err)
 	}

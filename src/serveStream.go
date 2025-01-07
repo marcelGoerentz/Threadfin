@@ -15,6 +15,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/avfs/avfs"
+	"github.com/avfs/avfs/vfs/memfs"
+	"github.com/avfs/avfs/vfs/osfs"
 )
 
 /*
@@ -25,6 +28,7 @@ func NewStreamManager() *StreamManager {
 		Playlists: map[string]*Playlist{},
 		errorChan: make(chan ErrorInfo),
 		stopChan:  make(chan bool),
+		FileSystem: InitBufferVFS(Settings.StoreBufferInRAM),
 	}
 
 	// Start a go routine that will check for the error channel
@@ -80,7 +84,7 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 		// check if a new stream is possible
 		if IsNewStreamPossible(sm, streamInfo, w) {
 			// create a new buffer and add the stream to the map within the new playlist
-			sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.errorChan)
+			sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.FileSystem, sm.errorChan)
 			if sm.Playlists[playlistID].Streams[streamID] == nil {
 				return "", ""
 			}
@@ -95,7 +99,7 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 			// check if a new stream is possible
 			if IsNewStreamPossible(sm, streamInfo, w) {
 				// create a new buffer and add the stream to the map within the existing playlist
-				sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.errorChan)
+				sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.FileSystem, sm.errorChan)
 				ShowInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
 			} else {
 				return "", ""
@@ -108,15 +112,23 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 	return
 }
 
+func InitBufferVFS(virtual bool) avfs.VFS {
+	if virtual {
+		return memfs.New()
+	} else {
+		return osfs.New()
+	}
+}
+
 /*
 CreateStream will create and return a new Stream struct, it will also start the new buffer.
 */
-func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
+func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan ErrorInfo) *Stream {
 	ctx, cancel := context.WithCancel(context.Background())
 	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid
 	stream := &Stream{
 		Name:              streamInfo.Name,
-		Buffer:            &Buffer{Config: &BufferConfig{}},
+		Buffer:            &Buffer{Config: &BufferConfig{}, FileSystem: fileSystem},
 		Ctx:               ctx,
 		Cancel:            cancel,
 		URL:               streamInfo.URL,
@@ -220,7 +232,7 @@ func ShouldCreateContent(fileList []fs.DirEntry) bool {
 		return false
 	default:
 		for _, file := range fileList {
-			bufferVFS.Remove(System.Folder.Video + file.Name())
+			os.Remove(System.Folder.Video + file.Name())
 		}
 		return true
 	}
@@ -325,7 +337,7 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 				} else {
 					close(stream.Buffer.StopChan)
 				}
-				delete(sm.Playlists[playlistID].Streams, streamID)
+				
 				ShowInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
 				var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
 				ShowDebug(debug, 1)
@@ -333,9 +345,10 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 				debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
 				ShowDebug(debug, 1)
 
-				if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
+				if err := sm.FileSystem.RemoveAll(stream.Folder); err != nil {
 					ShowError(err, 4005)
 				}
+				delete(sm.Playlists[playlistID].Streams, streamID)
 			}
 		}
 		if len(sm.Playlists[playlistID].Streams) == 0 {
@@ -412,7 +425,7 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 	// If it was the first client start t
 	if len(stream.Clients) == 1 {
 		// Send Data to the clients, this should run only once per stream
-		go SendData(stream, sm.errorChan)
+		go stream.SendData(sm.errorChan)
 	}
 
 	// Wait for the client context to get closed
@@ -438,45 +451,67 @@ func (sm *StreamManager) GetPlaylistIDandStreamID(stream *Stream) (string, strin
 SendData sends Data to the clients connected to the stream
 With errorChan it reports occuring errors to the StreamManager instance
 */
-func SendData(stream *Stream, errorChan chan ErrorInfo) {
+func (s *Stream) SendData(errorChan chan ErrorInfo) {
 	var oldSegments []string
 
 	for {
-		tmpFiles := GetBufTmpFiles(stream)
+		tmpFiles := s.GetBufTmpFiles()
 		for _, f := range tmpFiles {
-			if !CheckBufferFolder(stream) {
-				errorChan <- ErrorInfo{BufferFolderError, stream, ""}
+			if !s.CheckBufferFolder() {
+				errorChan <- ErrorInfo{BufferFolderError, s, ""}
 				return
 			}
 			oldSegments = append(oldSegments, f)
 			ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
-			if !SendFileToClients(stream, f, errorChan) {
-				errorChan <- ErrorInfo{SendFileError, stream, ""}
+			if !s.SendFileToClients(f, errorChan) {
+				errorChan <- ErrorInfo{SendFileError, s, ""}
 				return
 			}
-			if len(oldSegments) > 5 {
-				DeleteOldestSegment(stream, oldSegments[0])
+			if s.GetBufferedSize() > Settings.BufferSize * 1024 {
+				s.DeleteOldestSegment(oldSegments[0])
 				oldSegments = oldSegments[1:]
 			}
 		}
 		if len(tmpFiles) == 0 {
-			time.Sleep(10 * time.Millisecond) // This will ensure that streams will synchronize over the time
+			time.Sleep(5 * time.Millisecond) // This will ensure that streams will synchronize over the time
 		}
 	}
+}
+
+func (s *Stream) GetBufferedSize() (size int) {
+	size = 0
+	var tmpFolder = s.Folder + string(os.PathSeparator)
+	if _, err := s.Buffer.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
+
+		files, err := s.Buffer.FileSystem.ReadDir(getPlatformPath(tmpFolder))
+		if err != nil {
+			ShowError(err, 000)
+			return
+		}
+		for _, file := range files {
+			if !file.IsDir() && filepath.Ext(file.Name()) == ".ts" {
+				file_info, err := s.Buffer.FileSystem.Stat(getPlatformFile(tmpFolder + file.Name()))
+				if err == nil {
+					size += int(file_info.Size())
+				}
+			}
+		}
+	}
+	return size
 }
 
 /*
 GetBufTmpFiles retrieves the files within the buffer folder
 and returns a sorted list with the file names
 */
-func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
+func (s *Stream) GetBufTmpFiles() (tmpFiles []string) {
 
-	var tmpFolder = stream.Folder + string(os.PathSeparator)
+	var tmpFolder = s.Folder + string(os.PathSeparator)
 	var fileIDs []float64
 
-	if _, err := bufferVFS.Stat(tmpFolder); !fsIsNotExistErr(err) {
+	if _, err := s.Buffer.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
 
-		files, err := bufferVFS.ReadDir(getPlatformPath(tmpFolder))
+		files, err := s.Buffer.FileSystem.ReadDir(getPlatformPath(tmpFolder))
 		if err != nil {
 			ShowError(err, 000)
 			return
@@ -503,9 +538,9 @@ func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 			for _, file := range fileIDs {
 				fileName := fmt.Sprintf("%.0f.ts", file)
 				// Check if the file is already within old segments array
-				if !ContainsString(stream.OldSegments, fileName) {
+				if !ContainsString(s.OldSegments, fileName) {
 					tmpFiles = append(tmpFiles, fileName)
-					stream.OldSegments = append(stream.OldSegments, fileName)
+					s.OldSegments = append(s.OldSegments, fileName)
 				}
 			}
 		}
@@ -516,9 +551,9 @@ func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 /*
 DeleteOldesSegment will delete the file provided in the buffer
 */
-func DeleteOldestSegment(stream *Stream, oldSegment string) {
-	fileToRemove := stream.Folder + string(os.PathSeparator) + oldSegment
-	if err := bufferVFS.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
+func (s *Stream) DeleteOldestSegment(oldSegment string) {
+	fileToRemove := s.Folder + string(os.PathSeparator) + oldSegment
+	if err := s.Buffer.FileSystem.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
 		ShowError(err, 4007)
 	}
 }
@@ -526,8 +561,8 @@ func DeleteOldestSegment(stream *Stream, oldSegment string) {
 /*
 CheckBufferFolder reports whether the buffer folder exists.
 */
-func CheckBufferFolder(stream *Stream) bool {
-	if _, err := bufferVFS.Stat(stream.Folder); fsIsNotExistErr(err) {
+func (s *Stream) CheckBufferFolder() bool {
+	if _, err := s.Buffer.FileSystem.Stat(s.Folder); fsIsNotExistErr(err) {
 		return false
 	}
 	return true
@@ -537,8 +572,8 @@ func CheckBufferFolder(stream *Stream) bool {
 SendFileToClients reports whether sending the File to the clients was successful
 It will also use the errorChan to report to the StreamManager if there is an error sending the file to a specifc client
 */
-func SendFileToClients(stream *Stream, fileName string, errorChan chan ErrorInfo) bool {
-	file, err := bufferVFS.Open(stream.Folder + string(os.PathSeparator) + fileName)
+func (s *Stream) SendFileToClients(fileName string, errorChan chan ErrorInfo) bool {
+	file, err := s.Buffer.FileSystem.Open(s.Folder + string(os.PathSeparator) + fileName)
 	if err != nil {
 		ShowError(err, 4014)
 		return false
@@ -554,11 +589,11 @@ func SendFileToClients(stream *Stream, fileName string, errorChan chan ErrorInfo
 		ShowError(err, 4016)
 		return false
 	}
-	for clientID, client := range stream.Clients {
+	for clientID, client := range s.Clients {
 		ShowDebug(fmt.Sprintf("Streaming:Sending file %s to client %s", fileName, clientID), 3)
 		if _, err := client.w.Write(buffer); err != nil {
 			ShowDebug(fmt.Sprintf("Streaming:Error when trying to send file to client %s", clientID), 1)
-			errorChan <- ErrorInfo{SendFileError, stream, clientID}
+			errorChan <- ErrorInfo{SendFileError, s, clientID}
 		}
 	}
 	return true

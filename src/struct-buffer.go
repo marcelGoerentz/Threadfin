@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os/exec"
 	"sync"
+
+	"github.com/avfs/avfs"
 )
 
 // StreamManager verwaltet die Streams und ffmpeg-Prozesse
@@ -12,6 +14,7 @@ type StreamManager struct {
 	Playlists map[string]*Playlist
 	errorChan chan ErrorInfo
 	stopChan  chan bool
+	FileSystem avfs.VFS
 	mu        sync.Mutex
 }
 
@@ -36,9 +39,11 @@ type Stream struct {
 	BackupChannel3URL string
 	UseBackup         bool
 	BackupNumber      int
+	DoAutoReconnect   bool
 }
 
 type Buffer struct {
+	FileSystem		   avfs.VFS
 	IsThirdPartyBuffer bool
 	Cmd                *exec.Cmd
 	Config             *BufferConfig
