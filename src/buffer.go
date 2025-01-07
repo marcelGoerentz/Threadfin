@@ -85,7 +85,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
-				ShowError(err, 4010)
+				ShowError(err, CreateFileError)
 				errorChan <- ErrorInfo{CreateFileError, stream, ""}
 				return
 			}
@@ -103,14 +103,14 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 		}
 		if err != nil {
 			if _, ok := err.(*net.OpError); !ok || stream.Buffer.IsThirdPartyBuffer {
-				ShowError(err, 4012)
+				ShowError(err, ReadIntoBufferError)
 			}
 			f.Close()
 			errorChan <- ErrorInfo{ReadIntoBufferError, stream, ""}
 			return
 		}
 		if _, err := f.Write(buffer[:n]); err != nil {
-			ShowError(err, 4013)
+			ShowError(err, WriteToBufferError)
 			f.Close()
 			errorChan <- ErrorInfo{WriteToBufferError, stream, ""}
 			return
@@ -125,7 +125,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
-				ShowError(err, 4010)
+				ShowError(err, CreateFileError)
 				errorChan <- ErrorInfo{CreateFileError, stream, ""}
 				return
 			}
