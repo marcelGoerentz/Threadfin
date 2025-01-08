@@ -18,7 +18,7 @@ func (b *Buffer) StartBuffer(stream *Stream, errorChan chan ErrorInfo) {
 	var err error = nil
 	if err = PrepareBufferFolder(stream.Buffer.FileSystem, stream.Folder); err != nil {
 		ShowError(err, 4008)
-		b.HandleBufferError(err, stream, errorChan)
+		handleBufferError(err, stream, errorChan)
 		return
 	}
 
@@ -31,20 +31,20 @@ func (b *Buffer) StartBuffer(stream *Stream, errorChan chan ErrorInfo) {
 		return
 	}
 	if err != nil {
-		b.HandleBufferError(err, stream, errorChan)
+		handleBufferError(err, stream, errorChan)
 	}
 }
 
 /*
 HandleBufferError will retry running the Buffer function with the next backup number
 */
-func (b *Buffer) HandleBufferError(err error, stream *Stream, errorChan chan ErrorInfo) {
+func handleBufferError(err error, stream *Stream, errorChan chan ErrorInfo) {
 	ShowError(err, 4011)
 	if !stream.UseBackup || (stream.UseBackup && stream.BackupNumber >= 0 && stream.BackupNumber <= 3) {
 		stream.BackupNumber++
 		if stream.BackupChannel1URL != "" || stream.BackupChannel2URL != "" || stream.BackupChannel3URL != "" {
 			stream.UseBackup = true
-			b.StartBuffer(stream, errorChan)
+			stream.Buffer.StartBuffer(stream, errorChan)
 		}
 	}
 }
@@ -54,7 +54,7 @@ HandleByteOutput save the byte ouptut of the command or http request as files
 */
 func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan ErrorInfo) {
 	TS_PACKAGE_MIN_SIZE := 188
-	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
+	bufferSize := Settings.BufferSize * 1024 // in bytes
 	buffer := make([]byte, bufferSize)
 	var fileSize int
 	init := true
@@ -93,21 +93,23 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 				ShowError(err, ReadIntoBufferError)
 			}
 			f.Close()
+			bufferVFS.Remove(tmpFile)
 			errorChan <- ErrorInfo{ReadIntoBufferError, stream, ""}
 			return
 		}
 		if _, err := f.Write(buffer[:n]); err != nil {
 			ShowError(err, WriteToBufferError)
 			f.Close()
+			bufferVFS.Remove(tmpFile)
 			errorChan <- ErrorInfo{WriteToBufferError, stream, ""}
 			return
 		}
 		fileSize += n
-		// Prüfen, ob Dateigröße den Puffer überschreitet
+		// Check if the file size exceeds the threshold
 		if fileSize >= TS_PACKAGE_MIN_SIZE * 1024 {
 			tmpSegment++
 			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
-			// Datei schließen und neue Datei öffnen
+			// Close the current file and create a new one
 			f.Close()
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {

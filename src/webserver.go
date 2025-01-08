@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -840,21 +841,22 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	var lang = make(map[string]interface{})
 	var err error
 
-	var requestFile = strings.Replace(r.URL.Path, "/web", "html", -1)
+	var requestFile = strings.Replace(r.URL.Path, "/web", "web/public", 1)
+	var webBasePath = "web/public/"
 	var content, contentType, file string
 
 	var language LanguageUI
 
 	if System.Dev {
 
-		lang, err = loadJSONFileToMap(fmt.Sprintf("html/lang/%s.json", Settings.Language))
+		lang, err = loadJSONFileToMap(fmt.Sprintf("%slang/%s.json", webBasePath, Settings.Language))
 		if err != nil {
 			ShowError(err, 000)
 		}
 
 	} else {
 
-		var languageFile = "html/lang/en.json"
+		var languageFile = fmt.Sprintf("%slang/en.json", webBasePath)
 
 		if value, ok := webUI[languageFile].(string); ok {
 			content = string(GetHTMLString(value))
@@ -869,7 +871,9 @@ func Web(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if getFilenameFromPath(requestFile) == "html" {
+	basePath := getFilenameFromPath(requestFile)
+
+	if basePath == "public" {
 
 		switch System.ConfigurationWizard {
 
@@ -1370,35 +1374,34 @@ func httpStatusError(w http.ResponseWriter, httpStatusCode int) {
 	http.Error(w, fmt.Sprintf("%s [%d]", http.StatusText(httpStatusCode), httpStatusCode), httpStatusCode)
 }
 
-func getContentType(filename string) (contentType string) {
-
-	if strings.HasSuffix(filename, ".html") {
-		contentType = "text/html"
-	} else if strings.HasSuffix(filename, ".css") {
-		contentType = "text/css"
-	} else if strings.HasSuffix(filename, ".js") {
-		contentType = "application/javascript"
-	} else if strings.HasSuffix(filename, ".png") {
-		contentType = "image/png"
-	} else if strings.HasSuffix(filename, ".jpg") {
-		contentType = "image/jpeg"
-	} else if strings.HasSuffix(filename, ".gif") {
-		contentType = "image/gif"
-	} else if strings.HasSuffix(filename, ".svg") {
-		contentType = "image/svg+xml"
-	} else if strings.HasSuffix(filename, ".mp4") {
-		contentType = "video/mp4"
-	} else if strings.HasSuffix(filename, ".webm") {
-		contentType = "video/webm"
-	} else if strings.HasSuffix(filename, ".ogg") {
-		contentType = "video/ogg"
-	} else if strings.HasSuffix(filename, ".mp3") {
-		contentType = "audio/mp3"
-	} else if strings.HasSuffix(filename, ".wav") {
-		contentType = "audio/wav"
-	} else {
-		contentType = "text/plain"
+func getContentType(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	switch ext {
+	case ".html":
+		return "text/html"
+	case ".css":
+		return "text/css"
+	case ".js":
+		return "application/javascript"
+	case ".png":
+		return "image/png"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".gif":
+		return "image/gif"
+	case ".svg":
+		return "image/svg+xml"
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".ogg":
+		return "video/ogg"
+	case ".mp3":
+		return "audio/mp3"
+	case ".wav":
+		return "audio/wav"
+	default:
+		return "text/plain"
 	}
-
-	return
 }

@@ -27,7 +27,7 @@ func StartThirdPartyBuffer(stream *Stream, errorChan chan ErrorInfo) error {
 
 	err := RunBufferCommand(stream, errorChan)
 	if err != nil {
-		stream.Buffer.HandleBufferError(err, stream, errorChan)
+		handleBufferError(err, stream, errorChan)
 	}
 	return nil
 }
