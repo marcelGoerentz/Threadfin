@@ -22,15 +22,18 @@ async function getNewestReleaseFromGithub() {
             const latestReleaseVersion = parseVersion(latestAvailableVersion.tag_name);
 
             if (isNewerVersion(latestReleaseVersion, currentVersion)) {
-                const banner = document.getElementById('footer-banner') as HTMLElement;
+                const banner = document.getElementById('notification_containter') as HTMLElement;
+                const bannerText = document.getElementById('notification_text') as HTMLElement;
+                bannerText.innerHTML = '{{.notification.updateAvailable}}';
+
                 const closeButton = document.getElementById('closeNotification') as HTMLButtonElement;
                 const updateButton = document.getElementById('updateNowButton') as HTMLButtonElement;
-                updateButton.value = 'Update now';
+                updateButton.value = '{{.button.update}}';
                 closeButton.onclick = () => {
                     banner.style.display = 'none';
                 }
                 updateButton.onclick = () => {
-                    updateButton.innerText = 'Updating...';
+                    updateButton.value = '{{.button.updating}}';
                     const server: Server = new Server("updateThreadfin")
                     server.request(new Object())
                     setTimeout(() => {

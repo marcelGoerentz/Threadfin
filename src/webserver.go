@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,6 +27,7 @@ var streamManager = NewStreamManager()
 // StartWebserver : Startet den Webserver
 func StartWebserver() (webServer *WebServer, err error) {
 
+	addMimeExtensions()
 	webServer = &WebServer{SM: streamManager}
 
 	var port = Settings.Port
@@ -119,6 +121,15 @@ func StartWebserver() (webServer *WebServer, err error) {
 		}
 	}
 	return
+}
+
+func addMimeExtensions() {
+	mime.AddExtensionType(".m3u8", "application/vnc.apple.mpegurl")
+	mime.AddExtensionType(".m3u8", "application/x-mpegURL")
+	mime.AddExtensionType(".m3u", "application/m3u")
+	mime.AddExtensionType(".m3u", "audio/m3u")
+	mime.AddExtensionType(".m3u", "audio/x-m3u")
+	mime.AddExtensionType(".m3u", "audio/x-mp3-playlist")
 }
 
 // Index : Web Server /

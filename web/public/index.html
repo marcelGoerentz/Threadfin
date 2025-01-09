@@ -128,14 +128,16 @@
     </div>
   </div>
 
-  <div id="footer-banner" class="footer-banner">
-    <div class="header d-flex justify-content-between align-items-center">
-      <h5 class="modal-title">Update notification</h5>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="closeNotification"></button>
-    </div>
-    <div class="modal-body", style="border-radius: 10px;">
-        <p id="footer-banner-text">A newer version of Threadfin is available. Please update to the latest version.</p>
-        <input type="button" style="margin-bottom: 5px;" id="updateNowButton"/>
+  <div id="notification_containter" class="notification">
+    <div class="content">
+      <div class="header d-flex justify-content-between align-items-center">
+        <h5 class="title">Update notification</h5>
+        <button type="button" class="btn-close btn-close-white" id="closeNotification"></button>
+      </div>
+      <div class="modal-body", style="border-radius: 10px;">
+          <p id="notification_text"></p>
+          <input type="button" style="margin-bottom: 5px;" id="updateNowButton"/>
+      </div>
     </div>
   </div>
 

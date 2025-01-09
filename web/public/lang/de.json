@@ -44,6 +44,7 @@
     "save": "Speichern",
     "search": "Suchen",
     "update": "Aktualisieren",
+    "updating": "Aktualisiere...",
     "craeteAccount": "Konto erstellen",
     "resetLogs": "Protokolle zurücksetzen",
     "uploadLogo": "Logo hochladen",
@@ -463,6 +464,10 @@
       "title": "Puffer im RAM speichern",
       "description": "Wenn aktiviert, wird der Puffer im RAM anstelle auf der Festplatte gespeichert"
     },
+    "autoReconnect":{
+      "title": "Automatisch mit Stream neuverbinden",
+      "description": "Wenn aktiviert, verbindet sich der Puffer automatisch wieder mit dem Stream"
+    },
     "omitPorts":
     {
       "title": "Port weglassen",
@@ -600,5 +605,8 @@
       "title": "Bestätigen",
       "placeholder": "Bestätigen"
     }
+  },
+  "notification" : {
+    "updateAvailable": "Eine neuere Version von Threadfin ist verfügbare. Bitte auf die neuste Version aktualisieren."
   }
 }

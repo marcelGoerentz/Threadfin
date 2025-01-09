@@ -59,7 +59,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 	var fileSize int
 	init := true
 	tmpFolder := stream.Folder + string(os.PathSeparator)
-	tmpSegment := 1
+	tmpSegment := stream.LatestSegment
 
 	var bufferVFS = stream.Buffer.FileSystem
 	var f avfs.File
@@ -111,6 +111,7 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
 			// Close the current file and create a new one
 			f.Close()
+			stream.LatestSegment = tmpSegment
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"strings"
 	"time"
@@ -19,25 +20,39 @@ func StartThreadfinBuffer(stream *Stream, errorChan chan ErrorInfo) error {
 		if err != nil {
 			return
 		}
-		//defer resp.Body.Close()
-		if contentType, exists := resp.Header["Content-Type"]; exists {
-			ShowDebug(fmt.Sprintf("Streaming:%s", contentType), 1)
-			if contentType[0] != "application/octet-stream" {
-				videoURL, audioURL, err := selectStreamFromMaster(resp.Body)
+		
+		if contentTypes, exists := resp.Header["Content-Type"]; exists {
+			ShowDebug(fmt.Sprintf("Streaming:%s", contentTypes), 1)
+			extensions := []string{}
+			for _, contentType := range contentTypes {
+				type_extensions, err := mime.ExtensionsByType(contentType)
 				if err != nil {
-					ShowError(err, 0)
 					return
 				}
+				if type_extensions == nil {
+					continue
+				}
+				extensions = append(extensions, type_extensions...)
+			}
+						
+			for _, extension := range extensions {
+				if extension == ".m3u" || extension == ".m3u8" {
+					videoURL, audioURL, err := selectStreamFromMaster(resp.Body)
+					if err != nil {
+						ShowError(err, 0)
+						return
+					}
 
-				if videoURL != "" || audioURL != "" {
-					ShowInfo("Streaming: Can not stream from m3u file")
-					errorChan <- ErrorInfo{4017, stream, ""}
-					return
+					if videoURL != "" || audioURL != "" {
+						ShowInfo("Streaming:Can not stream from m3u file")
+						errorChan <- ErrorInfo{4017, stream, ""}
+						return
+					}
 				}
 			}
 		}
 
-		go HandleByteOutput(resp.Body, stream, errorChan)
+		go HandleByteOutput(resp.Body, stream, errorChan) // Download the video file directly and save to disk
 
 		for {
 			select {

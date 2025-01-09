@@ -42,8 +42,27 @@ func NewStreamManager() *StreamManager {
 						// Client specifc errors
 						sm.StopStream(playlistID, streamID, errorInfo.ClientID)
 					} else {
-						for clientID := range errorInfo.Stream.Clients {
-							sm.StopStream(playlistID, streamID, clientID)
+						playlist := sm.Playlists[playlistID]
+						if playlist == nil{
+							return
+						}
+						stream := playlist.Streams[streamID]
+						if stream == nil {
+							return
+						}
+						clients := stream.Clients
+						if errorInfo.ErrorCode == EndOfFileError {
+							// Buffer disconnect error
+							
+							if stream.DoAutoReconnect && len(clients) > 0 {
+								// Reconnect to stream
+								stream.Buffer.StartBuffer(stream, sm.errorChan)
+							} 
+						}else if len(clients) > 0 {
+							// Stop the stream for all clients
+							for clientID := range errorInfo.Stream.Clients {
+								sm.StopStream(playlistID, streamID, clientID)
+							}
 						}
 					}
 				}
@@ -139,6 +158,7 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 		Clients:           make(map[string]Client),
 		BackupNumber:      0,
 		UseBackup:         false,
+		DoAutoReconnect:   Settings.BufferAutoReconnect,
 	}
 	stream.Buffer.StartBuffer(stream, errorChan)
 	if stream.Buffer == nil {
@@ -464,8 +484,12 @@ func (s *Stream) SendData(errorChan chan ErrorInfo) {
 			oldSegments = append(oldSegments, f)
 			ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
 			if !s.SendFileToClients(f, errorChan) {
-				errorChan <- ErrorInfo{SendFileError, s, ""}
-				return
+				if !s.DoAutoReconnect {
+					errorChan <- ErrorInfo{SendFileError, s, ""}
+					return
+				} else {
+					continue
+				}
 			}
 			if s.GetBufferedSize() > Settings.BufferSize * 1024 {
 				s.DeleteOldestSegment(oldSegments[0])

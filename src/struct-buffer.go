@@ -32,6 +32,7 @@ type Stream struct {
 	Cancel  context.CancelFunc
 
 	Folder            string
+	LatestSegment	  int
 	OldSegments       []string
 	URL               string
 	BackupChannel1URL string

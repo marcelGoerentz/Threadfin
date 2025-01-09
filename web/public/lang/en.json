@@ -44,6 +44,7 @@
     "save": "Save",
     "search": "Search",
     "update": "Update",
+    "updating": "Updating...",
     "craeteAccount": "Create Account",
     "resetLogs": "Reset Logs",
     "uploadLogo": "Upload Logo",
@@ -463,6 +464,10 @@
       "title": "Store buffer in RAM",
       "description": "If checked, write buffer to RAM instead of writing to disk"
     },
+    "autoReconnect":{
+      "title": "Automatic reconnect to stream",
+      "description": "If checked, the buffer will automatically reconnect to stream"
+    },
     "omitPorts":
     {
       "title": "Omit port",
@@ -600,5 +605,8 @@
       "title": "Confirm",
       "placeholder": "Confirm"
     }
+  },
+  "notification" : {
+    "updateAvailable": "A newer version of Threadfin is available. Please update to the latest version."
   }
 }
