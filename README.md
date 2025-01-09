@@ -12,6 +12,7 @@ https://discord.gg/gwkpMxepPA
 You can follow the old xTeVe documentation for now until I update it for Threadfin. Documentation for setup and configuration is [here](https://github.com/xteve-project/xTeVe-Documentation/blob/master/en/configuration.md).
 
 #### Donation
+Buy me a coffee with
 [Paypal/Me](https://paypal.me/MarcelGoerentz)
 
 ## Requirements
