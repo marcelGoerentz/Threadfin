@@ -290,6 +290,7 @@ type SettingsStruct struct {
 	Buffer            string   `json:"buffer"`
 	BufferSize        int      `json:"buffer.size.kb"`
 	BufferTimeout     float64  `json:"buffer.timeout"`
+	BufferAutoReconnect bool   `json:"buffer.autoReconnect"`
 	CacheImages       bool     `json:"cache.images"`
 	ChangeVersion     bool     `json:"changeVersion"`
 	EpgSource         string   `json:"epgSource"`
