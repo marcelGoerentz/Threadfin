@@ -1,5 +1,31 @@
 class SettingsCategory {
   DocumentID: string = "content_settings"
+  headline: string
+  settingsKeys: string
+
+  constructor(headline: string, settingsKeys: string) {
+    this.headline = headline
+    this.settingsKeys = settingsKeys
+  }
+
+  createSettingsCheckbox(settingsKey: string, title: string): any {
+    var setting = document.createElement("TR")
+    var content: PopupContent = new PopupContent()
+    var data = SERVER["settings"][settingsKey]
+    var tdLeft = document.createElement("TD")
+    tdLeft.innerHTML = title + ":"
+
+    var tdRight = document.createElement("TD")
+    var input = content.createCheckbox(settingsKey)
+    input.checked = data
+    input.setAttribute("onchange", "javascript: this.className = 'changed'")
+    tdRight.appendChild(input)
+
+    setting.appendChild(tdLeft)
+    setting.appendChild(tdRight)
+    return setting
+  }
+
   createCategoryHeadline(value: string): any {
     var element = document.createElement("H4")
     element.innerHTML = value
@@ -163,258 +189,19 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-      // Checkboxen
-      case "authentication.web":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.authenticationWEB.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "authentication.pms":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.authenticationPMS.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "authentication.m3u":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.authenticationM3U.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "authentication.xml":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.authenticationXML.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "authentication.api":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.authenticationAPI.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "files.update":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.filesUpdate.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "cache.images":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.cacheImages.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "xepg.replace.missing.images":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.replaceEmptyImages.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "xepg.replace.channel.title":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.replaceChannelTitle.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "storeBufferInRAM":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.storeBufferInRAM.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "omitPorts":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.omitPorts.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "forceHttps":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.forceHttps.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "useHttps":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.useHttps.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "forceClientHttps":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.forceClientHttps.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "threadfinDomain":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.threadfinDomain.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "threadfinDomain", data.toString())
-          input.setAttribute("placeholder", "{{.settings.threadfinDomain.placeholder}}")
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-          
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
-      
-      case "domainUseHttps":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.domainUseHttps.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createCheckbox(settingsKey)
-          input.checked = data
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
-
-      case "enableNonAscii":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.enableNonAscii.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createCheckbox(settingsKey)
-          input.checked = data
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
-
       case "epgCategories":
-          var tdLeft = document.createElement("TD")
-          tdLeft.innerHTML = "{{.settings.epgCategories.title}}" + ":"
-  
-          var tdRight = document.createElement("TD")
-          var input = content.createInput("text", "epgCategories", data.toString())
-          input.setAttribute("placeholder", "{{.settings.epgCategories.placeholder}}")
-          input.setAttribute("onchange", "javascript: this.className = 'changed'")
-          tdRight.appendChild(input)
-  
-          setting.appendChild(tdLeft)
-          setting.appendChild(tdRight)
-          break
+        var tdLeft = document.createElement("TD")
+        tdLeft.innerHTML = "{{.settings.epgCategories.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createInput("text", "epgCategories", data.toString())
+        input.setAttribute("placeholder", "{{.settings.epgCategories.placeholder}}")
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
 
       case "epgCategoriesColors":
           var tdLeft = document.createElement("TD")
@@ -430,48 +217,124 @@ class SettingsCategory {
           setting.appendChild(tdRight)
           break
 
-      case "ThreadfinAutoUpdate":
+      case "threadfinDomain":
         var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.ThreadfinAutoUpdate.title}}" + ":"
+        tdLeft.innerHTML = "{{.settings.threadfinDomain.title}}" + ":"
 
         var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
+        var input = content.createInput("text", "threadfinDomain", data.toString())
+        input.setAttribute("placeholder", "{{.settings.threadfinDomain.placeholder}}")
+        input.setAttribute("onchange", "javascript: this.className = 'changed'")
+        tdRight.appendChild(input)
+        
+        setting.appendChild(tdLeft)
+        setting.appendChild(tdRight)
+        break
+
+      case "udpxy":
+        var tdLeft = document.createElement("TD");
+        tdLeft.innerHTML = "{{.settings.udpxy.title}}" + ":"
+
+        var tdRight = document.createElement("TD")
+        var input = content.createInput("text", "udpxy", data)
+        input.setAttribute("placeholder", "{{.settings.udpxy.placeholder}}")
         input.setAttribute("onchange", "javascript: this.className = 'changed'")
         tdRight.appendChild(input)
 
         setting.appendChild(tdLeft)
         setting.appendChild(tdRight)
+        break
+
+      // Checkboxen
+      case "authentication.web":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.authenticationWEB.title}}")
+        break
+
+      case "authentication.pms":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.authenticationPMS.title}}")
+        break
+
+      case "authentication.m3u":
+        setting = this.createSettingsCheckbox(settingsKey,"{{.settings.authenticationM3U.title}}")
+        break
+
+      case "authentication.xml":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.authenticationXML.title}}")
+        break
+
+      case "authentication.api":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.authenticationAPI.title}}")
+        break
+
+      case "files.update":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.filesUpdate.title}}")
+        break
+
+      case "cache.images":
+        setting = this.createSettingsCheckbox(settingsKey,"{{.settings.cacheImages.title}}")
+        break
+
+      case "xepg.replace.missing.images":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.replaceEmptyImages.title}}")
+        break
+
+      case "xepg.replace.channel.title":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.replaceChannelTitle.title}}")
+        break
+
+      case "storeBufferInRAM":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.storeBufferInRAM.title}}")
+        break
+
+      case "buffer.autoReconnect":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.autoReconnect.title}}")
+        break
+
+      case "omitPorts":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.omitPorts.title}}")
+        break
+
+      case "forceHttps":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.forceHttps.title}}")
+        break
+
+      case "useHttps":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.useHttps.title}}")
+        break
+
+      case "forceClientHttps":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.forceClientHttps.title}}")
+        break
+      
+      case "domainUseHttps":
+          setting = this.createSettingsCheckbox(settingsKey, "{{.settings.domainUseHttps.title}}")
+          break
+
+      case "enableNonAscii":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.enableNonAscii.title}}")
+          break
+
+      case "ThreadfinAutoUpdate":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.ThreadfinAutoUpdate.title}}")
         break
 
       case "ssdp":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.ssdp.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.ssdp.title}}")
         break
 
       case "dummy":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.dummy.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.dummy.title}}")
         break
 
+      case "ignoreFilters":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.ignoreFilters.title}}")
+        break
+
+      case "api":
+        setting = this.createSettingsCheckbox(settingsKey, "{{.settings.api.title}}")
+        break
+
+      // Select
       case "dummyChannel":
         var tdLeft = document.createElement("TD")
         tdLeft.innerHTML = "{{.settings.dummyChannel.title}}" + ":"
@@ -488,35 +351,6 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-      case "ignoreFilters":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.ignoreFilters.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      case "api":
-        var tdLeft = document.createElement("TD")
-        tdLeft.innerHTML = "{{.settings.api.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createCheckbox(settingsKey)
-        input.checked = data
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
-      // Select
       case "tuner":
         var tdLeft = document.createElement("TD")
         tdLeft.innerHTML = "{{.settings.tuner.title}}" + ":"
@@ -602,21 +436,6 @@ class SettingsCategory {
         setting.appendChild(tdRight)
         break
 
-      case "udpxy":
-
-        var tdLeft = document.createElement("TD");
-        tdLeft.innerHTML = "{{.settings.udpxy.title}}" + ":"
-
-        var tdRight = document.createElement("TD")
-        var input = content.createInput("text", "udpxy", data)
-        input.setAttribute("placeholder", "{{.settings.udpxy.placeholder}}")
-        input.setAttribute("onchange", "javascript: this.className = 'changed'")
-        tdRight.appendChild(input)
-
-        setting.appendChild(tdLeft)
-        setting.appendChild(tdRight)
-        break
-
       // Button
       case "uploadCustomImage":
 
@@ -694,6 +513,10 @@ class SettingsCategory {
 
       case "buffer.size.kb":
         text = "{{.settings.bufferSize.description}}"
+        break
+
+      case "buffer.autoReconnect":
+        text = "{{.settings.autoReconnect.description}}"
         break
 
       case "storeBufferInRAM":
@@ -820,27 +643,20 @@ class SettingsCategory {
 }
 
 class SettingsCategoryItem extends SettingsCategory {
-  headline: string
-  settingsKeys: string
-
+  
   constructor(headline: string, settingsKeys: string) {
-    super()
-    this.headline = headline
-    this.settingsKeys = settingsKeys
+    super(headline, settingsKeys)
   }
 
   createCategory(): void {
-    var headline = this.createCategoryHeadline(this.headline)
-    var settingsKeys = this.settingsKeys
-
     var doc = document.getElementById(this.DocumentID)
-    doc.appendChild(headline)
+    doc.appendChild(this.createCategoryHeadline(this.headline))
 
     // Tabelle für die Kategorie erstellen
 
     var table = document.createElement("TABLE")
 
-    var keys = settingsKeys.split(",")
+    var keys = this.settingsKeys.split(",")
 
     keys.forEach(settingsKey => {
 

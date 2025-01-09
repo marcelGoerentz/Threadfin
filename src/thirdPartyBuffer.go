@@ -8,82 +8,87 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 )
 
-/*
-StartThirdPartyBuffer starts the third party tool and capture its output
-*/
-func StartThirdPartyBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) (*Buffer, error) {
-	if useBackup {
-		UpdateStreamURLForBackup(stream, backupNumber)
+// StartThirdPartyBuffer starts the third party tool and capture its output for the given stream.
+func StartThirdPartyBuffer(stream *Stream, errorChan chan ErrorInfo) error {
+	if stream.UseBackup {
+		UpdateStreamURLForBackup(stream)
+	}
+         
+	SetBufferConfig(stream.Buffer.Config)
+	bufferConfig := stream.Buffer.Config
+	if bufferConfig.BufferType == "" {
+		return fmt.Errorf("could not set buffer config")
 	}
 
-	bufferType, path, options := GetBufferConfig()
-	if bufferType == "" {
-		return nil, fmt.Errorf("could not get buffer config")
-	}
-
-	ShowInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", bufferType, path))
+	ShowInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", bufferConfig.BufferType, bufferConfig.Path))
 	ShowInfo("Streaming URL:" + stream.URL)
 
-	if buffer, err := RunBufferCommand(bufferType, path, options, stream, errorChan); err != nil {
-		return HandleBufferError(err, backupNumber, useBackup, stream, errorChan), err
-	} else {
-		return buffer, nil
+	err := RunBufferCommand(stream, errorChan)
+	if err != nil {
+		handleBufferError(err, stream, errorChan)
 	}
+	return nil
 }
 
-/*
-GetBufferConfig reutrns the the arguments from the buffer settings
-*/
-func GetBufferConfig() (bufferType, path, options string) {
-	bufferType = strings.ToUpper(Settings.Buffer)
-	switch bufferType {
+// SetBufferConfig returns the the arguments from the buffer settings in the config file
+func SetBufferConfig(config *BufferConfig) {
+	config.BufferType = strings.ToUpper(Settings.Buffer)
+	switch config.BufferType {
 	case "FFMPEG":
-		return bufferType, Settings.FFmpegPath, Settings.FFmpegOptions
+		config.Options = Settings.FFmpegOptions
+		config.Path = Settings.FFmpegPath
 	case "VLC":
-		return bufferType, Settings.VLCPath, Settings.VLCOptions
+		config.Options = Settings.VLCOptions
+		config.Path = Settings.VLCPath
 	default:
-		return "", "", ""
+		config.BufferType = ""
+		config.Options = ""
+		config.Path = ""
 	}
 }
 
-/*
-RunBufferCommand starts the third party tool process
-*/
-func RunBufferCommand(bufferType string, path, options string, stream *Stream, errorChan chan ErrorInfo) (*Buffer, error) {
-	args := PrepareBufferArguments(options, stream.URL)
+// RunBufferCommand starts the third party tool process with the specified path and options, and captures its output.
+//
+// Parameters:
+//   - bufferType: A string specifying the type of buffer (e.g., "FFMPEG", "VLC").
+//   - path: A string specifying the path to the buffer executable.
+//   - options: A string specifying the options to be passed to the buffer executable.
+//   - stream: A pointer to a Stream struct containing the stream information.
+//   - errorChan: A channel for sending error information.
+//
+// Returns:
+//   - *Buffer: A pointer to a Buffer struct representing the buffer process.
+//   - error: An error object if an error occurs, otherwise nil.
+func RunBufferCommand(stream *Stream, errorChan chan ErrorInfo) error {
+	bufferConfig := stream.Buffer.Config
+	args := PrepareBufferArguments(bufferConfig.Options, stream.URL)
 
-	cmd := exec.Command(path, args...)
-	debug := fmt.Sprintf("%s:%s %s", strings.ToUpper(Settings.Buffer), path, args)
+	cmd := exec.Command(bufferConfig.Path, args...)
+	debug := fmt.Sprintf("%s:%s %s", strings.ToUpper(Settings.Buffer), bufferConfig.Path, args)
 	ShowDebug(debug, 1)
 
-	stdOut, logOut, err := GetCommandPipes(cmd)
+	stdOut, stdErr, err := GetCommandPipes(cmd)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start buffer command: %w", err)
+		return fmt.Errorf("failed to start buffer command: %w", err)
 	}
 	WritePIDtoDisk(fmt.Sprintf("%d", cmd.Process.Pid))
 
-	var streamStatus = make(chan bool)
-	go ShowCommandLogOutputInConsole(bufferType, logOut, streamStatus)
+	go ShowCommandStdErrInConsole(bufferConfig.BufferType, stdErr)
 	go HandleByteOutput(stdOut, stream, errorChan)
 
-	buffer := &Buffer{
-		isThirdPartyBuffer: true,
-		cmd:                cmd,
-	}
+	stream.Buffer.IsThirdPartyBuffer = true
+	stream.Buffer.Cmd = cmd
 
-	return buffer, nil
+	return nil
 }
 
-/*
-PrepareBufferArguments
-*/
+// PrepareBufferArguments replaces the [URL] placeholder in the buffer options with the actual stream URL
 func PrepareBufferArguments(options, streamURL string) []string {
 	args := []string{}
 	u, err := url.Parse(streamURL)
@@ -100,50 +105,56 @@ func PrepareBufferArguments(options, streamURL string) []string {
 	return args
 }
 
-/*
-Get the output pipes of the given command
-*/
+// GetCommandPipes retrieves the standard output and standard error pipes of the given command.
+// It returns the stdout pipe, stderr pipe, and an error if any occurs.
+//
+// Parameters:
+//   - cmd: A pointer to an exec.Cmd struct representing the command to be executed.
+//
+// Returns:
+//   - io.ReadCloser: A ReadCloser for the standard output pipe.
+//   - io.ReadCloser: A ReadCloser for the standard error pipe.
+//   - error: An error object if an error occurs, otherwise nil.
 func GetCommandPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
 	stdOut, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
 
-	logOut, err := cmd.StderrPipe()
+	stdErr, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get stderr pipe: %w", err)
 	}
 
-	return stdOut, logOut, nil
+	return stdOut, stdErr, nil
 }
 
-/*
-ShowCommandLogOutputInConsole prints the log output of the given pipe
-*/
-func ShowCommandLogOutputInConsole(bufferType string, logOut io.ReadCloser, streamStatus chan bool) {
-	// Log Daten vom Prozess im Debug Mode 1 anzeigen.
-	scanner := bufio.NewScanner(logOut)
+// ShowCommandStdErrInConsole reads from the provided io.ReadCloser (stdErr) line by line,
+// and logs each line with the specified bufferType prefix. If an error occurs during scanning,
+// it logs the error with a specific error code.
+//
+// Parameters:
+//   - bufferType: A string that specifies the type of buffer, used as a prefix in the log.
+//   - stdErr: An io.ReadCloser from which the function reads the standard error output.
+//
+// The function uses a bufio.Scanner to read the standard error output line by line,
+// trims any leading or trailing whitespace from each line, and logs it using the ShowInfo function.
+// If an error occurs during scanning, it logs the error using the ShowError function with error code 4018.
+func ShowCommandStdErrInConsole(bufferType string, stdErr io.ReadCloser) {
+	scanner := bufio.NewScanner(stdErr)
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
-
 		debug := fmt.Sprintf("%s log:%s", bufferType, strings.TrimSpace(scanner.Text()))
+		ShowInfo(debug)
+	}
 
-		select {
-		case <-streamStatus:
-			ShowDebug(debug, 1)
-		default:
-			ShowInfo(debug)
-		}
-
-		time.Sleep(time.Duration(10) * time.Millisecond)
-
+	if scanner.Err() != nil {
+		ShowError(scanner.Err(), 4018)
 	}
 }
 
-/*
-WritePIDtoDisk saves the PID of the buffering process
-*/
+// WritePIDtoDisk saves the PID of the buffering process to a file on disk
 func WritePIDtoDisk(pid string) {
 	// Open the file in append mode (create it if it doesn't exist)
 	file, err := os.OpenFile(System.Folder.Temp+"PIDs", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
@@ -159,9 +170,18 @@ func WritePIDtoDisk(pid string) {
 	}
 }
 
-/*
-DeletPIDfromDisc deletes the PID from the disk
-*/
+// DeletPIDfromDisc deletes the PID from the disk
+// DeletPIDfromDisc removes a specified PID from a file on disk.
+// The file is expected to be located in the system's temporary folder and named "PIDs".
+// Each line in the file represents a PID.
+//
+// Parameters:
+//
+//	delete_pid (string): The PID to be removed from the file.
+//
+// Returns:
+//
+//	error: An error object if an error occurs, otherwise nil.
 func DeletPIDfromDisc(delete_pid string) error {
 	file, err := os.OpenFile(System.Folder.Temp+"PIDs", os.O_RDWR, 0660)
 	if err != nil {

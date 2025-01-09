@@ -450,7 +450,7 @@ table {
 
 }
 
-.footer-banner {
+.notification {
   background-color: #333;
   color: #fff;
   text-align: center;
@@ -461,15 +461,21 @@ table {
   z-index: 1000;
   display: none; /* Initially hidden */
   width: 300px; /* Adjust width as needed */
-  height: 130px; /* Adjust height as needed */
+  max-height: calc(80vh - 10px); /* Adjust height as needed */
   border-radius: 10px; /* Optional: rounded corners */
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Optional: add shadow for better visibility */
 }
 
-.footer-banner .header {
+.notification .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.notification .content {
+  flex-grow: 1; /* Allow content to grow and take available space */
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+  margin-bottom: 10px; /* Ensure there's a gap to the bottom */
 }
 
 @-webkit-keyframes spin {
