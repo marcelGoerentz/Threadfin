@@ -17,8 +17,9 @@ func (b *Buffer) StartBuffer(stream *Stream, errorChan chan ErrorInfo) {
 
 	var err error = nil
 	if err = PrepareBufferFolder(b.FileSystem, stream.Folder); err != nil {
-		ShowError(err, 4008)
-		handleBufferError(err, stream, errorChan)
+		// If something went wrong when setting up the buffer storage don't run at all
+		errorChan <- ErrorInfo{BufferFolderError, stream, ""}
+		ShowError(err, BufferFolderError)
 		return
 	}
 

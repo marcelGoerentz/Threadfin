@@ -22,15 +22,18 @@ async function getNewestReleaseFromGithub() {
             const latestReleaseVersion = parseVersion(latestAvailableVersion.tag_name);
 
             if (isNewerVersion(latestReleaseVersion, currentVersion)) {
-                const banner = document.getElementById('notification_containter') as HTMLElement;
-                const bannerText = document.getElementById('notification_text') as HTMLElement;
-                bannerText.innerHTML = '{{.notification.updateAvailable}}';
+                const notification_container = document.getElementById('notification_containter') as HTMLElement;
+                const notificationTitle = document.getElementById('notification_title') as HTMLElement;
+                const notificaitonText = document.getElementById('notification_text') as HTMLElement;
+
+                notificationTitle.innerHTML = '{{.notification.update.title}}';
+                notificaitonText.innerHTML = '{{.notification.update.content}}';
 
                 const closeButton = document.getElementById('closeNotification') as HTMLButtonElement;
                 const updateButton = document.getElementById('updateNowButton') as HTMLButtonElement;
                 updateButton.value = '{{.button.update}}';
                 closeButton.onclick = () => {
-                    banner.style.display = 'none';
+                    notification_container.style.display = 'none';
                 }
                 updateButton.onclick = () => {
                     updateButton.value = '{{.button.updating}}';
@@ -40,7 +43,7 @@ async function getNewestReleaseFromGithub() {
                         location.reload()
                     }, 20000);
                 }
-                banner.style.display = 'block';
+                notification_container.style.display = 'block';
             }
         } else {
             console.log('Error fetching releases or no releases found.');

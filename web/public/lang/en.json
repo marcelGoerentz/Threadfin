@@ -26,7 +26,7 @@
     "restore": "All data will be replaced with those from the backup. Should the files be restored?"
   },
   "alert": {
-    "fileLoadingError": "File couldn't be loaded",
+    "fileLoadingError": "File could not be loaded",
     "invalidChannelNumber": "Invalid channel number",
     "missingInput": "Missing input"
   },
@@ -376,7 +376,7 @@
     },
     "api": {
       "title": "API Interface",
-      "description": "Via API interface it is possible to send commands to Threadfin. API documentation is <a href='https://github.com/marcelGoerentz/Threadfin/wiki/API'>here</a>"
+      "description": "Via API interface it is possible to send commands to Threadfin. API documentation is <a href=\"https://github.com/marcelGoerentz/Threadfin/wiki/API\">here</a>"
     },
     "ssdp": {
       "title": "SSDP",
@@ -476,7 +476,7 @@
     "bindingIPs" :
     {
       "title": "Binding IP(s)",
-      "description": "By clicking on the input a dialogue will open where you can select the IP(s)<br>Please note that these are also the DVR IPs<br>Changing this option and saving the settings will exit the program!<br>You need to restart it if you didn't configured an automatical restart!"
+      "description": "By clicking on the input a dialogue will open where you can select the IP(s)<br>Please note that these are also the DVR IPs<br>Changing this option and saving the settings will exit the program!<br>You need to restart it if you did not configured an automatical restart!"
     },
     "forceHttps":
     {
@@ -607,6 +607,9 @@
     }
   },
   "notification" : {
-    "updateAvailable": "A newer version of Threadfin is available. Please update to the latest version."
+    "update": {
+      "title": "Update available",
+      "content": "A newer version of Threadfin is available. Please update to the latest version."
+    }
   }
 }

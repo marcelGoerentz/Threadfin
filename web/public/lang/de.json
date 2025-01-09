@@ -376,7 +376,7 @@
     },
     "api": {
       "title": "API-Schnittstelle",
-      "description": "Über die API-Schnittstelle können Befehle an Threadfin gesendet werden. API-Dokumentation ist <a href='https://github.com/marcelGoerentz/Threadfin/wiki/API'>hier</a>"
+      "description": "Über die API-Schnittstelle können Befehle an Threadfin gesendet werden. API-Dokumentation ist <a href=\"https://github.com/marcelGoerentz/Threadfin/wiki/API\">hier</a>"
     },
     "ssdp": {
       "title": "SSDP",
@@ -384,10 +384,10 @@
     },
     "dummy": {
       "title": "Standard-Dummy-Daten aktivieren",
-      "description": "Wenn aktiviert, werden inaktive Kanäle automatisch dem unten angegebenen Dummy-Datenkanal zugeordnet. Verwenden Sie dies, um Live-Event-Kanäle aktiv zu halten."
+      "description": "Wenn aktiviert, werden inaktive Kanäle automatisch dem unten angegebenen Dummy-Kanal zugeordnet. Verwenden Sie dies, um Live-Event-Kanäle aktiv zu halten."
     },
     "dummyChannel": {
-      "title": "Dummy-Datenkanal",
+      "title": "Dummy-Kanal",
       "description": "Wählen Sie den Standardkanal aus, der verwendet werden soll, wenn inaktive Kanäle den Dummy-Daten zugeordnet werden."
     },
     "ignoreFilters": {
@@ -607,6 +607,9 @@
     }
   },
   "notification" : {
-    "updateAvailable": "Eine neuere Version von Threadfin ist verfügbare. Bitte auf die neuste Version aktualisieren."
+    "update": {
+      "title": "Update verfügbar",
+      "content": "Eine neuere Version von Threadfin ist verfügbare. Bitte auf die neuste Version aktualisieren."
+    }
   }
 }

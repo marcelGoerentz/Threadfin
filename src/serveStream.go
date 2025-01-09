@@ -28,7 +28,7 @@ func NewStreamManager() *StreamManager {
 		Playlists: map[string]*Playlist{},
 		errorChan: make(chan ErrorInfo),
 		stopChan:  make(chan bool),
-		FileSystem: InitBufferVFS(Settings.StoreBufferInRAM),
+		FileSystem: nil,
 	}
 
 	// Start a go routine that will check for the error channel
@@ -393,38 +393,15 @@ func CloseClientConnection(w http.ResponseWriter) {
 }
 
 /*
-StopStreamForAllClient stops the third paryt tool process and will delete all clients from the given stream
-*/
-/*func (sm *StreamManager) StopStreamForAllClients(streamID string) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	for playlistID, playlist := range sm.playlists {
-		stream, exists := playlist.streams[streamID]
-		if exists {
-			stream.cancel() // Cancel the context to stop all clients
-			stream.cmd.Process.Signal(syscall.SIGKILL)
-			stream.cmd.Wait()
-			DeletPIDfromDisc(fmt.Sprintf("%d", stream.cmd.Process.Pid))
-			delete(playlist.streams, streamID)
-			showInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
-			var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
-			showDebug(debug, 1)
-			debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
-			showDebug(debug, 1)
-			if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
-				ShowError(err, 4005)
-			}
-		}
-		if len(playlist.streams) == 0 {
-			delete(sm.playlists, playlistID)
-		}
-	}
-}
-
-/*
 ServeStream will ensure that the clients is getting the stream requested
 */
 func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Request) {
+
+	// Initialize buffer file system
+	if sm.FileSystem == nil {
+		sm.FileSystem = InitBufferVFS(Settings.StoreBufferInRAM)
+	}
+
 	clientID, playlistID := sm.StartStream(streamInfo, w)
 	if clientID == "" || playlistID == "" {
 		if sm.Playlists[streamInfo.PlaylistID].Streams[streamInfo.URLid] == nil {
