@@ -613,7 +613,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if Settings.StoreBufferInRAM != previousStoreBufferInRAM {
-					InitBufferVFS(Settings.StoreBufferInRAM)
+					streamManager.FileSystem = InitBufferVFS(Settings.StoreBufferInRAM)
 				}
 
 				if Settings.BindingIPs != previousBindingIPs || Settings.UseHttps != previousUseHttps {
