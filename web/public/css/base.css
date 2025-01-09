@@ -118,8 +118,10 @@ li:hover {
 select {
   cursor: pointer;
   width: calc(100% + 2px);
+  height: auto;
   border: solid 0px #00E6FF;
   border-radius: 0px;
+  box-sizing: border-box;
   outline: none;
   color: #fff;
   padding: 9px 10px;
@@ -127,7 +129,6 @@ select {
   background-color: #333;
   font-size: 14px;
   margin: 5px 0px 5px 0px;
-  padding-bottom: 50px;
 }
 
 select:focus {
