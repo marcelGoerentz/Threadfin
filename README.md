@@ -1,5 +1,5 @@
 <div align="center" style="background-color: #111; padding: 100;">
-    <a href="https://github.com/marcelGoerentz/Threadfin"><img width="285" height="80" src="html/img/threadfin.png" alt="Threadfin" /></a>
+    <a href="https://github.com/marcelGoerentz/Threadfin"><img width="285" height="80" src="web/public/img/threadfin.png" alt="Threadfin" /></a>
 </div>
 <br>
 
