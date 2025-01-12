@@ -231,15 +231,11 @@ func main() {
 	}
 
 	// Start the Webserver
-	srv, err := src.StartWebserver()
+	err = webserver.StartWebserver()
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
-
-	// Add references to the structure so everything can be exited gracefully
-	webserver.Server = srv.Server
-	webserver.SM = srv.SM
 
 	// Wait for the Signal to end the program
 	<-done
@@ -284,15 +280,7 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 func stopAllStreams(webserver *src.WebServer) {
 	if webserver != nil {
 		if webserver.SM != nil {
-			if webserver.SM.Playlists != nil {
-				for playlistID, playlist := range webserver.SM.Playlists {
-					for streamID, stream := range playlist.Streams {
-						for clientID := range stream.Clients {
-							webserver.SM.StopStream(playlistID, streamID, clientID)
-						}
-					}
-				}
-			}
+			webserver.SM.StopAllStreams()
 		}
 	}
 }
