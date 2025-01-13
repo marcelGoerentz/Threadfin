@@ -893,7 +893,7 @@ func Web(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 
-		var languageFile = fmt.Sprintf("%slang/en.json", webBasePath)
+		var languageFile = fmt.Sprintf("%slang/%s.json", webBasePath, Settings.WebClientLanguage)
 
 		if value, ok := webUI[languageFile].(string); ok {
 			content = string(GetHTMLString(value))
