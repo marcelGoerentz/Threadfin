@@ -240,7 +240,9 @@ threadfin.exe -dev
 ## How can I contribute
 You can translate the /web/public/lang/en.json file into your mother tongue.
 
-Or you can fork this repo and the create a PR for your changes.
+Or you can fork this repo and create a PR for your changes.
+
+---
 
 ## Fork without pull request :mega:
 When creating a fork, the Threadfin GitHub account must be changed from the source code or the update function disabled.
