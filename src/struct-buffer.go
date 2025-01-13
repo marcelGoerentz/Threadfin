@@ -14,6 +14,7 @@ type StreamManager struct {
 	Playlists map[string]*Playlist
 	errorChan chan ErrorInfo
 	stopChan  chan bool
+	LockAgainstNewStreams bool
 	FileSystem avfs.VFS
 	mu        sync.Mutex
 }

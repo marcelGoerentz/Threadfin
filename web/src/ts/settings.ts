@@ -1,5 +1,5 @@
 class SettingsCategory {
-  DocumentID: string = "content_settings";
+  DocumentID: string = 'content_settings';
   Content: PopupContent = new PopupContent();
   headline: string;
   settingsKeys: string;
@@ -280,6 +280,13 @@ class SettingsCategory {
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
+      case 'webclient.language':
+        var title = '{{.settings.webclient.language.title}}';
+        var text: any[] = ['English', 'Deutsch'];
+        var values: any[] = ['en', 'de'];
+        setting = this.createSelectInput(settingsKey, title, text, values);
+        break;
+
       // Button
       case 'uploadCustomImage':
         setting = document.createElement('TR');
@@ -462,6 +469,10 @@ class SettingsCategory {
         text = '{{.settings.udpxy.description}}';
         break;
 
+      case 'webclient.language':
+        text = '{{.settings.webclient.language.description}}';
+        break;
+
       default:
         text = '';
         break;
@@ -562,6 +573,17 @@ function saveSettings() {
             name = (settings[i] as HTMLInputElement).name;
             value = (settings[i] as HTMLInputElement).checked;
             newSettings[name] = value;
+            switch (name) {
+              case 'useHttps':
+                setTimeout(() => {
+                  if (value) {
+                    location.protocol = 'https'
+                  } else {
+                    location.protocol = 'http'
+                  }
+                  location.reload()
+                }, 3000);
+            }
             break;
 
           case 'text':
@@ -576,6 +598,25 @@ function saveSettings() {
 
               case 'buffer.timeout':
                 value = parseFloat(value);
+
+              case 'bindingIPs':
+                setTimeout(() => {
+                  let isLocalhost = false
+                  let hostname = String(location.hostname);
+                  const newValue = value as String
+                  if (hostname ==='localhost') {
+                    hostname = '127.0.0.1'
+                  }
+                  if (!newValue.includes(hostname)) {
+                    const newHostname = newValue.split(';')[0]
+                    if (newHostname === '127.0.0.1') {
+                      location.href = location.href.replace(hostname, 'localhost')
+                    } else {
+                      location.href = location.href.replace(hostname, newHostname)
+                    }
+                  }
+                  location.reload()
+                }, 3000);
             }
 
             newSettings[name] = value;
@@ -593,6 +634,12 @@ function saveSettings() {
           newSettings[name] = value;
         } else {
           newSettings[name] = parseInt(value);
+        }
+
+        if (name === 'webclient.language') {
+          setTimeout(() => {
+            location.reload()
+          }, 3000);
         }
 
         break;

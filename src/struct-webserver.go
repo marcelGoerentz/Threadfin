@@ -67,6 +67,7 @@ type RequestStruct struct {
 		Dummy                    *bool     `json:"dummy,omitempty"`
 		DummyChannel             *string   `json:"dummyChannel,omitempty"`
 		IgnoreFilters            *bool     `json:"ignoreFilters,omitempty"`
+		WebClientLanguage        *string   `json:"webclient.language,omitempty"`
 	} `json:"settings,omitempty"`
 
 	// Upload Logo

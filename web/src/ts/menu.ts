@@ -4,9 +4,10 @@ class MainMenu {
   HTMLTag: string = "LI"
   ImagePath: string = "img/"
 
-  createIMG(src): any {
+  createIMG(src, alt): any {
     var element = document.createElement("IMG")
     element.setAttribute("src", this.ImagePath + src)
+    element.setAttribute("alt", alt)
     return element
   }
 
@@ -38,7 +39,7 @@ class MainMenuItem extends MainMenu {
     item.setAttribute("onclick", "javascript: openThisMenu(this)")
     item.setAttribute("id", this.id)
     item.setAttribute("class", "nav-item")
-    var img = this.createIMG(this.imgSrc)
+    var img = this.createIMG(this.imgSrc, this.value)
     var value = this.createValue(this.value)
 
     item.appendChild(img)
@@ -1189,12 +1190,7 @@ function createLayout() {
           menuItems[i].createItem()
         }
         break
-
-      case "mapping":
-      case "xmltv":
-          menuItems[i].createItem()
-        break
-
+      
       default:
         menuItems[i].createItem()
         break

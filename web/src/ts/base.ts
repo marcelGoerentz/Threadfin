@@ -48,6 +48,7 @@ menuItems.push(new MainMenuItem("logout", "{{.mainMenu.item.logout}}", "logout.p
 var settingsCategory = new Array()
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.general}}", "ThreadfinAutoUpdate,ssdp,tuner,epgSource,epgCategories,epgCategoriesColors,dummy,dummyChannel,ignoreFilters,api"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.customization}}", "uploadCustomImage"))
+settingsCategory.push(new SettingsCategoryItem("{{.settings.category.webclient}}", "webclient.language"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.files}}", "update,files.update,temp.path,cache.images,omitPorts,xepg.replace.missing.images,xepg.replace.channel.title,enableNonAscii"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.network}}", "bindingIPs,threadfinDomain,useHttps,forceClientHttps,forceHttps"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}", "buffer,udpxy,buffer.size.kb,storeBufferInRAM,buffer.timeout,buffer.autoReconnect,user.agent,ffmpeg.path,ffmpeg.options,vlc.path,vlc.options"))
@@ -753,6 +754,26 @@ function updateLog() {
   var server: Server = new Server("updateLog")
   server.request(new Object())
 
+}
+
+// Get the button:
+let mybutton = document.getElementById("backToTop");
+
+// When the user scrolls down 20px from the top of the document, show the button
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+  if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+    mybutton.style.display = "block";
+  } else {
+    mybutton.style.display = "none";
+  }
+}
+
+// When the user clicks on the button, scroll to the top of the document
+function topFunction() {
+  document.body.scrollTop = 0; // For Safari
+  document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
 }
 
 

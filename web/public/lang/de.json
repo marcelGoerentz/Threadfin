@@ -363,7 +363,8 @@
       "network": "Netzwerk",
       "streaming": "Streaming",
       "backup": "Sicherung",
-      "authentication": "Authentifizierung"
+      "authentication": "Authentifizierung",
+      "webclient": "Web client"
     },
     "uploadCustomImage": {
       "title": "Benutzerdefiniertes Bild",
@@ -556,6 +557,13 @@
     "authenticationAPI": {
       "title": "API-Authentifizierung",
       "description": "Zugriff auf die API-Schnittstelle nur mit Authentifizierung möglich."
+    },
+    "webclient": {
+      "language": {
+        "title": "Web client Sprache",
+        "description": "Ändern der Sprache des Web Clients"
+
+      }
     }
   },
   "wizard": {

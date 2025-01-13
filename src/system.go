@@ -141,7 +141,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["files.update"] = true
 	defaults["filter"] = make(map[string]interface{})
 	defaults["git.branch"] = System.Branch
-	defaults["language"] = "en"
+	defaults["webclient.language"] = "en"
 	defaults["log.entries.ram"] = 500
 	defaults["mapping.first.channel"] = 1000
 	defaults["xepg.replace.missing.images"] = true

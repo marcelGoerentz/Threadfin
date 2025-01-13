@@ -37,32 +37,23 @@ func NewStreamManager() *StreamManager {
 			select {
 			case errorInfo := <-sm.errorChan:
 				if errorInfo.ErrorCode != 0 {
-					playlistID, streamID := sm.GetPlaylistIDandStreamID(errorInfo.Stream)
+					_, streamID := sm.GetPlaylistIDandStreamID(errorInfo.Stream)
 					if errorInfo.ClientID != "" {
 						// Client specifc errors
-						sm.StopStream(playlistID, streamID, errorInfo.ClientID)
+						errorInfo.Stream.RemoveClientFromStream(streamID, errorInfo.ClientID)
 					} else {
-						playlist := sm.Playlists[playlistID]
-						if playlist == nil{
-							return
-						}
-						stream := playlist.Streams[streamID]
-						if stream == nil {
-							return
-						}
+						stream := errorInfo.Stream
 						clients := stream.Clients
 						if errorInfo.ErrorCode == EndOfFileError {
 							// Buffer disconnect error
 							
 							if stream.DoAutoReconnect && len(clients) > 0 {
 								// Reconnect to stream
-								stream.Buffer.StartBuffer(stream, sm.errorChan)
+								errorInfo.Stream.Buffer.StartBuffer(errorInfo.Stream, sm.errorChan)
 							} 
 						}else if len(clients) > 0 {
 							// Stop the stream for all clients
-							for clientID := range errorInfo.Stream.Clients {
-								sm.StopStream(playlistID, streamID, clientID)
-							}
+							stream.StopStream(streamID)
 						}
 					}
 				}
@@ -392,10 +383,22 @@ func CloseClientConnection(w http.ResponseWriter) {
 	}
 }
 
+func (sm *StreamManager) StopAllStreams() {
+	for _, playlist := range sm.Playlists {
+		for streamID, stream := range playlist.Streams {
+			stream.StopStream(streamID)
+		}
+	}
+}
+
 /*
 ServeStream will ensure that the clients is getting the stream requested
 */
 func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Request) {
+
+	if sm.LockAgainstNewStreams {
+		return
+	}
 
 	// Initialize buffer file system
 	if sm.FileSystem == nil {
@@ -598,6 +601,31 @@ func (s *Stream) SendFileToClients(fileName string, errorChan chan ErrorInfo) bo
 		}
 	}
 	return true
+}
+
+func (s *Stream) StopStream(streamID string) {
+	for clientID, client := range s.Clients {
+		CloseClientConnection(client.w)
+		delete(s.Clients, clientID)
+		ShowInfo(fmt.Sprintf("Streaming:Client kicked %s, total: %d", streamID, len(s.Clients)))
+		if len(s.Clients) == 0 {
+			s.Cancel() // Tell everyone about the ending of the stream
+			if s.Buffer.IsThirdPartyBuffer {
+				s.Buffer.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+				s.Buffer.Cmd.Wait()
+				DeletPIDfromDisc(fmt.Sprintf("%d", s.Buffer.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
+			} else {
+				close(s.Buffer.StopChan)
+			}
+		}
+	}
+}
+
+func (s *Stream) RemoveClientFromStream(streamID, clientID string) {
+	client := s.Clients[clientID]
+	CloseClientConnection(client.w)
+	delete(s.Clients, clientID)
+	ShowInfo(fmt.Sprintf("Streaming:Removed client from %s, total: %d", streamID, len(s.Clients)))
 }
 
 /*

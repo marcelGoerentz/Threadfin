@@ -1,6 +1,7 @@
 package src
 
 import (
+	"context"
 	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"threadfin/src/internal/authentication"
 
@@ -23,12 +25,14 @@ import (
 )
 
 var streamManager = NewStreamManager()
+var webServer *WebServer = nil
 
 // StartWebserver : Startet den Webserver
-func StartWebserver() (webServer *WebServer, err error) {
+func (ws *WebServer) StartWebserver() (err error) {
 
+	webServer = ws
 	addMimeExtensions()
-	webServer = &WebServer{SM: streamManager}
+	ws.SM = streamManager
 
 	var port = Settings.Port
 	var serverMux = http.NewServeMux()
@@ -53,7 +57,7 @@ func StartWebserver() (webServer *WebServer, err error) {
 		Handler: serverMux,
 	}
 
-	webServer.Server = srv
+	ws.Server = srv
 
 	regexIpV4, _ := regexp.Compile(`(?:\d{1,3}\.){3}\d{1,3}`)
 	regexIpV6, _ := regexp.Compile(`(?:[A-Fa-f0-9]{0,4}:){3,7}[a-fA-F0-9]{1,4}`)
@@ -116,11 +120,30 @@ func StartWebserver() (webServer *WebServer, err error) {
 					//ShowError(err, 1001)
 					return
 				}
-				fmt.Println("Ich bin hier!")
 			}()
 		}
 	}
 	return
+}
+
+func (ws *WebServer) restartWebserver() error {
+	for _, playlist := range streamManager.Playlists {
+		for streamID, stream := range playlist.Streams {
+			stream.StopStream(streamID)
+		}
+	}
+	ShutDownWebserver(ws)
+	return ws.StartWebserver()
+
+}
+
+func ShutDownWebserver(ws *WebServer) {
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	err := ws.Server.Shutdown(ctx)
+	if err != nil {
+		ShowError(err, 0) // TODO: Add error code
+	}
 }
 
 func addMimeExtensions() {
@@ -618,7 +641,10 @@ func WS(w http.ResponseWriter, r *http.Request) {
 
 				if Settings.BindingIPs != previousBindingIPs || Settings.UseHttps != previousUseHttps {
 					ShowInfo("WEB:Restart program since listening IP option has been changed!")
-					os.Exit(0)
+					err := webServer.restartWebserver()
+					if err != nil {
+						ShowError(err, 0)
+					}
 				}
 			}
 
@@ -860,14 +886,14 @@ func Web(w http.ResponseWriter, r *http.Request) {
 
 	if System.Dev {
 
-		lang, err = loadJSONFileToMap(fmt.Sprintf("%slang/%s.json", webBasePath, Settings.Language))
+		lang, err = loadJSONFileToMap(fmt.Sprintf("%slang/%s.json", webBasePath, Settings.WebClientLanguage))
 		if err != nil {
 			ShowError(err, 000)
 		}
 
 	} else {
 
-		var languageFile = fmt.Sprintf("%slang/en.json", webBasePath)
+		var languageFile = fmt.Sprintf("%slang/%s.json", webBasePath, Settings.WebClientLanguage)
 
 		if value, ok := webUI[languageFile].(string); ok {
 			content = string(GetHTMLString(value))

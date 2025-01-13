@@ -310,7 +310,7 @@ type SettingsStruct struct {
 	FilesUpdate               bool                  `json:"files.update"`
 	Filter                    map[int64]interface{} `json:"filter"`
 	Key                       string                `json:"key,omitempty"`
-	Language                  string                `json:"language"`
+	WebClientLanguage         string                `json:"webclient.language"`
 	LogEntriesRAM             int                   `json:"log.entries.ram"`
 	M3U8AdaptiveBandwidthMBPS int                   `json:"m3u8.adaptive.bandwidth.mbps"`
 	MappingFirstChannel       float64               `json:"mapping.first.channel"`
