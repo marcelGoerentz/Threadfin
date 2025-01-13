@@ -396,6 +396,10 @@ ServeStream will ensure that the clients is getting the stream requested
 */
 func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Request) {
 
+	if sm.LockAgainstNewStreams {
+		return
+	}
+
 	// Initialize buffer file system
 	if sm.FileSystem == nil {
 		sm.FileSystem = InitBufferVFS(Settings.StoreBufferInRAM)

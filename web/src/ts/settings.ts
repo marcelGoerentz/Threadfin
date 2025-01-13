@@ -1,5 +1,5 @@
 class SettingsCategory {
-  DocumentID: string = "content_settings";
+  DocumentID: string = 'content_settings';
   Content: PopupContent = new PopupContent();
   headline: string;
   settingsKeys: string;

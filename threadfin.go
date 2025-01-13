@@ -254,6 +254,9 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 			continue
 		case syscall.SIGINT, syscall.SIGABRT, syscall.SIGTERM:
 
+			// Lock against reconnection for clients
+			webserver.SM.LockAgainstNewStreams = true
+
 			src.ShowInfo("Threadfin:Stop all streams")
 			// Stop all streams
 			stopAllStreams(webserver)
