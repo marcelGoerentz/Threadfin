@@ -15,8 +15,12 @@ const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstra
 var clipboard = new ClipboardJS('.copy-btn');
 clipboard.on('success', function(e) {
   const tooltip = bootstrap.Tooltip.getInstance(e.trigger);
-  tooltip.setContent({ '.tooltip-inner': 'Copied!' });
-
+  if (tooltip) {
+    tooltip.setContent({ '.tooltip-inner': 'Copied!' });
+    tooltip.show();
+  } else {
+    console.error('Tooltip instance not found for element:', e.trigger);
+  }
 });
 clipboard.on('error', function(e) {
   console.log(e);

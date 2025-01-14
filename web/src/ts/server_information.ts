@@ -19,7 +19,6 @@ class ServerInformation {
 
         const modalTitle = document.createElement('h3');
         modalTitle.className = 'modal-title';
-        modalTitle.setAttribute('id','server_information_title');
         modalTitle.innerHTML = '{{.serverInfo.title}}';
         modalHeader.appendChild(modalTitle);
 
@@ -36,7 +35,7 @@ class ServerInformation {
         const containerFluid = document.createElement('div');
         containerFluid.className = 'container-fluid';
 
-        const row = document.createElement('row');
+        const row = document.createElement('div');
         row.className = 'row';
 
         containerFluid.appendChild(row)
@@ -131,9 +130,9 @@ class ServerInformationGroup{
         input.className = 'form-control';
         input.setAttribute('id', id);
         input.setAttribute('aria-describedby', 'basic-addon3');
-        input.setAttribute('readonly','');
+        input.readOnly = true;
         if (disabled) {
-            input.setAttribute('disabled', '');
+            input.disabled = true;
         }
         return input;
     }
@@ -155,11 +154,12 @@ class ServerInformationGroup{
 
     addButton(id:String):HTMLElement {
         const button = document.createElement('button')
+        button.type = 'button';
         button.className = 'input-group-text copy-btn';
         button.setAttribute('data-clipboard-target', '#'+ id);
-        button.setAttribute('data-bs-title', 'Copy to clipboard');
         button.setAttribute('data-bs-toggle', 'tooltip');
         button.setAttribute('data-bs-placement', 'bottom');
+        button.setAttribute('data-bs-title', 'Copy to clipboard');
         button.style.backgroundColor = '#333'
         button.style.borderColor = '#444'
         button.innerHTML = '<i class="far fa-clipboard"></i>';
