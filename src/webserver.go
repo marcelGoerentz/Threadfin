@@ -897,14 +897,20 @@ func Web(w http.ResponseWriter, r *http.Request) {
 
 		if value, ok := webUI[languageFile].(string); ok {
 			content = string(GetHTMLString(value))
-			lang = jsonToMap(content)
+			lang, err = jsonToMap(content)
 		}
+	}
 
+	if err !=  nil {
+		ShowError(err, 0 ) //TODO: Define error code
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	err = json.Unmarshal([]byte(mapToJSON(lang)), &language)
 	if err != nil {
 		ShowError(err, 000)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -1050,7 +1056,10 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 
 	if contentType == "text/html" || contentType == "application/javascript" {
-		content = parseTemplate(content, lang)
+		parsed_content, err := parseTemplate(content, lang)
+		if err == nil {
+			content = parsed_content
+		}
 	}
 
 	w.Write([]byte(content))

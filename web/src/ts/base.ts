@@ -55,6 +55,11 @@ settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.backup}}", "backup.path,backup.keep"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.authentication}}", "authentication.web,authentication.pms,authentication.m3u,authentication.xml,authentication.api"))
 
+var serverInformation: ServerInformationItem[] = new Array()
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.serverInfo}}", "version,errors,warnings"))
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.streamInfo}}", "dvr,m3uUrl,xepgUrl,streams,xepg"))
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.changeVersion}}", "changeVersion"))
+
 function showElement(elmID, show: boolean) {
   if (elmID == "popupCustom" || elmID == "popup") {
     switch (show) {
@@ -757,16 +762,18 @@ function updateLog() {
 }
 
 // Get the button:
-let mybutton = document.getElementById("backToTop");
+let backToTop = document.getElementById("backToTop");
+backToTop.setAttribute("title", "{{.button.backToTop}}")
+
 
 // When the user scrolls down 20px from the top of the document, show the button
 window.onscroll = function() {scrollFunction()};
 
 function scrollFunction() {
   if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-    mybutton.style.display = "block";
+    backToTop.style.display = "block";
   } else {
-    mybutton.style.display = "none";
+    backToTop.style.display = "none";
   }
 }
 
@@ -800,7 +807,7 @@ interface Server {
 interface clientInfo {
   arch: string;
   beta: boolean;
-  DVR: string;
+  dvr: string;
   epgSource: string;
   errors: string;
   m3uUrl: string;

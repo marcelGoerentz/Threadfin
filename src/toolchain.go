@@ -1,7 +1,6 @@
 package src
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
@@ -250,12 +249,24 @@ func mapToJSON(tmpMap interface{}) string {
 	return string(jsonString)
 }
 
-func jsonToMap(content string) map[string]interface{} {
+func jsonToMap(content string) (tmpMap map[string]interface{}, err error) {
 
-	var tmpMap = make(map[string]interface{})
-	json.Unmarshal([]byte(content), &tmpMap)
+	tmpMap = make(map[string]interface{})
+	err = json.Unmarshal([]byte(content), &tmpMap)
+	return 
+}
 
-	return (tmpMap)
+func loadJSONFileToMap(file string) (tmpMap map[string]interface{}, err error) {
+	f, err := os.Open(getPlatformFile(file))
+	if err == nil {
+		defer f.Close()
+	}
+
+	content, err := io.ReadAll(f)
+	if err == nil {
+		return jsonToMap(string(content))
+	}
+	return
 }
 
 /*
@@ -291,20 +302,6 @@ func saveMapToJSONFile(file string, tmpMap interface{}) error {
 	}
 
 	return nil
-}
-
-func loadJSONFileToMap(file string) (tmpMap map[string]interface{}, err error) {
-	f, err := os.Open(getPlatformFile(file))
-	if err == nil {
-		defer f.Close()
-	}
-
-	content, err := io.ReadAll(f)
-
-	if err == nil {
-		err = json.Unmarshal([]byte(content), &tmpMap)
-	}
-	return
 }
 
 // Binary
@@ -422,14 +419,15 @@ func randomString(n int) string {
 	return string(bytes)
 }
 
-func parseTemplate(content string, tmpMap map[string]interface{}) (result string) {
+func parseTemplate(content string, tmpMap map[string]interface{}) (result string, err error) {
 
 	t := template.Must(template.New("template").Parse(content))
 
-	var tpl bytes.Buffer
+	var tpl strings.Builder
 
-	if err := t.Execute(&tpl, tmpMap); err != nil {
+	if err = t.Execute(&tpl, tmpMap); err != nil {
 		ShowError(err, 0)
+		return
 	}
 	result = tpl.String()
 
