@@ -70,9 +70,6 @@ class MainMenuItem extends MainMenu {
         break
 
     }
-
-    //console.log(this.menuKey, this.tableHeader);
-
   }
 }
 
@@ -117,7 +114,7 @@ class Content {
 
   createTABLE(): any {
     var element = document.createElement("TABLE")
-    element.setAttribute('class', 'table')
+    element.setAttribute('class', 'contentTable')
     element.id = this.TableID
     return element
   }
@@ -712,7 +709,9 @@ class Cell {
         case "P":
           element = document.createElement(this.childType);
           element.innerHTML = this.value
-          element.className = this.className
+          if (this.className !== undefined) {
+            element.className = this.className
+          }
           if (this.classColor) {
             element.style.borderColor = this.classColor
           }
@@ -1085,8 +1084,6 @@ function PageReady() {
 
   getNewestReleaseFromGithub()
 
-  //createOptionDialogueContainer()
-
   return
 }
 
@@ -1177,6 +1174,10 @@ function createLayout() {
   serverInfo.addContent(serverInformation)
   document.getElementById("server_information").replaceWith(serverInfo.container)
 
+  // initialize tool tips
+  tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipList = Array.from(tooltipTriggerList).map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl as HTMLElement));
+
   // Client Info (Server Information)
   var obj = SERVER["clientInfo"]
   var keys = getObjKeys(obj);
@@ -1204,10 +1205,6 @@ function createLayout() {
   }
 
   return
-}
-
-function createServerInfo() {
-
 }
 
 function openThisMenu(element) {

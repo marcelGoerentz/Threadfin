@@ -9,15 +9,19 @@ var WS_AVAILABLE = false
 declare var bootstrap: any;
 declare var ClipboardJS: any;
 
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-// new ClipboardJS('.copy-btn');
-var clipboard = new ClipboardJS('.copy-btn');
+var tooltipTriggerList: NodeListOf<Element>;
+var tooltipList: any[];
+
+const clipboard = new ClipboardJS('.copy-btn');
 clipboard.on('success', function(e) {
-  const tooltip = bootstrap.Tooltip.getInstance(e.trigger);
+  const tooltip = bootstrap.Tooltip.getInstance(e.trigger as HTMLElement);
   if (tooltip) {
+    const prevContent = tooltip._config.title;
     tooltip.setContent({ '.tooltip-inner': 'Copied!' });
     tooltip.show();
+    setTimeout(() => {
+      tooltip.setContent({ '.tooltip-inner': prevContent });
+    }, 3000);
   } else {
     console.error('Tooltip instance not found for element:', e.trigger);
   }

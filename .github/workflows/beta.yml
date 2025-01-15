@@ -27,6 +27,17 @@ jobs:
         run: |
           bash ${GITHUB_WORKSPACE}/Utility/update_build_number_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.NEW_BUILD }}
 
+      - name: Build webUI
+        run: |
+          tsc -p ./web/tsconfig.json
+          python ./Utility/create_webUI.py
+
+      - name: Upload webUI as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webUI-artifact
+          path: ./src/webUI.go
+
       - name: Set up and Build
         uses: actions/setup-go@v5
         with:
@@ -74,7 +85,6 @@ jobs:
           context: .
           build-args: |
             BRANCH=beta
-            VERSION=${{ env.NEW_VERSION }}
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8

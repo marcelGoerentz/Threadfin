@@ -52,7 +52,7 @@
     "sortChannelsAlpha": "Kanäle alphabetisch sortieren",
     "sortChannelNumbers": "Kanäle sortieren",
     "backToTop": "Gehe nach oben",
-    "serverInformation": "Server Information"
+    "serverInformation": "Server Informationen"
   },
   "filter": {
     "table": {
@@ -623,26 +623,26 @@
     }
   },
   "serverInfo": {
-    "title": "Server Information",
+    "title": "Server Informationen",
     "header": {
-      "serverInfo": "Server Information",
-      "streamInfo": "Stream Information",
-      "changeVersion": "Change Threadfin Version"
+      "serverInfo": "Server Informationen",
+      "streamInfo": "Stream Informationen",
+      "changeVersion": "Wechsel Threadfin Version"
     },
     "label": {
       "version": "Threadfin Version",
-      "errors": "Errors",
-      "warnings": "Warnings",
+      "errors": "Fehler",
+      "warnings": "Warnungen",
       "dvr": "DVR IP",
       "m3uUrl": "M3U URL (Specifc groups: [http://...?group-title=foo,bar])",
       "xepgUrl": "XMLTV URL",
-      "streams": "Filtered Channels",
-      "xepg": "Mapped Channels"
+      "streams": "Gefilterte Kanäle",
+      "xepg": "Zugeordnete Kanäle"
     },
     "changeVersion": {
-      "changeToBeta": "Change to beta version",
-      "changeToRelease": "Change to release version",
-      "changing": "Changing..."
+      "changeToBeta": "Wechsel zur Beta Version",
+      "changeToRelease": "Wechsel zur offiziellen Version",
+      "changing": "Wechsel..."
     }
   }
 }

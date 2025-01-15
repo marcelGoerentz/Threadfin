@@ -3,15 +3,11 @@
 ARG BRANCH=master
 FROM golang:1.23-alpine AS base
 
-# Download the source code
-RUN apk --no-cache add git
-RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
-
+# Copy source code
+COPY . /src
 WORKDIR /src
 
-ARG VERSION
-RUN git checkout ${BRANCH} && git pull \
-    && sed -i "s/const Version = \".*\"/const Version = \"${VERSION}\"/" threadfin.go \
+RUN sed -i "s/const Version = \".*\"/const Version = \"${VERSION}\"/" threadfin.go \
     && go mod tidy \
     && go mod vendor
 

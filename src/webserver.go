@@ -1056,6 +1056,9 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 
 	if contentType == "text/html" || contentType == "application/javascript" {
+		if ContainsString(strings.Split(requestFile, "/"), "index.html") {
+			content = strings.Replace(content, "en", Settings.WebClientLanguage, 1)
+		}
 		parsed_content, err := parseTemplate(content, lang)
 		if err == nil {
 			content = parsed_content

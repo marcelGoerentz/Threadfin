@@ -25,8 +25,12 @@ class ServerInformation {
         const closeButton = document.createElement('button');
         closeButton.className = 'btn-close btn-close-white';
         closeButton.type ='button';
+        closeButton.addEventListener('click', () => {
+            this.container.style.display = 'none';
+            this.container.setAttribute('aria-hidden', 'false')
+        })
         closeButton.setAttribute('data-bs-dismiss', 'modal');
-        closeButton.setAttribute('aria-label', 'Close');
+        //closeButton.setAttribute('aria-label', 'Close');
         modalHeader.appendChild(closeButton);
 
         const modalBody = document.createElement('div');
@@ -160,9 +164,10 @@ class ServerInformationGroup{
         button.setAttribute('data-bs-toggle', 'tooltip');
         button.setAttribute('data-bs-placement', 'bottom');
         button.setAttribute('data-bs-title', 'Copy to clipboard');
+        button.setAttribute('alt', '')
         button.style.backgroundColor = '#333'
         button.style.borderColor = '#444'
-        button.innerHTML = '<i class="far fa-clipboard"></i>';
+        button.innerHTML = '<i class="far fa-clipboard fa-style"></i>';
         return button;
     }
 }

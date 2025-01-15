@@ -333,33 +333,33 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 
 	playlist, exists := sm.Playlists[playlistID]
 	if exists {
-		stream, exists := playlist.Streams[streamID]
-		if exists {
-			client := stream.Clients[clientID]
-			CloseClientConnection(client.w)
-			delete(stream.Clients, clientID)
-			ShowInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.Clients)))
-			if len(stream.Clients) == 0 {
-				stream.Cancel() // Tell everyone about the ending of the stream
-				if stream.Buffer.IsThirdPartyBuffer {
-					stream.Buffer.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
-					stream.Buffer.Cmd.Wait()
-					DeletPIDfromDisc(fmt.Sprintf("%d", stream.Buffer.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
-				} else {
-					close(stream.Buffer.StopChan)
-				}
-				
-				ShowInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
-				var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
-				ShowDebug(debug, 1)
+		if stream, exists := playlist.Streams[streamID]; exists {
+			if client, exists := stream.Clients[clientID]; exists {
+				CloseClientConnection(client.w)
+				delete(stream.Clients, clientID)
+				ShowInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.Clients)))
+				if len(stream.Clients) == 0 {
+					stream.Cancel() // Tell everyone about the ending of the stream
+					if stream.Buffer.IsThirdPartyBuffer {
+						stream.Buffer.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+						stream.Buffer.Cmd.Wait()
+						DeletPIDfromDisc(fmt.Sprintf("%d", stream.Buffer.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
+					} else {
+						close(stream.Buffer.StopChan)
+					}
+					
+					ShowInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
+					var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
+					ShowDebug(debug, 1)
 
-				debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
-				ShowDebug(debug, 1)
+					debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
+					ShowDebug(debug, 1)
 
-				if err := sm.FileSystem.RemoveAll(stream.Folder); err != nil {
-					ShowError(err, 4005)
+					if err := sm.FileSystem.RemoveAll(stream.Folder); err != nil {
+						ShowError(err, 4005)
+					}
+					delete(sm.Playlists[playlistID].Streams, streamID)
 				}
-				delete(sm.Playlists[playlistID].Streams, streamID)
 			}
 		}
 		if len(sm.Playlists[playlistID].Streams) == 0 {

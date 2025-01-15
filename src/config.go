@@ -192,6 +192,7 @@ func Init() (err error) {
 
 	System.URLBase = fmt.Sprintf("%s://%s:%s", System.ServerProtocol, System.IPAddress, Settings.Port)
 
+	/*
 	// HTML Dateien erstellen, mit dev == true werden die lokalen HTML Dateien verwendet
 	if System.Dev {
 
@@ -201,7 +202,7 @@ func Init() (err error) {
 			return
 		}
 
-	}
+	}*/
 
 	// DLNA Server starten
 	if Settings.SSDP {

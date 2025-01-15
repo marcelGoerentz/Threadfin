@@ -27,6 +27,17 @@ jobs:
         run: |
           bash ${GITHUB_WORKSPACE}/Utility/update_build_number_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.NEW_BUILD }}
 
+      - name: Build webUI
+        run: |
+          tsc -p ./web/tsconfig.json
+          python ./Utility/create_webUI.py
+
+      - name: Upload webUI as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webUI-artifact
+          path: ./src/webUI.go
+
       - name: Set up and Build
         uses: actions/setup-go@v5
         with:
@@ -56,8 +67,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set NEW_VERSION
-        run: echo "NEW_VERSION=${{ needs.buildBinaries.outputs.new_version }}" >> $GITHUB_ENV
+        run: |
+          echo "NEW_VERSION=${{ needs.buildBinaries.outputs.new_version }}" >> $GITHUB_ENV
+          sed -i "s/const Version = \".*\"/const Version = \"${{ env.NEW_VERSION }}\"/" threadfin.go
         shell: bash
+
+      - name: Download webUI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webUI-artifact
+          path: ./src
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -75,7 +94,6 @@ jobs:
           push: true
           no-cache: true
           build-args: |
-            VERSION=${{ env.NEW_VERSION }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
             mgoerentz/threadfin:latest
