@@ -42,8 +42,8 @@ jobs:
 
       - name: Build webUI
         run: |
-          tsc -p ./web/tsconfig.json
-          python Utility/create_new_webUI.py
+          tsc -p  ${GITHUB_WORKSPACE}/web/tsconfig.json
+          python  ${GITHUB_WORKSPACE}/Utility/create_new_webUI.py
 
       - name: Upload webUI as artifact
         uses: actions/upload-artifact@v4
