@@ -30,7 +30,7 @@ jobs:
       - name: Build webUI
         run: |
           tsc -p ./web/tsconfig.json
-          python ./Utility/create_webUI.py
+          python ./Utility/create_new_webUI.py
 
       - name: Upload webUI as artifact
         uses: actions/upload-artifact@v4
