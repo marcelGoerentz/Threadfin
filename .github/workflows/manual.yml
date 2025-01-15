@@ -31,6 +31,9 @@ jobs:
         with:
           ref: beta
 
+      - name: List Utility directory contents
+        run: ls -la ${GITHUB_WORKSPACE}/Utility
+
       - name: Set build number
         id: set-build-number
         run: |
