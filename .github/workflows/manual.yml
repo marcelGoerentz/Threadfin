@@ -28,9 +28,9 @@ jobs:
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
+        with:
+          ref: intermediat
 
-      - name: List Utility directory contents
-        run: ls -la ${GITHUB_WORKSPACE}/Utility
 
       - name: Set build number
         id: set-build-number
@@ -61,15 +61,15 @@ jobs:
       - name: Build binaries
         run: |
           go mod tidy && go mod vendor
-          bash ${GITHUB_WORKSPACE}/Utility/create_binaries.sh beta
+          bash ${GITHUB_WORKSPACE}/Utility/create_binaries.sh
 
       - name: Create a Release
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: v${{ env.NEW_VERSION }} (Beta)
-          tag_name: v${{ env.NEW_VERSION }}-beta
+          name: v${{ env.NEW_VERSION }} (Test)
+          tag_name: v${{ env.NEW_VERSION }}-test
           files: dist/*
   
   buildDockerImages:
