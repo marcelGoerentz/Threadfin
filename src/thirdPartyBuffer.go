@@ -11,10 +11,7 @@ import (
 )
 
 // StartThirdPartyBuffer starts the third party tool and capture its output for the given stream.
-func StartThirdPartyBuffer(stream *Stream, errorChan chan ErrorInfo) error {
-	if stream.UseBackup {
-		UpdateStreamURLForBackup(stream)
-	}
+func StartThirdPartyBuffer(stream *Stream) error {
          
 	SetBufferConfig(stream.Buffer.Config)
 	bufferConfig := stream.Buffer.Config
@@ -25,9 +22,9 @@ func StartThirdPartyBuffer(stream *Stream, errorChan chan ErrorInfo) error {
 	ShowInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", bufferConfig.BufferType, bufferConfig.Path))
 	ShowInfo("Streaming URL:" + stream.URL)
 
-	err := RunBufferCommand(stream, errorChan)
+	err := RunBufferCommand(stream)
 	if err != nil {
-		handleBufferError(err, stream, errorChan)
+		stream.handleBufferError(err)
 	}
 	return nil
 }
@@ -61,7 +58,7 @@ func SetBufferConfig(config *BufferConfig) {
 // Returns:
 //   - *Buffer: A pointer to a Buffer struct representing the buffer process.
 //   - error: An error object if an error occurs, otherwise nil.
-func RunBufferCommand(stream *Stream, errorChan chan ErrorInfo) error {
+func RunBufferCommand(stream *Stream) error {
 	bufferConfig := stream.Buffer.Config
 	args := PrepareBufferArguments(bufferConfig.Options, stream.URL)
 
@@ -80,7 +77,7 @@ func RunBufferCommand(stream *Stream, errorChan chan ErrorInfo) error {
 	WritePIDtoDisk(fmt.Sprintf("%d", cmd.Process.Pid))
 
 	go ShowCommandStdErrInConsole(bufferConfig.BufferType, stdErr)
-	go HandleByteOutput(stdOut, stream, errorChan)
+	go stream.Buffer.HandleByteOutput(stdOut)
 
 	stream.Buffer.IsThirdPartyBuffer = true
 	stream.Buffer.Cmd = cmd

@@ -36,23 +36,23 @@ func NewStreamManager() *StreamManager {
 		for {
 			select {
 			case errorInfo := <-sm.errorChan:
-				if errorInfo.ErrorCode != 0 {
-					_, streamID := sm.GetPlaylistIDandStreamID(errorInfo.Stream)
-					if errorInfo.ClientID != "" {
-						// Client specifc errors
-						errorInfo.Stream.RemoveClientFromStream(streamID, errorInfo.ClientID)
-					} else {
-						stream := errorInfo.Stream
-						clients := stream.Clients
-						if errorInfo.ErrorCode == EndOfFileError {
-							// Buffer disconnect error
-							
-							if stream.DoAutoReconnect && len(clients) > 0 {
-								// Reconnect to stream
-								errorInfo.Stream.Buffer.StartBuffer(errorInfo.Stream, sm.errorChan)
-							} 
-						}else if len(clients) > 0 {
-							// Stop the stream for all clients
+				stream := errorInfo.Stream
+				if errorInfo.BufferClosed && !stream.DoAutoReconnect {
+					ShowError(errorInfo.Error, errorInfo.ErrorCode)
+				} else {
+					ShowDebug(errorInfo.Error.Error(), 3)
+				}
+				_, streamID := sm.GetPlaylistIDandStreamID(stream)
+				if errorInfo.ClientID != "" {
+					// Client specifc errors
+					errorInfo.Stream.RemoveClientFromStream(streamID, errorInfo.ClientID)
+				} else {
+					// Buffer disconnect error
+					clients := stream.Clients
+					if len(clients) > 0 && errorInfo.BufferClosed {
+						if stream.DoAutoReconnect  && stream.Buffer.IsThirdPartyBuffer {
+							stream.Buffer.StartBuffer(stream)
+						} else {
 							stream.StopStream(streamID)
 						}
 					}
@@ -139,6 +139,7 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 	stream := &Stream{
 		Name:              streamInfo.Name,
 		Buffer:            &Buffer{Config: &BufferConfig{}, FileSystem: fileSystem},
+		ErrorChan:         errorChan,
 		Ctx:               ctx,
 		Cancel:            cancel,
 		URL:               streamInfo.URL,
@@ -151,7 +152,7 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 		UseBackup:         false,
 		DoAutoReconnect:   Settings.BufferAutoReconnect,
 	}
-	stream.Buffer.StartBuffer(stream, errorChan)
+	stream.Buffer.StartBuffer(stream)
 	if stream.Buffer == nil {
 		return nil
 	}
@@ -425,7 +426,7 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 	// If it was the first client start t
 	if len(stream.Clients) == 1 {
 		// Send Data to the clients, this should run only once per stream
-		go stream.SendData(sm.errorChan)
+		go stream.SendData()
 	}
 
 	// Wait for the client context to get closed
@@ -451,33 +452,31 @@ func (sm *StreamManager) GetPlaylistIDandStreamID(stream *Stream) (string, strin
 SendData sends Data to the clients connected to the stream
 With errorChan it reports occuring errors to the StreamManager instance
 */
-func (s *Stream) SendData(errorChan chan ErrorInfo) {
+func (s *Stream) SendData() {
 	var oldSegments []string
 
 	for {
-		tmpFiles := s.GetBufTmpFiles()
-		for _, f := range tmpFiles {
-			if !s.CheckBufferFolder() {
-				errorChan <- ErrorInfo{BufferFolderError, s, ""}
-				return
-			}
-			oldSegments = append(oldSegments, f)
-			ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
-			if !s.SendFileToClients(f, errorChan) {
-				if !s.DoAutoReconnect {
-					errorChan <- ErrorInfo{SendFileError, s, ""}
+		select {
+		case <- s.Ctx.Done():
+			return
+		default:
+			tmpFiles := s.GetBufTmpFiles()
+			for _, f := range tmpFiles {
+				if  ok, err := s.CheckBufferFolder(); !ok {
+					s.ReportError(err, BufferFolderError, "", true)
 					return
-				} else {
-					continue
+				}
+				oldSegments = append(oldSegments, f)
+				ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
+				s.SendFileToClients(f)
+				if s.GetBufferedSize() > Settings.BufferSize * 1024 {
+					s.DeleteOldestSegment(oldSegments[0])
+					oldSegments = oldSegments[1:]
 				}
 			}
-			if s.GetBufferedSize() > Settings.BufferSize * 1024 {
-				s.DeleteOldestSegment(oldSegments[0])
-				oldSegments = oldSegments[1:]
+			if len(tmpFiles) == 0 {
+				time.Sleep(5 * time.Millisecond) // This will ensure that streams will synchronize over the time
 			}
-		}
-		if len(tmpFiles) == 0 {
-			time.Sleep(5 * time.Millisecond) // This will ensure that streams will synchronize over the time
 		}
 	}
 }
@@ -565,42 +564,57 @@ func (s *Stream) DeleteOldestSegment(oldSegment string) {
 /*
 CheckBufferFolder reports whether the buffer folder exists.
 */
-func (s *Stream) CheckBufferFolder() bool {
+func (s *Stream) CheckBufferFolder() (bool, error) {
 	if _, err := s.Buffer.FileSystem.Stat(s.Folder); fsIsNotExistErr(err) {
-		return false
+		return false, err
 	}
-	return true
+	return true, nil
+}
+
+// CheckBufferedFile check for the existance of the given file (file path is needed)
+func (s *Stream) CheckBufferedFile(file string) (bool, error) {
+	if _, err := s.Buffer.FileSystem.Stat(file); fsIsNotExistErr(err) {
+		return false, err
+	}
+	return true, nil
 }
 
 /*
 SendFileToClients reports whether sending the File to the clients was successful
 It will also use the errorChan to report to the StreamManager if there is an error sending the file to a specifc client
 */
-func (s *Stream) SendFileToClients(fileName string, errorChan chan ErrorInfo) bool {
-	file, err := s.Buffer.FileSystem.Open(s.Folder + string(os.PathSeparator) + fileName)
+func (s *Stream) SendFileToClients(fileName string) {
+	var filePath string = fmt.Sprint(s.Folder + string(os.PathSeparator) + fileName)
+	if  ok, err := s.CheckBufferedFile(filePath); !ok {
+		s.ReportError(err, 4019, "", false)
+		return
+	}
+	file, err := s.Buffer.FileSystem.Open(filePath)
 	if err != nil {
-		ShowError(err, 4014)
-		return false
+		s.ReportError(err, OpenFileError, "", false)
+		return
 	}
 	defer file.Close()
 	l, err := file.Stat()
 	if err != nil {
-		ShowError(err, 4015)
-		return false
+		s.ReportError(err, FileStatError, "", false)
+		return
 	}
 	buffer := make([]byte, l.Size())
 	if _, err := file.Read(buffer); err != nil {
-		ShowError(err, 4016)
-		return false
+		s.ReportError(err, ReadFileError, "", false)
+		return
 	}
 	for clientID, client := range s.Clients {
 		ShowDebug(fmt.Sprintf("Streaming:Sending file %s to client %s", fileName, clientID), 3)
 		if _, err := client.w.Write(buffer); err != nil {
-			ShowDebug(fmt.Sprintf("Streaming:Error when trying to send file to client %s", clientID), 1)
-			errorChan <- ErrorInfo{SendFileError, s, clientID}
+			s.ReportError(fmt.Errorf("Streaming:Error when trying to send file to client %s", clientID), SendFileError, clientID, false)
 		}
 	}
-	return true
+}
+
+func (s *Stream) ReportError(err error, errCode int, clientID string, closed bool) {
+	s.ErrorChan <- ErrorInfo{err, errCode, s, clientID, closed}
 }
 
 func (s *Stream) StopStream(streamID string) {
@@ -622,10 +636,46 @@ func (s *Stream) StopStream(streamID string) {
 }
 
 func (s *Stream) RemoveClientFromStream(streamID, clientID string) {
-	client := s.Clients[clientID]
-	CloseClientConnection(client.w)
-	delete(s.Clients, clientID)
-	ShowInfo(fmt.Sprintf("Streaming:Removed client from %s, total: %d", streamID, len(s.Clients)))
+	if client, exists := s.Clients[clientID]; exists {
+		CloseClientConnection(client.w)
+		delete(s.Clients, clientID)
+		ShowInfo(fmt.Sprintf("Streaming:Removed client from %s, total: %d", streamID, len(s.Clients)))
+	}
+}
+
+/*
+UpdateStreamURLForBackup will set the ther stream url when a backup will be used
+*/
+func (s *Stream) UpdateStreamURLForBackup() {
+	switch s.BackupNumber {
+	case 1:
+		s.URL = s.BackupChannel1URL
+		ShowHighlight("START OF BACKUP 1 STREAM")
+		ShowInfo("Backup Channel 1 URL: " + s.URL)
+	case 2:
+		s.URL = s.BackupChannel2URL
+		ShowHighlight("START OF BACKUP 2 STREAM")
+		ShowInfo("Backup Channel 2 URL: " + s.URL)
+	case 3:
+		s.URL = s.BackupChannel3URL
+		ShowHighlight("START OF BACKUP 3 STREAM")
+		ShowInfo("Backup Channel 3 URL: " + s.URL)
+	}
+}
+
+/*
+HandleBufferError will retry running the Buffer function with the next backup number
+*/
+func (s *Stream) handleBufferError(err error) {
+	ShowError(err, 4011)
+	if !s.UseBackup || (s.UseBackup && s.BackupNumber >= 0 && s.BackupNumber <= 3) {
+		s.BackupNumber++
+		if s.BackupChannel1URL != "" || s.BackupChannel2URL != "" || s.BackupChannel3URL != "" {
+			s.UseBackup = true
+			s.UpdateStreamURLForBackup()
+			s.Buffer.StartBuffer(s)
+		}
+	}
 }
 
 /*
