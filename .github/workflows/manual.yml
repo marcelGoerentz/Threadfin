@@ -23,6 +23,8 @@ jobs:
   buildBinaries:
     name: Build and release binaries
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       new_version: ${{ steps.set-build-number.outputs.new_version }}
     steps:
