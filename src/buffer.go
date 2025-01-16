@@ -20,6 +20,7 @@ func (b *Buffer) StartBuffer(stream *Stream,) {
 
 	switch Settings.Buffer {
 	case "ffmpeg", "vlc":
+		b.IsThirdPartyBuffer = true
 		err = StartThirdPartyBuffer(stream)
 	case "threadfin":
 		err = StartThreadfinBuffer(stream)
