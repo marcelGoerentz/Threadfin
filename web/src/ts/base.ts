@@ -9,14 +9,22 @@ var WS_AVAILABLE = false
 declare var bootstrap: any;
 declare var ClipboardJS: any;
 
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-// new ClipboardJS('.copy-btn');
-var clipboard = new ClipboardJS('.copy-btn');
-clipboard.on('success', function(e) {
-  const tooltip = bootstrap.Tooltip.getInstance(e.trigger);
-  tooltip.setContent({ '.tooltip-inner': 'Copied!' });
+var tooltipTriggerList: NodeListOf<Element>;
+var tooltipList: any[];
 
+const clipboard = new ClipboardJS('.copy-btn');
+clipboard.on('success', function(e) {
+  const tooltip = bootstrap.Tooltip.getInstance(e.trigger as HTMLElement);
+  if (tooltip) {
+    const prevContent = tooltip._config.title;
+    tooltip.setContent({ '.tooltip-inner': 'Copied!' });
+    tooltip.show();
+    setTimeout(() => {
+      tooltip.setContent({ '.tooltip-inner': prevContent });
+    }, 3000);
+  } else {
+    console.error('Tooltip instance not found for element:', e.trigger);
+  }
 });
 clipboard.on('error', function(e) {
   console.log(e);
@@ -54,6 +62,11 @@ settingsCategory.push(new SettingsCategoryItem("{{.settings.category.network}}",
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}", "buffer,udpxy,buffer.size.kb,storeBufferInRAM,buffer.timeout,buffer.autoReconnect,user.agent,ffmpeg.path,ffmpeg.options,vlc.path,vlc.options"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.backup}}", "backup.path,backup.keep"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.authentication}}", "authentication.web,authentication.pms,authentication.m3u,authentication.xml,authentication.api"))
+
+var serverInformation: ServerInformationItem[] = new Array()
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.serverInfo}}", "version,errors,warnings"))
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.streamInfo}}", "dvr,m3uUrl,xepgUrl,streams,xepg"))
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.changeVersion}}", "changeVersion"))
 
 function showElement(elmID, show: boolean) {
   if (elmID == "popupCustom" || elmID == "popup") {
@@ -757,16 +770,18 @@ function updateLog() {
 }
 
 // Get the button:
-let mybutton = document.getElementById("backToTop");
+let backToTop = document.getElementById("backToTop");
+backToTop.setAttribute("title", "{{.button.backToTop}}")
+
 
 // When the user scrolls down 20px from the top of the document, show the button
 window.onscroll = function() {scrollFunction()};
 
 function scrollFunction() {
   if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-    mybutton.style.display = "block";
+    backToTop.style.display = "block";
   } else {
-    mybutton.style.display = "none";
+    backToTop.style.display = "none";
   }
 }
 
@@ -800,7 +815,7 @@ interface Server {
 interface clientInfo {
   arch: string;
   beta: boolean;
-  DVR: string;
+  dvr: string;
   epgSource: string;
   errors: string;
   m3uUrl: string;

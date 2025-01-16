@@ -1,7 +1,8 @@
 *{
+  /*
   -webkit-appearance: none;
   -moz-appearance: none;
-  -ms-appearance: none;
+  -ms-appearance: none;*/
   font-family: "Arial", sans-serif;
   letter-spacing: 2px;
 }
@@ -136,7 +137,7 @@ select:focus {
 }
 
 input {
-  -webkit-appearance: none;
+  -webkit-appearance: unset;
   margin: 0px;
   padding: 2.5px 10px;
   outline: none;
@@ -185,31 +186,28 @@ input[type=password] {
   padding: 8px 10px;
 }
 
-input[type="checkbox"] {
+input[type=checkbox] {
   border: solid 1px #00E6FF;
   background-color: #333;
   height: 25px;
   width: 25px;
   cursor: pointer;
-  /*
-  -webkit-appearance: checkbox;
-  */
 }
 
-input[type="checkbox"]:checked {
+input[type=checkbox]:checked {
   color: #fff;
-  background-color: #00E6FF;
+  background-color: #00E6FF !important;
   /*display: inline-block;*/
 }
 
-input[type="checkbox"]:before {
+input[type=checkbox]:before {
   position: initial;
   left: 0px;
   margin-left: -4px;
   content: " ";
 }
 
-input[type="checkbox"]:checked:before {
+input[type=checkbox]:checked:before {
   position: initial;
   left: 0px;
   margin-left: -3px;
@@ -217,16 +215,13 @@ input[type="checkbox"]:checked:before {
   color: #000;
 }
 
-input[type="checkbox"].bulk:checked:before {
-  position: relative;
+input[type=checkbox].bulk:checked:before {
+  position: initial;
   left: 0px;
-  top: -11px;
   margin-left: -3px;
   content: "✓";
-  font-size: 1.5em;
   color: #000;
 }
-
 
 input[type=button].cancel {
 
@@ -317,8 +312,6 @@ input[type=button].center {
   margin-bottom: 30px;
 }
 
-.block {}
-
 .none {
   display: none;
 }
@@ -354,8 +347,6 @@ input[type=button].center {
 table {
   width: 100%
 }
-
-.menu-notActive {}
 
 #branch {
   color: red;
@@ -477,6 +468,23 @@ table {
   flex-grow: 1; /* Allow content to grow and take available space */
   overflow-y: auto; /* Enable vertical scrolling if content overflows */
   margin-bottom: 10px; /* Ensure there's a gap to the bottom */
+}
+
+.fa-style {
+  color: #FFF;
+  font-size: 25px;
+}
+
+.fa-style:hover {
+  transform: scale(1.2);
+}
+
+.notificationContent {
+  border-radius: 10px;
+}
+
+.updateNow {
+  margin-bottom: 5px;
 }
 
 #backToTop {

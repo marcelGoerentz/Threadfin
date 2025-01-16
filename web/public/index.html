@@ -1,17 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8" >
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Threadfin</title>
   <!-- font-awesome -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css"
-  />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="css/screen.css" type="text/css">
   <link rel="stylesheet" href="css/base.css" type="text/css">
   <link rel="icon" href="img/threadfin.ico">
@@ -39,64 +35,11 @@
     </div>
   </div>
 
-  <div class="modal fade" id="server_information">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Server Information</h3>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="container-fluid">
-            <div class="row">
-              <div class="card text-bg-dark mb-3">
-                <div class="card-header">Server Information</div>
-                <div class="card-body">
-                  <label for="version" class="form-label">Threadfin Version</label>
-                  <input type="text" class="form-control" id="version" aria-describedby="basic-addon3" readonly disabled>
-                  <label for="errors" class="form-label">Errors</label>
-                  <input type="text" class="form-control" id="errors" aria-describedby="basic-addon3" readonly disabled>
-                  <label for="warnings" class="form-label">Warnings</label>
-                  <input type="text" class="form-control" id="warnings" aria-describedby="basic-addon3" readonly disabled>
-                </div>
-              </div>
-              <div class="card text-bg-dark mb-3">
-                <div class="card-header">Stream Information</div>
-                <div class="card-body">
-                  <label for="DVR" class="form-label">DVR IP</label>
-                  <input type="text" class="form-control" id="DVR" aria-describedby="basic-addon3" readonly disabled>
-                  <label for="m3u-url" class="form-label">M3U URL (Specific groups: [http://...?group-title=foo,bar])</label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" id="m3u-url" aria-describedby="basic-addon3" readonly>
-                    <button class="input-group-text copy-btn" data-clipboard-target="#m3u-url" data-bs-title="Copy to clipboard" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="far fa-clipboard"></i></button>
-                  </div>
-                  <label for="xepg-url" class="form-label">XMLTV URL</label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" id="xepg-url" aria-describedby="basic-addon3" readonly>
-                    <button class="input-group-text copy-btn" data-clipboard-target="#xepg-url" data-bs-title="Copy to clipboard" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="far fa-clipboard"></i></button>
-                  </div>
-                  <label for="streams" class="form-label">Filtered Channels</label>
-                  <input type="text" class="form-control" id="streams" aria-describedby="basic-addon3" readonly disabled>
-                  <label for="xepg" class="form-label">Mapped Channels</label>
-                  <input type="text" class="form-control" id="xepg" aria-describedby="basic-addon3" readonly disabled>
-                </div>
-              </div>
-              <div class="card text-bg-dark mb 3">
-                <div class="card-header">Change Threadfin Version</div>
-                <div class="card-body">
-                  <input type="button" id="changeVersion"/>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="modal fade" id="server_information"></div>
   
   <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-black">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/web">
+      <a class="navbar-brand" href="/web" title="logo">
         <span id="logo"></span>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,8 +48,8 @@
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mx-auto mb-2 mb-lg-0" id="main-menu">
         </ul>
-        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-          <li class="nav-link" data-bs-toggle="modal" data-bs-target="#server_information"><i class="fas fa-info-circle"></i> Server Information</li>
+        <ul>
+          <li class="nav-link" data-bs-toggle="modal" data-bs-target="#server_information" id="server_information_button"><i class="fas fa-info-circle"></i> Server Information</li>
         </ul>
       </div>
     </div>
@@ -133,19 +76,20 @@
         <h5 class="title" id="notification_title"></h5>
         <button type="button" class="btn-close btn-close-white" id="closeNotification"></button>
       </div>
-      <div class="modal-body", style="border-radius: 10px;">
+      <div class="modal-body notificationContent">
           <p id="notification_text"></p>
-          <input type="button" style="margin-bottom: 5px;" id="updateNowButton"/>
+          <input type="button" class="updateNow" id="updateNowButton">
       </div>
     </div>
   </div>
 
-  <button onclick="topFunction()" id="backToTop" title="Go to top">
-    <img src="icons/chevron-double-up.svg">
+  <button type="button" onclick="topFunction()" id="backToTop">
+    <img src="icons/chevron-double-up.svg" alt="Go to top">
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script language="javascript" type="text/javascript" src="js/server_information.js"></script>
   <script language="javascript" type="text/javascript" src="js/network.js"></script>
   <script language="javascript" type="text/javascript" src="js/option_dialogue.js"></script>
   <script language="javascript" type="text/javascript" src="js/menu.js"></script>
@@ -153,5 +97,5 @@
   <script language="javascript" type="text/javascript" src="js/logs.js"></script>
   <script language="javascript" type="text/javascript" src="js/base.js"></script>
   <script language="javascript" type="text/javascript" src="js/version_check.js"></script>
-</body>
-</html>
+
+</body></html>

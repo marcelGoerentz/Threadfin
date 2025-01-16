@@ -70,9 +70,6 @@ class MainMenuItem extends MainMenu {
         break
 
     }
-
-    //console.log(this.menuKey, this.tableHeader);
-
   }
 }
 
@@ -117,7 +114,7 @@ class Content {
 
   createTABLE(): any {
     var element = document.createElement("TABLE")
-    element.setAttribute('class', 'table')
+    element.setAttribute('class', 'contentTable')
     element.id = this.TableID
     return element
   }
@@ -712,7 +709,9 @@ class Cell {
         case "P":
           element = document.createElement(this.childType);
           element.innerHTML = this.value
-          element.className = this.className
+          if (this.className !== undefined) {
+            element.className = this.className
+          }
           if (this.classColor) {
             element.style.borderColor = this.classColor
           }
@@ -1085,8 +1084,6 @@ function PageReady() {
 
   getNewestReleaseFromGithub()
 
-  //createOptionDialogueContainer()
-
   return
 }
 
@@ -1144,32 +1141,6 @@ function resetCheckboxes(checkboxes: NodeListOf<Element>, initialStates: boolean
 
 function createLayout() {
 
-  // Client Info (Server Information)
-  var obj = SERVER["clientInfo"]
-  var keys = getObjKeys(obj);
-  const changeVersion = document.getElementById("changeVersion") as HTMLButtonElement
-  changeVersion.value = "Change to beta version"
-  changeVersion.onclick = () => {
-    changeVersion.value = "Changing..."
-    const server: Server = new Server("changeVersion")
-    server.request(new Object())
-    setTimeout(() => {
-      location.reload()
-    }, 20000);
-  }
-  for (var i = 0; i < keys.length; i++) {
-    if (document.getElementById(keys[i])) {
-      (<HTMLInputElement>document.getElementById(keys[i])).value = obj[keys[i]];
-      if (keys[i] === "version") {
-        if (obj["beta"]) {
-          const version = document.getElementById(keys[i]) as HTMLInputElement
-          version.value += " Beta"
-          changeVersion.value = "Change to release version"
-        }
-      }
-    }
-  }
-
   if (!document.getElementById("main-menu")) {
     return
   }
@@ -1195,7 +1166,42 @@ function createLayout() {
         menuItems[i].createItem()
         break
     }
+  }
 
+  // Create server information
+  document.getElementById("server_information").innerHTML = ""
+  const serverInfo = new ServerInformation()
+  serverInfo.addContent(serverInformation)
+  document.getElementById("server_information").replaceWith(serverInfo.container)
+
+  // initialize tool tips
+  tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipList = Array.from(tooltipTriggerList).map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl as HTMLElement));
+
+  // Client Info (Server Information)
+  var obj = SERVER["clientInfo"]
+  var keys = getObjKeys(obj);
+  const changeVersion = document.getElementById("changeVersion") as HTMLButtonElement
+  changeVersion.value = "{{.serverInfo.changeVersion.changeToBeta}}"
+  changeVersion.onclick = () => {
+    changeVersion.value = "{{.serverInfo.changeVersion.changing}}"
+    const server: Server = new Server("changeVersion")
+    server.request(new Object())
+    setTimeout(() => {
+      location.reload()
+    }, 20000);
+  }
+  for (var i = 0; i < keys.length; i++) {
+    if (document.getElementById(keys[i])) {
+      (<HTMLInputElement>document.getElementById(keys[i])).value = obj[keys[i]];
+      if (keys[i] === "version") {
+        if (obj["beta"]) {
+          const version = document.getElementById(keys[i]) as HTMLInputElement
+          version.value += " Beta"
+          changeVersion.value = "{{.serverInfo.changeVersion.changeToRelease}}"
+        }
+      }
+    }
   }
 
   return

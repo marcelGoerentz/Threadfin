@@ -1043,9 +1043,8 @@ func createDummyProgram(xepgChannel XEPGChannelStruct) (dummyXMLTV XMLTV) {
 	var err error
 	var dl = strings.Split(xepgChannel.XMapping, "_")
 	if dl[0] != "" {
-		dummyLength, err = strconv.Atoi(dl[0])
-		if err != nil {
-			ShowError(err, 000)
+		if dummyLength, err = strconv.Atoi(dl[0]); err != nil {
+			ShowError(fmt.Errorf("invalid integer value: %s, please change the XMLTV ID for this channel", dl[0]), 000)
 			return
 		}
 	}

@@ -29,6 +29,7 @@ type Stream struct {
 	Name    string
 	Clients map[string]Client
 	Buffer  *Buffer
+	ErrorChan chan ErrorInfo
 	Ctx     context.Context
 	Cancel  context.CancelFunc
 
@@ -49,6 +50,7 @@ type Buffer struct {
 	IsThirdPartyBuffer bool
 	Cmd                *exec.Cmd
 	Config             *BufferConfig
+	Stream			   *Stream // Reference to the parents struct
 	StopChan           chan struct{}
 }
 
@@ -64,17 +66,22 @@ type Client struct {
 }
 
 type ErrorInfo struct {
+	Error     error
 	ErrorCode int
 	Stream    *Stream
 	ClientID  string
+	BufferClosed bool
 }
 
 const (
-	NoError             = 0
-	BufferFolderError   = 4008
-	SendFileError       = 4009
-	CreateFileError     = 4010
-	EndOfFileError      = 4011
-	ReadIntoBufferError = 4012
-	WriteToBufferError  = 4013
+	BufferFolderError     = 4008
+	SendFileError         = 4009
+	CreateFileError       = 4010
+	EndOfFileError        = 4011
+	ReadIntoBufferError   = 4012
+	WriteToBufferError    = 4013
+	OpenFileError         = 4014  //errMsg = "Not able to open buffered file"
+	FileStatError         = 4015	//errMsg = "Could not get file statics of buffered file"
+	ReadFileError         = 4016  //errMsg = "Could not read buffered file before sending to clients"
+	FileDoesNotExistError = 4019 //errMsg = "Buffered file does not exist anymore"
 )

@@ -385,6 +385,8 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Cannot stream from M3U file, please use ffmpeg or VLC"
 	case 4018:
 		errMsg = "Error while reading thirdparty stdErr"
+	case 4019:
+		errMsg = "Buffered file does not exist anymore"
 
 	// PID saving and deleting
 	case 4040:

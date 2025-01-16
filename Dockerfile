@@ -1,17 +1,14 @@
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
-ARG BRANCH=master
+ARG BUILD_FLAG=master
 FROM golang:1.23-alpine AS base
 
-# Download the source code
-RUN apk --no-cache add git
-RUN git clone https://github.com/marcelGoerentz/Threadfin.git /src
-
+# Copy source code
+COPY . /src
 WORKDIR /src
 
 ARG VERSION
-RUN git checkout ${BRANCH} && git pull \
-    && sed -i "s/const Version = \".*\"/const Version = \"${VERSION}\"/" threadfin.go \
+RUN sed -i "s/const Version = \".*\"/const Version = \"${VERSION}\"/" threadfin.go \
     && go mod tidy \
     && go mod vendor
 
@@ -21,7 +18,7 @@ RUN go build .
 FROM base AS beta
 RUN go build -tags beta .
 
-FROM ${BRANCH} AS builder
+FROM ${BUILD_FLAG} AS builder
 ARG BRANCH
 RUN echo "Build ${BRANCH} version"
 

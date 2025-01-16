@@ -50,7 +50,9 @@
     "uploadLogo": "Logo hochladen",
     "uploadCustomImage": "Benutzerdefiniertes Bild hochladen",
     "sortChannelsAlpha": "Kanäle alphabetisch sortieren",
-    "sortChannelNumbers": "Kanäle sortieren"
+    "sortChannelNumbers": "Kanäle sortieren",
+    "backToTop": "Gehe nach oben",
+    "serverInformation": "Server Informationen"
   },
   "filter": {
     "table": {
@@ -618,6 +620,29 @@
     "update": {
       "title": "Update verfügbar",
       "content": "Eine neuere Version von Threadfin ist verfügbare. Bitte auf die neuste Version aktualisieren."
+    }
+  },
+  "serverInfo": {
+    "title": "Server Informationen",
+    "header": {
+      "serverInfo": "Server Informationen",
+      "streamInfo": "Stream Informationen",
+      "changeVersion": "Wechsel Threadfin Version"
+    },
+    "label": {
+      "version": "Threadfin Version",
+      "errors": "Fehler",
+      "warnings": "Warnungen",
+      "dvr": "DVR IP",
+      "m3uUrl": "M3U URL (Specifc groups: [http://...?group-title=foo,bar])",
+      "xepgUrl": "XMLTV URL",
+      "streams": "Gefilterte Kanäle",
+      "xepg": "Zugeordnete Kanäle"
+    },
+    "changeVersion": {
+      "changeToBeta": "Wechsel zur Beta Version",
+      "changeToRelease": "Wechsel zur offiziellen Version",
+      "changing": "Wechsel..."
     }
   }
 }

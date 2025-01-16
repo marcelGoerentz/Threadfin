@@ -12,14 +12,26 @@ async function getNewestReleaseFromGithub() {
                 prerelease: release.prerelease,
             }));
 
-            const currentVersion = parseVersion(SERVER.clientInfo.version);
+            let currentVersion
+            try{
+                 currentVersion = parseVersion(SERVER.clientInfo.version);
+            } catch (error: any) {
+                console.log("Unable to parse current version info!")
+                return
+            }
             var latestAvailableVersion: Release;
             if (SERVER.clientInfo.beta) {
                 latestAvailableVersion = releases.find(release => release.prerelease == true);
             } else {
                 latestAvailableVersion = releases.find(release => release.prerelease == false);
             }
-            const latestReleaseVersion = parseVersion(latestAvailableVersion.tag_name);
+            let latestReleaseVersion
+            try {
+             latestReleaseVersion = parseVersion(latestAvailableVersion.tag_name);
+            } catch (error: any) {
+                console.log("Unable to parse GitHub version info!")
+                return
+            }
 
             if (isNewerVersion(latestReleaseVersion, currentVersion)) {
                 const notification_container = document.getElementById('notification_containter') as HTMLElement;
@@ -51,7 +63,7 @@ async function getNewestReleaseFromGithub() {
     }
 }
 
-function parseVersion(version: string): number[] {
+function parseVersion(version: string): number[]  {
     // TODO: Improve version parsing
     const regex = /^v?(\d+)\.(\d+)(?:\.(\d+))?(?:\.(\d+))?(?: \((\d+)(?:-(\w+))?\))?(?:-(\w+))?$/;
     const match = version.match(regex);

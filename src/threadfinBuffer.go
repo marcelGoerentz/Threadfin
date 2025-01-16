@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func StartThreadfinBuffer(stream *Stream, errorChan chan ErrorInfo) error {
+func StartThreadfinBuffer(stream *Stream) error {
 	stopChan := make(chan struct{})
 	ShowInfo(fmt.Sprintf("Streaming:Buffer:%s", "Threadfin"))
 	ShowInfo("Streaming URL:" + stream.URL)
@@ -44,15 +44,14 @@ func StartThreadfinBuffer(stream *Stream, errorChan chan ErrorInfo) error {
 					}
 
 					if videoURL != "" || audioURL != "" {
-						ShowInfo("Streaming:Can not stream from m3u file")
-						errorChan <- ErrorInfo{4017, stream, ""}
+						stream.ReportError(fmt.Errorf("Streaming:Can not stream from m3u file"), 4017, "", true)
 						return
 					}
 				}
 			}
 		}
 
-		go HandleByteOutput(resp.Body, stream, errorChan) // Download the video file directly and save to disk
+		go stream.Buffer.HandleByteOutput(resp.Body) // Download the video file directly and save to disk
 
 		for {
 			select {
