@@ -70,7 +70,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: v${{ env.NEW_VERSION }} (Test)
+          name: v${{ env.NEW_VERSION }} (Workflow Test)
           tag_name: v${{ env.NEW_VERSION }}-test
           files: dist/*
   
@@ -106,10 +106,8 @@ jobs:
         with:
           context: .
           build-args: |
-            BRANCH=beta
-          push: true
+            BUILD_FLAG=beta
+            VERSION=${{ env.NEW_VERSION }}
+          push: false
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
-          tags: |
-            mgoerentz/threadfin:latest-beta
-            mgoerentz/threadfin:v${{ env.NEW_VERSION }}-beta

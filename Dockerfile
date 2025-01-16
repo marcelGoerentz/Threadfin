@@ -1,12 +1,13 @@
 # First stage. Building a binary
 # -----------------------------------------------------------------------------
-ARG BRANCH=master
+ARG BUILD_FLAG=master
 FROM golang:1.23-alpine AS base
 
 # Copy source code
 COPY . /src
 WORKDIR /src
 
+ARG VERSION
 RUN sed -i "s/const Version = \".*\"/const Version = \"${VERSION}\"/" threadfin.go \
     && go mod tidy \
     && go mod vendor
@@ -17,7 +18,7 @@ RUN go build .
 FROM base AS beta
 RUN go build -tags beta .
 
-FROM ${BRANCH} AS builder
+FROM ${BUILD_FLAG} AS builder
 ARG BRANCH
 RUN echo "Build ${BRANCH} version"
 
