@@ -97,10 +97,10 @@ type ResponseStruct struct {
 	ClientInfo struct {
 		ARCH      string   `json:"arch"`
 		Beta      bool     `json:"beta,omitempty"`
-		DVR       string   `json:"DVR"`
+		DVR       string   `json:"dvr"`
 		EpgSource string   `json:"epgSource"`
 		Errors    int      `json:"errors"`
-		M3U       string   `json:"m3u-url"`
+		M3U       string   `json:"m3uUrl"`
 		OS        string   `json:"os"`
 		Streams   string   `json:"streams"`
 		SystemIPs []string `json:"systemIPs"`
@@ -108,7 +108,7 @@ type ResponseStruct struct {
 		Version   string   `json:"version"`
 		Warnings  int      `json:"warnings"`
 		XEPGCount int64    `json:"xepg"`
-		XML       string   `json:"xepg-url"`
+		XML       string   `json:"xepgUrl"`
 	} `json:"clientInfo,omitempty"`
 
 	Data struct {

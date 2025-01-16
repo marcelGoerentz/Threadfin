@@ -23,13 +23,14 @@ jobs:
   buildBinaries:
     name: Build and release binaries
     runs-on: ubuntu-latest
-    outputs:
+    permissions:
+      contents: write
       new_version: ${{ steps.set-build-number.outputs.new_version }}
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
         with:
-          ref: beta
+          ref: intermediat
 
       - name: Set build number
         id: set-build-number
@@ -42,8 +43,8 @@ jobs:
 
       - name: Build webUI
         run: |
-          tsc -p ./web/tsconfig.json
-          python ./Utility/create_webUI.py
+          tsc -p  ${GITHUB_WORKSPACE}/web/tsconfig.json
+          python  ${GITHUB_WORKSPACE}/Utility/create_new_webUI.py
 
       - name: Upload webUI as artifact
         uses: actions/upload-artifact@v4
@@ -67,8 +68,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: v${{ env.NEW_VERSION }} (Beta)
-          tag_name: v${{ env.NEW_VERSION }}-beta
+          name: v${{ env.NEW_VERSION }} (Workflow Test)
+          tag_name: v${{ env.NEW_VERSION }}-test
           files: dist/*
   
   buildDockerImages:
@@ -82,6 +83,12 @@ jobs:
       - name: Set NEW_VERSION
         run: echo "NEW_VERSION=${{ needs.buildBinaries.outputs.new_version }}" >> $GITHUB_ENV
         shell: bash
+
+      - name: Download webUI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webUI-artifact
+          path: ./src
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -97,10 +104,8 @@ jobs:
         with:
           context: .
           build-args: |
-            BRANCH=beta
-          push: true
+            BUILD_FLAG=beta
+            VERSION=${{ env.NEW_VERSION }}
+          push: false
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
-          tags: |
-            mgoerentz/threadfin:latest-beta
-            mgoerentz/threadfin:v${{ env.NEW_VERSION }}-beta
