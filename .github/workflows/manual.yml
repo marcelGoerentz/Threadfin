@@ -85,6 +85,12 @@ jobs:
       - name: Set NEW_VERSION
         run: echo "NEW_VERSION=${{ needs.buildBinaries.outputs.new_version }}" >> $GITHUB_ENV
         shell: bash
+
+      - name: Download webUI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webUI-artifact
+          path: ./src
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
