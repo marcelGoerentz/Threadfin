@@ -136,12 +136,7 @@ func Init() (err error) {
 		ShowError(err, 1071)
 		return
 	}
-
-	err = conditionalUpdateChanges()
-	if err != nil {
-		return
-	}
-
+	
 	// Einstellungen laden (settings.json)
 	ShowInfo(fmt.Sprintf("Load Settings:%s", System.File.Settings))
 

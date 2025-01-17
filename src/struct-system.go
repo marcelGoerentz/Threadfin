@@ -95,11 +95,7 @@ type SystemStruct struct {
 		TagName string
 	}
 
-	Update struct {
-		Git    string
-		Name   string
-		Github string
-	}
+	Update Update
 
 	URLBase string
 	UDPxy   string
@@ -109,22 +105,19 @@ type SystemStruct struct {
 	}
 }
 
+type Update struct {
+	Git    string
+	Name   string
+	Github string
+}
+
 // GitStruct : Updateinformationen von GitHub
 type GitStruct struct {
 	Filename string `json:"filename"`
 	Version  string `json:"version"`
 }
 
-type GithubReleaseInfo struct {
-	TagName    string         `json:"tag_name"`
-	Prerelease bool           `json:"prerelease"`
-	Assets     []AssetsStruct `json:"assets"`
-}
 
-type AssetsStruct struct {
-	DownloadUrl string `json:"browser_download_url"`
-	UpdatetAt   string `json:"updated_at"`
-}
 
 // DataStruct : Alle Daten werden hier abgelegt. (Lineup, XMLTV)
 type DataStruct struct {

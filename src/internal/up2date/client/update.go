@@ -197,26 +197,6 @@ func getPlatformPath(path string) string {
 	return newPath
 }
 
-func copyFile(src, dst string) (err error) {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return err
-	}
-	return out.Close()
-}
-
 func extractZIP(archive, target string) (err error) {
 
 	reader, err := zip.OpenReader(archive)

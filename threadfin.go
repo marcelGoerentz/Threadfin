@@ -211,9 +211,8 @@ func main() {
 	}
 
 	// Update binary
-	err = src.BinaryUpdate(false)
-	if err != nil {
-		src.ShowError(err, 0)
+	if src.BinaryUpdate(false) {
+		os.Exit(0)
 	}
 
 	// Build the database
