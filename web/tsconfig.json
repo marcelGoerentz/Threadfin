@@ -4,10 +4,10 @@
     "lib": ["es6", "dom", "dom.iterable", "es2017"],
     "target": "es6",
     "sourceMap": true,
-    "outDir": "../html/js"
+    "outDir": "public/js"
   },
   "include": [
-    "*.ts"
+    "src/ts/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -17,8 +17,16 @@ import (
 // Einstellungen ändern (WebUI)
 func updateServerSettings(request RequestStruct) (settings SettingsStruct, err error) {
 
-	var oldSettings = jsonToMap(mapToJSON(Settings))
-	var newSettings = jsonToMap(mapToJSON(request.Settings))
+	oldSettings, err := jsonToMap(mapToJSON(Settings))
+	if err !=  nil {
+		ShowError(err, 0 ) //TODO: Define error code
+		return
+	}
+	newSettings, err := jsonToMap(mapToJSON(request.Settings))
+	if err !=  nil {
+		ShowError(err, 0 ) //TODO: Define error code
+		return
+	}
 	var reloadData = false
 	var cacheImages = false
 	var createXEPGFiles = false
@@ -33,7 +41,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 			switch key {
 
 			case "tuner":
-				showWarning(2105)
+				ShowWarning(2105)
 
 			case "epgSource":
 				reloadData = true
@@ -142,7 +150,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 				debug = fmt.Sprintf("%T", value)
 			}
 
-			showDebug(debug, 1)
+			ShowDebug(debug, 1)
 
 		}
 
@@ -150,7 +158,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 
 	// Einstellungen aktualisieren
 	err = json.Unmarshal([]byte(mapToJSON(oldSettings)), &Settings)
- 	if err != nil {
+	if err != nil {
 		return
 	}
 
@@ -241,11 +249,11 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 						createM3UFile()
 
 						System.ImageCachingInProgress = 1
-						showInfo("Image Caching:Images are cached")
+						ShowInfo("Image Caching:Images are cached")
 
 						//Data.Cache.Images.Image.Caching()
 						Data.Cache.Images.WaitForDownloads()
-						showInfo("Image Caching:Done")
+						ShowInfo("Image Caching:Done")
 
 						System.ImageCachingInProgress = 0
 
@@ -470,7 +478,11 @@ func saveFilter(request RequestStruct) (settings SettingsStruct, err error) {
 			// Neuer Filter
 			newFilter = true
 			dataID = createNewID()
-			filterMap[dataID] = jsonToMap(mapToJSON(defaultFilter))
+			filterMap[dataID], err = jsonToMap(mapToJSON(defaultFilter))
+			if err !=  nil {
+				ShowError(err, 0 ) //TODO: Define error code
+				return
+			}
 
 		}
 
@@ -569,7 +581,7 @@ func saveXEpgMapping(request RequestStruct) (err error) {
 			cleanupXEPG()
 			System.ScanInProgress = 0
 			buildXEPG(false)
-			showInfo("XEPG: Ready to use")
+			ShowInfo("XEPG: Ready to use")
 
 			System.BackgroundProcess = false
 
@@ -658,7 +670,11 @@ func saveNewUser(request RequestStruct) (err error) {
 // Wizard (WebUI)
 func saveWizard(request RequestStruct) (nextStep int, err error) {
 
-	var wizard = jsonToMap(mapToJSON(request.Wizard))
+	wizard, err := jsonToMap(mapToJSON(request.Wizard))
+	if err !=  nil {
+		ShowError(err, 0 ) //TODO: Define error code
+		return
+	}
 
 	for key, value := range wizard {
 
@@ -878,11 +894,7 @@ func buildDatabaseDVR() (err error) {
 						if value, ok := s[key]; ok {
 							if len(value) > 0 {
 
-								if _, ok := tmpGroupsM3U[value]; ok {
-									tmpGroupsM3U[value]++
-								} else {
-									tmpGroupsM3U[value] = 1
-								}
+								tmpGroupsM3U[value]++
 
 								groupTitle++
 							}
@@ -981,17 +993,17 @@ func buildDatabaseDVR() (err error) {
 	}
 
 	if len(Data.Streams.Active) > System.PlexChannelLimit {
-		showWarning(2000)
+		ShowWarning(2000)
 	}
 
 	if len(Settings.Filter) == 0 && len(Data.Streams.All) > System.UnfilteredChannelLimit {
-		showWarning(2001)
+		ShowWarning(2001)
 	}
 
 	System.ScanInProgress = 0
-	showInfo(fmt.Sprintf("All streams:%d", len(Data.Streams.All)))
-	showInfo(fmt.Sprintf("Active streams:%d", len(Data.Streams.Active)))
-	showInfo(fmt.Sprintf("Filter:%d", len(Data.Filter)))
+	ShowInfo(fmt.Sprintf("All streams:%d", len(Data.Streams.All)))
+	ShowInfo(fmt.Sprintf("Active streams:%d", len(Data.Streams.Active)))
+	ShowInfo(fmt.Sprintf("Filter:%d", len(Data.Filter)))
 
 	sort.Strings(Data.StreamPreviewUI.Active)
 	sort.Strings(Data.StreamPreviewUI.Inactive)

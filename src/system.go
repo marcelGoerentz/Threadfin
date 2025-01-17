@@ -64,7 +64,7 @@ func createSystemFiles() (err error) {
 			}
 
 			debug = fmt.Sprintf("Create File:%s", filename)
-			showDebug(debug, 1)
+			ShowDebug(debug, 1)
 
 		}
 
@@ -132,6 +132,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["buffer"] = "-"
 	defaults["buffer.size.kb"] = 1024
 	defaults["buffer.timeout"] = 500
+	defaults["buffer.autoReconnect"] = false
 	defaults["cache.images"] = false
 	defaults["epgSource"] = "PMS"
 	defaults["ffmpeg.options"] = System.FFmpeg.DefaultOptions
@@ -140,7 +141,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["files.update"] = true
 	defaults["filter"] = make(map[string]interface{})
 	defaults["git.branch"] = System.Branch
-	defaults["language"] = "en"
+	defaults["webclient.language"] = "en"
 	defaults["log.entries.ram"] = 500
 	defaults["mapping.first.channel"] = 1000
 	defaults["xepg.replace.missing.images"] = true
@@ -191,7 +192,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 
 	if len(System.Flag.Branch) > 0 {
 		settings.Branch = System.Flag.Branch
-		showInfo(fmt.Sprintf("Git Branch:Switching Git Branch to -> %s", settings.Branch))
+		ShowInfo(fmt.Sprintf("Git Branch:Switching Git Branch to -> %s", settings.Branch))
 	}
 
 	if len(settings.FFmpegPath) == 0 {
@@ -214,11 +215,11 @@ func loadSettings() (settings SettingsStruct, err error) {
 
 	// Warung wenn FFmpeg nicht gefunden wurde
 	if len(Settings.FFmpegPath) == 0 && Settings.Buffer == "ffmpeg" {
-		showWarning(2020)
+		ShowWarning(2020)
 	}
 
 	if len(Settings.VLCPath) == 0 && Settings.Buffer == "vlc" {
-		showWarning(2021)
+		ShowWarning(2021)
 	}
 
 	// Setzen der globalen Domain
@@ -315,7 +316,7 @@ func setBaseURL() {
 	}
 
 	if Settings.EpgSource != "XEPG" && !onlyOnce {
-		showInfo("SOURCE:" + Settings.EpgSource)
+		ShowInfo("SOURCE:" + Settings.EpgSource)
 		System.Addresses.M3U = getErrMsg(2106)
 		System.Addresses.XML = getErrMsg(2106)
 		onlyOnce = true

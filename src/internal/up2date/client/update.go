@@ -43,7 +43,7 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 		}
 
 		// Change binary filename to .filename
-		binary, err := os.Executable()
+		binary, _ := os.Executable()
 		var filename = getFilenameFromPath(binary)
 		var path = getPlatformPath(binary)
 		var oldBinary = path + "_old_" + filename
@@ -110,7 +110,7 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 		}
 
 		// Set the permission
-		err = os.Chmod(binary, 0755)
+		os.Chmod(binary, 0755)
 
 		// Close the new file !Windows
 		out.Close()
@@ -144,7 +144,10 @@ func DoUpdate(fileType, filenameBIN string) (err error) {
 
 			// Restart binary (Linux and UNIX)
 			file, _ := os.Executable()
-			os.RemoveAll(oldBinary)
+			err = os.RemoveAll(oldBinary)
+			if err != nil {
+				fmt.Println(err)
+			}
 			err = syscall.Exec(file, os.Args, os.Environ())
 			if err != nil {
 				restorOldBinary(oldBinary, newBinary)
@@ -181,15 +184,6 @@ func restorOldBinary(oldBinary, newBinary string) {
 	os.Rename(oldBinary, newBinary)
 }
 
-func getPlatformFile(filename string) string {
-
-	path, file := filepath.Split(filename)
-	var newPath = filepath.Dir(path)
-	var newFileName = newPath + string(os.PathSeparator) + file
-
-	return newFileName
-}
-
 func getFilenameFromPath(path string) string {
 
 	file := filepath.Base(path)
@@ -199,8 +193,7 @@ func getFilenameFromPath(path string) string {
 
 func getPlatformPath(path string) string {
 
-	var newPath = filepath.Dir(path) + string(os.PathSeparator)
-
+	var newPath = filepath.Dir(path)
 	return newPath
 }
 

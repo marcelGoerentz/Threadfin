@@ -15,6 +15,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/avfs/avfs"
+	"github.com/avfs/avfs/vfs/memfs"
+	"github.com/avfs/avfs/vfs/osfs"
 )
 
 /*
@@ -22,9 +25,10 @@ NewStreamManager creates and returns a new StreamManager struct and will check p
 */
 func NewStreamManager() *StreamManager {
 	sm := &StreamManager{
-		playlists: map[string]*Playlist{},
+		Playlists: map[string]*Playlist{},
 		errorChan: make(chan ErrorInfo),
 		stopChan:  make(chan bool),
+		FileSystem: nil,
 	}
 
 	// Start a go routine that will check for the error channel
@@ -32,25 +36,24 @@ func NewStreamManager() *StreamManager {
 		for {
 			select {
 			case errorInfo := <-sm.errorChan:
-				if errorInfo.ErrorCode != 0 {
-					playlistID, streamID := sm.GetPlaylistIDandStreamID(errorInfo.Stream)
-					if errorInfo.ClientID != "" {
-						// Client specifc errors
-						sm.StopStream(playlistID, streamID, errorInfo.ClientID)
-						/*} else {
-						if streamID != "" {
-							// Buffer errors
-							if errorInfo.ErrorCode != EndOfFileError {
-								ShowError(fmt.Errorf("stopping all clients because of error while buffering"), errorInfo.ErrorCode)
-							} else {
-								showInfo("Streaming:Stopping all clients as the stream has ended or was terminated!")
-							}
-							sm.StopStreamForAllClients(streamID)
-						}*/
-					} else {
-						for clientID, client := range errorInfo.Stream.clients {
-							sm.StopStream(playlistID, streamID, clientID)
-							CloseClientConnection(client.w)
+				stream := errorInfo.Stream
+				if errorInfo.BufferClosed && !stream.DoAutoReconnect {
+					ShowError(errorInfo.Error, errorInfo.ErrorCode)
+				} else {
+					ShowDebug(errorInfo.Error.Error(), 3)
+				}
+				_, streamID := sm.GetPlaylistIDandStreamID(stream)
+				if errorInfo.ClientID != "" {
+					// Client specifc errors
+					errorInfo.Stream.RemoveClientFromStream(streamID, errorInfo.ClientID)
+				} else {
+					// Buffer disconnect error
+					clients := stream.Clients
+					if len(clients) > 0 && errorInfo.BufferClosed {
+						if stream.DoAutoReconnect  && stream.Buffer.IsThirdPartyBuffer {
+							stream.Buffer.StartBuffer(stream)
+						} else {
+							stream.StopStream(streamID)
 						}
 					}
 				}
@@ -78,70 +81,81 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 	streamID := streamInfo.URLid
 
 	// check if playlist already exists
-	_, exists := sm.playlists[playlistID]
+	_, exists := sm.Playlists[playlistID]
 	if !exists {
 		// create a new one
 		playlist := &Playlist{
-			name:    getProviderParameter(playlistID, GetPlaylistType(playlistID), "name"),
-			streams: make(map[string]*Stream),
+			Name:    getProviderParameter(playlistID, GetPlaylistType(playlistID), "name"),
+			Streams: make(map[string]*Stream),
 		}
 		// add the playlist to the map
-		sm.playlists[playlistID] = playlist
+		sm.Playlists[playlistID] = playlist
 
 		// check if a new stream is possible
 		if IsNewStreamPossible(sm, streamInfo, w) {
 			// create a new buffer and add the stream to the map within the new playlist
-			sm.playlists[playlistID].streams[streamID] = CreateStream(streamInfo, sm.errorChan)
-			if sm.playlists[playlistID].streams[streamID] == nil {
+			sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.FileSystem, sm.errorChan)
+			if sm.Playlists[playlistID].Streams[streamID] == nil {
 				return "", ""
 			}
-			showInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
+			ShowInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
 		} else {
 			return "", ""
 		}
 	} else {
 		// check if the stream already exists
-		stream, exists := sm.playlists[playlistID].streams[streamID]
+		stream, exists := sm.Playlists[playlistID].Streams[streamID]
 		if !exists {
 			// check if a new stream is possible
 			if IsNewStreamPossible(sm, streamInfo, w) {
 				// create a new buffer and add the stream to the map within the existing playlist
-				sm.playlists[playlistID].streams[streamID] = CreateStream(streamInfo, sm.errorChan)
-				showInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
+				sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.FileSystem, sm.errorChan)
+				ShowInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
 			} else {
 				return "", ""
 			}
 		} else {
 			// Here we can check if multiple clients for one stream is allowed!
-			showInfo(fmt.Sprintf("Streaming:Client joined %s, total: %d", streamID, len(stream.clients)+1))
+			ShowInfo(fmt.Sprintf("Streaming:Client joined %s, total: %d", streamID, len(stream.Clients)+1))
 		}
 	}
 	return
 }
 
+func InitBufferVFS(virtual bool) avfs.VFS {
+	if virtual {
+		return memfs.New()
+	} else {
+		return osfs.New()
+	}
+}
+
 /*
 CreateStream will create and return a new Stream struct, it will also start the new buffer.
 */
-func CreateStream(streamInfo StreamInfo, errorChan chan ErrorInfo) *Stream {
+func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan ErrorInfo) *Stream {
 	ctx, cancel := context.WithCancel(context.Background())
-	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid + string(os.PathSeparator)
+	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid
 	stream := &Stream{
-		name:              streamInfo.Name,
-		Buffer:            nil,
-		ctx:               ctx,
-		cancel:            cancel,
+		Name:              streamInfo.Name,
+		Buffer:            &Buffer{Config: &BufferConfig{}, FileSystem: fileSystem},
+		ErrorChan:         errorChan,
+		Ctx:               ctx,
+		Cancel:            cancel,
 		URL:               streamInfo.URL,
 		BackupChannel1URL: streamInfo.BackupChannel1URL,
 		BackupChannel2URL: streamInfo.BackupChannel2URL,
 		BackupChannel3URL: streamInfo.BackupChannel3URL,
 		Folder:            folder,
-		clients:           make(map[string]Client),
+		Clients:           make(map[string]Client),
+		BackupNumber:      0,
+		UseBackup:         false,
+		DoAutoReconnect:   Settings.BufferAutoReconnect,
 	}
-	buffer := StartBuffer(stream, false, 0, errorChan)
-	if buffer == nil {
+	stream.Buffer.StartBuffer(stream)
+	if stream.Buffer == nil {
 		return nil
 	}
-	stream.Buffer = buffer
 	return stream
 }
 
@@ -150,7 +164,7 @@ IsNewStreamPossible reports whether there is a new connection allowed
 */
 func IsNewStreamPossible(sm *StreamManager, streamInfo StreamInfo, w http.ResponseWriter) bool {
 	playlistID := streamInfo.PlaylistID
-	if len(sm.playlists[playlistID].streams) < GetTuner(playlistID, GetPlaylistType(playlistID)) {
+	if len(sm.Playlists[playlistID].Streams) < GetTuner(playlistID, GetPlaylistType(playlistID)) {
 		return true
 	} else {
 		HandleStreamLimit(w)
@@ -182,12 +196,12 @@ func GetStreamLimitContent() ([]byte, bool) {
 				ShowError(err, 0)
 				return nil, false
 			}
+			content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
+			if err != nil {
+				ShowError(err, 0)
+			}
+			contentOk = true
 		}
-		content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
-		if err != nil {
-			ShowError(err, 0)
-		}
-		contentOk = true
 	}
 	if !contentOk {
 		if value, ok := webUI["html/video/stream-limit.ts"]; ok && !contentOk {
@@ -203,7 +217,7 @@ HandleStreamLimit sends an info to the client that the stream limit has been rea
 The content that will provided to client will be fetched with GetStreamLimitContent() function
 */
 func HandleStreamLimit(w http.ResponseWriter) {
-	showInfo("Streaming Status: No new connections available. Tuner limit reached.")
+	ShowInfo("Streaming Status: No new connections available. Tuner limit reached.")
 	content, contentOk := GetStreamLimitContent()
 	if contentOk {
 		w.Header().Set("Content-type", "video/mpeg")
@@ -230,7 +244,7 @@ func ShouldCreateContent(fileList []fs.DirEntry) bool {
 		return false
 	default:
 		for _, file := range fileList {
-			bufferVFS.Remove(System.Folder.Video + file.Name())
+			os.Remove(System.Folder.Video + file.Name())
 		}
 		return true
 	}
@@ -245,7 +259,7 @@ func GetTuner(id, playlistType string) (tuner int) {
 	case "-":
 		tuner = Settings.Tuner
 
-	case "ffmpeg", "vlc":
+	case "ffmpeg", "vlc", "threadfin":
 		i, err := strconv.Atoi(getProviderParameter(id, playlistType, "tuner"))
 		if err == nil {
 			tuner = i
@@ -286,13 +300,13 @@ func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
 
 	cmd = exec.Command(path, arguments...)
 
-	if len(cmd.Args) > 0  && path != "" {
-		showInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
+	if len(cmd.Args) > 0 && path != "" {
+		ShowInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
 		err := cmd.Run()
 		if err != nil {
 			return err
 		}
-		showInfo("Streaming Status:Successfully created video from custom image")
+		ShowInfo("Streaming Status:Successfully created video from custom image")
 		return nil
 	} else {
 		return fmt.Errorf("path for third party tool ")
@@ -300,7 +314,7 @@ func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
 }
 
 // TODO: Add description
-func prepareArguments(pathToFile string) (string, []string){
+func prepareArguments(pathToFile string) (string, []string) {
 	switch Settings.Buffer {
 	case "ffmpeg", "threadfin", "-":
 		return Settings.FFmpegPath, []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
@@ -318,39 +332,39 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	playlist, exists := sm.playlists[playlistID]
+	playlist, exists := sm.Playlists[playlistID]
 	if exists {
-		stream, exists := playlist.streams[streamID]
-		if exists {
-			//client := stream.clients[clientID]
-			//client.w.Header().Set("Connection", "Close")
-			//client.w.Write(nil)
-			delete(stream.clients, clientID)
-			showInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.clients)))
-			if len(stream.clients) == 0 {
-				stream.cancel() // Tell everyone about the ending of the stream
-				if stream.Buffer.isThirdPartyBuffer {
-					stream.Buffer.cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
-					stream.Buffer.cmd.Wait()
-					DeletPIDfromDisc(fmt.Sprintf("%d", stream.Buffer.cmd.Process.Pid)) // Delete the PID since the process has been terminated
-				} else {
-					close(stream.Buffer.stopChan)
-				}
-				delete(sm.playlists[playlistID].streams, streamID)
-				showInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
-				var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
-				showDebug(debug, 1)
+		if stream, exists := playlist.Streams[streamID]; exists {
+			if client, exists := stream.Clients[clientID]; exists {
+				CloseClientConnection(client.w)
+				delete(stream.Clients, clientID)
+				ShowInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.Clients)))
+				if len(stream.Clients) == 0 {
+					stream.Cancel() // Tell everyone about the ending of the stream
+					if stream.Buffer.IsThirdPartyBuffer {
+						stream.Buffer.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+						stream.Buffer.Cmd.Wait()
+						DeletPIDfromDisc(fmt.Sprintf("%d", stream.Buffer.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
+					} else {
+						close(stream.Buffer.StopChan)
+					}
+					
+					ShowInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
+					var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
+					ShowDebug(debug, 1)
 
-				debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
-				showDebug(debug, 1)
+					debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
+					ShowDebug(debug, 1)
 
-				if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
-					ShowError(err, 4005)
+					if err := sm.FileSystem.RemoveAll(stream.Folder); err != nil {
+						ShowError(err, 4005)
+					}
+					delete(sm.Playlists[playlistID].Streams, streamID)
 				}
 			}
 		}
-		if len(sm.playlists[playlistID].streams) == 0 {
-			delete(sm.playlists, playlistID)
+		if len(sm.Playlists[playlistID].Streams) == 0 {
+			delete(sm.Playlists, playlistID)
 		}
 	}
 }
@@ -370,31 +384,10 @@ func CloseClientConnection(w http.ResponseWriter) {
 	}
 }
 
-/*
-StopStreamForAllClient stops the third paryt tool process and will delete all clients from the given stream
-*/
-/*func (sm *StreamManager) StopStreamForAllClients(streamID string) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	for playlistID, playlist := range sm.playlists {
-		stream, exists := playlist.streams[streamID]
-		if exists {
-			stream.cancel() // Cancel the context to stop all clients
-			stream.cmd.Process.Signal(syscall.SIGKILL)
-			stream.cmd.Wait()
-			DeletPIDfromDisc(fmt.Sprintf("%d", stream.cmd.Process.Pid))
-			delete(playlist.streams, streamID)
-			showInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
-			var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
-			showDebug(debug, 1)
-			debug = fmt.Sprintf("Streaming:Remove tmp folder %s", stream.Folder)
-			showDebug(debug, 1)
-			if err := bufferVFS.RemoveAll(stream.Folder); err != nil {
-				ShowError(err, 4005)
-			}
-		}
-		if len(playlist.streams) == 0 {
-			delete(sm.playlists, playlistID)
+func (sm *StreamManager) StopAllStreams() {
+	for _, playlist := range sm.Playlists {
+		for streamID, stream := range playlist.Streams {
+			stream.StopStream(streamID)
 		}
 	}
 }
@@ -403,10 +396,20 @@ StopStreamForAllClient stops the third paryt tool process and will delete all cl
 ServeStream will ensure that the clients is getting the stream requested
 */
 func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Request) {
+
+	if sm.LockAgainstNewStreams {
+		return
+	}
+
+	// Initialize buffer file system
+	if sm.FileSystem == nil {
+		sm.FileSystem = InitBufferVFS(Settings.StoreBufferInRAM)
+	}
+
 	clientID, playlistID := sm.StartStream(streamInfo, w)
 	if clientID == "" || playlistID == "" {
-		if sm.playlists[streamInfo.PlaylistID].streams[streamInfo.URLid] == nil {
-			delete(sm.playlists, streamInfo.PlaylistID)
+		if sm.Playlists[streamInfo.PlaylistID].Streams[streamInfo.URLid] == nil {
+			delete(sm.Playlists, streamInfo.PlaylistID)
 		}
 		return
 	}
@@ -417,13 +420,13 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 		r: r,
 		w: w,
 	}
-	stream := sm.playlists[playlistID].streams[streamInfo.URLid]
-	stream.clients[clientID] = *client
+	stream := sm.Playlists[playlistID].Streams[streamInfo.URLid]
+	stream.Clients[clientID] = *client
 
 	// If it was the first client start t
-	if len(stream.clients) == 1 {
+	if len(stream.Clients) == 1 {
 		// Send Data to the clients, this should run only once per stream
-		go SendData(stream, sm.errorChan)
+		go stream.SendData()
 	}
 
 	// Wait for the client context to get closed
@@ -434,14 +437,14 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 GetPlaylistIDandStreamID retrieves the playlist ID and the stream ID from the given stream
 */
 func (sm *StreamManager) GetPlaylistIDandStreamID(stream *Stream) (string, string) {
-	for playlistID, playlist := range sm.playlists {
-		for streamID, tmpStream := range playlist.streams {
-			if tmpStream.name == stream.name {
+	for playlistID, playlist := range sm.Playlists {
+		for streamID, tmpStream := range playlist.Streams {
+			if tmpStream.Name == stream.Name {
 				return playlistID, streamID
 			}
 		}
 	}
-	showDebug("Streaming:Could not get playlist ID and stream ID", 3)
+	ShowDebug("Streaming:Could not get playlist ID and stream ID", 3)
 	return "", ""
 }
 
@@ -449,44 +452,69 @@ func (sm *StreamManager) GetPlaylistIDandStreamID(stream *Stream) (string, strin
 SendData sends Data to the clients connected to the stream
 With errorChan it reports occuring errors to the StreamManager instance
 */
-func SendData(stream *Stream, errorChan chan ErrorInfo) {
+func (s *Stream) SendData() {
 	var oldSegments []string
 
 	for {
-		tmpFiles := GetBufTmpFiles(stream)
-		for _, f := range tmpFiles {
-			if !CheckBufferFolder(stream) {
-				errorChan <- ErrorInfo{BufferFolderError, stream, ""}
-				return
+		select {
+		case <- s.Ctx.Done():
+			return
+		default:
+			tmpFiles := s.GetBufTmpFiles()
+			for _, f := range tmpFiles {
+				if  ok, err := s.CheckBufferFolder(); !ok {
+					s.ReportError(err, BufferFolderError, "", true)
+					return
+				}
+				oldSegments = append(oldSegments, f)
+				ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
+				s.SendFileToClients(f)
+				if s.GetBufferedSize() > Settings.BufferSize * 1024 {
+					s.DeleteOldestSegment(oldSegments[0])
+					oldSegments = oldSegments[1:]
+				}
 			}
-			oldSegments = append(oldSegments, f)
-			showDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
-			if !SendFileToClients(stream, f, errorChan) {
-				return
+			if len(tmpFiles) == 0 {
+				time.Sleep(5 * time.Millisecond) // This will ensure that streams will synchronize over the time
 			}
-			if len(oldSegments) > 5 {
-				DeleteOldestSegment(stream, oldSegments[0])
-				oldSegments = oldSegments[1:]
-			}
-		}
-		if len(tmpFiles) == 0 {
-			time.Sleep(10 * time.Millisecond) // This will ensure that streams will synchronize over the time
 		}
 	}
+}
+
+func (s *Stream) GetBufferedSize() (size int) {
+	size = 0
+	var tmpFolder = s.Folder + string(os.PathSeparator)
+	if _, err := s.Buffer.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
+
+		files, err := s.Buffer.FileSystem.ReadDir(getPlatformPath(tmpFolder))
+		if err != nil {
+			ShowError(err, 000)
+			return
+		}
+		for _, file := range files {
+			if !file.IsDir() && filepath.Ext(file.Name()) == ".ts" {
+				file_info, err := s.Buffer.FileSystem.Stat(getPlatformFile(tmpFolder + file.Name()))
+				if err == nil {
+					size += int(file_info.Size())
+				}
+			}
+		}
+	}
+	return size
 }
 
 /*
 GetBufTmpFiles retrieves the files within the buffer folder
 and returns a sorted list with the file names
 */
-func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
+func (s *Stream) GetBufTmpFiles() (tmpFiles []string) {
 
-	var tmpFolder = stream.Folder
+	var tmpFolder = s.Folder + string(os.PathSeparator)
 	var fileIDs []float64
 
-	if _, err := bufferVFS.Stat(tmpFolder); !fsIsNotExistErr(err) {
+	if _, err := s.Buffer.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
 
-		files, err := bufferVFS.ReadDir(getPlatformPath(tmpFolder))
+		files, err := s.Buffer.FileSystem.ReadDir(getPlatformPath(tmpFolder))
 		if err != nil {
 			ShowError(err, 000)
 			return
@@ -513,9 +541,9 @@ func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 			for _, file := range fileIDs {
 				fileName := fmt.Sprintf("%.0f.ts", file)
 				// Check if the file is already within old segments array
-				if !ContainsString(stream.OldSegments, fileName) {
+				if !ContainsString(s.OldSegments, fileName) {
 					tmpFiles = append(tmpFiles, fileName)
-					stream.OldSegments = append(stream.OldSegments, fileName)
+					s.OldSegments = append(s.OldSegments, fileName)
 				}
 			}
 		}
@@ -526,9 +554,9 @@ func GetBufTmpFiles(stream *Stream) (tmpFiles []string) {
 /*
 DeleteOldesSegment will delete the file provided in the buffer
 */
-func DeleteOldestSegment(stream *Stream, oldSegment string) {
-	fileToRemove := stream.Folder + oldSegment
-	if err := bufferVFS.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
+func (s *Stream) DeleteOldestSegment(oldSegment string) {
+	fileToRemove := s.Folder + string(os.PathSeparator) + oldSegment
+	if err := s.Buffer.FileSystem.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
 		ShowError(err, 4007)
 	}
 }
@@ -536,42 +564,118 @@ func DeleteOldestSegment(stream *Stream, oldSegment string) {
 /*
 CheckBufferFolder reports whether the buffer folder exists.
 */
-func CheckBufferFolder(stream *Stream) bool {
-	if _, err := bufferVFS.Stat(stream.Folder); fsIsNotExistErr(err) {
-		return false
+func (s *Stream) CheckBufferFolder() (bool, error) {
+	if _, err := s.Buffer.FileSystem.Stat(s.Folder); fsIsNotExistErr(err) {
+		return false, err
 	}
-	return true
+	return true, nil
+}
+
+// CheckBufferedFile check for the existance of the given file (file path is needed)
+func (s *Stream) CheckBufferedFile(file string) (bool, error) {
+	if _, err := s.Buffer.FileSystem.Stat(file); fsIsNotExistErr(err) {
+		return false, err
+	}
+	return true, nil
 }
 
 /*
 SendFileToClients reports whether sending the File to the clients was successful
 It will also use the errorChan to report to the StreamManager if there is an error sending the file to a specifc client
 */
-func SendFileToClients(stream *Stream, fileName string, errorChan chan ErrorInfo) bool {
-	file, err := bufferVFS.Open(stream.Folder + fileName)
+func (s *Stream) SendFileToClients(fileName string) {
+	var filePath string = fmt.Sprint(s.Folder + string(os.PathSeparator) + fileName)
+	if  ok, err := s.CheckBufferedFile(filePath); !ok {
+		s.ReportError(err, 4019, "", false)
+		return
+	}
+	file, err := s.Buffer.FileSystem.Open(filePath)
 	if err != nil {
-		ShowError(err, 4014)
-		return false
+		s.ReportError(err, OpenFileError, "", false)
+		return
 	}
 	defer file.Close()
 	l, err := file.Stat()
 	if err != nil {
-		ShowError(err, 4015)
-		return false
+		s.ReportError(err, FileStatError, "", false)
+		return
 	}
 	buffer := make([]byte, l.Size())
 	if _, err := file.Read(buffer); err != nil {
-		ShowError(err, 4016)
-		return false
+		s.ReportError(err, ReadFileError, "", false)
+		return
 	}
-	for clientID, client := range stream.clients {
-		showDebug(fmt.Sprintf("Streaming:Sending file %s to client %s", fileName, clientID), 3)
+	for clientID, client := range s.Clients {
+		ShowDebug(fmt.Sprintf("Streaming:Sending file %s to client %s", fileName, clientID), 3)
 		if _, err := client.w.Write(buffer); err != nil {
-			showDebug(fmt.Sprintf("Streaming:Error when trying to send file to client %s", clientID), 1)
-			errorChan <- ErrorInfo{SendFileError, stream, clientID}
+			s.ReportError(fmt.Errorf("Streaming:Error when trying to send file to client %s", clientID), SendFileError, clientID, false)
 		}
 	}
-	return true
+}
+
+func (s *Stream) ReportError(err error, errCode int, clientID string, closed bool) {
+	s.ErrorChan <- ErrorInfo{err, errCode, s, clientID, closed}
+}
+
+func (s *Stream) StopStream(streamID string) {
+	for clientID, client := range s.Clients {
+		CloseClientConnection(client.w)
+		delete(s.Clients, clientID)
+		ShowInfo(fmt.Sprintf("Streaming:Client kicked %s, total: %d", streamID, len(s.Clients)))
+		if len(s.Clients) == 0 {
+			s.Cancel() // Tell everyone about the ending of the stream
+			if s.Buffer.IsThirdPartyBuffer {
+				s.Buffer.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+				s.Buffer.Cmd.Wait()
+				DeletPIDfromDisc(fmt.Sprintf("%d", s.Buffer.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
+			} else {
+				close(s.Buffer.StopChan)
+			}
+		}
+	}
+}
+
+func (s *Stream) RemoveClientFromStream(streamID, clientID string) {
+	if client, exists := s.Clients[clientID]; exists {
+		CloseClientConnection(client.w)
+		delete(s.Clients, clientID)
+		ShowInfo(fmt.Sprintf("Streaming:Removed client from %s, total: %d", streamID, len(s.Clients)))
+	}
+}
+
+/*
+UpdateStreamURLForBackup will set the ther stream url when a backup will be used
+*/
+func (s *Stream) UpdateStreamURLForBackup() {
+	switch s.BackupNumber {
+	case 1:
+		s.URL = s.BackupChannel1URL
+		ShowHighlight("START OF BACKUP 1 STREAM")
+		ShowInfo("Backup Channel 1 URL: " + s.URL)
+	case 2:
+		s.URL = s.BackupChannel2URL
+		ShowHighlight("START OF BACKUP 2 STREAM")
+		ShowInfo("Backup Channel 2 URL: " + s.URL)
+	case 3:
+		s.URL = s.BackupChannel3URL
+		ShowHighlight("START OF BACKUP 3 STREAM")
+		ShowInfo("Backup Channel 3 URL: " + s.URL)
+	}
+}
+
+/*
+HandleBufferError will retry running the Buffer function with the next backup number
+*/
+func (s *Stream) handleBufferError(err error) {
+	ShowError(err, 4011)
+	if !s.UseBackup || (s.UseBackup && s.BackupNumber >= 0 && s.BackupNumber <= 3) {
+		s.BackupNumber++
+		if s.BackupChannel1URL != "" || s.BackupChannel2URL != "" || s.BackupChannel3URL != "" {
+			s.UseBackup = true
+			s.UpdateStreamURLForBackup()
+			s.Buffer.StartBuffer(s)
+		}
+	}
 }
 
 /*
@@ -587,7 +691,7 @@ func GetCurrentlyUsedChannels(sm *StreamManager, response *APIResponseStruct) er
 		response.ActiveStreams.Playlists = make(map[string]*PlaylistStruct)
 	}
 	// iterate over the playlists within the StreamManager and extract the data
-	for playlistID, playlist := range sm.playlists {
+	for playlistID, playlist := range sm.Playlists {
 		// create a new ActiveStreams struct if it doesn't exist right now
 		if response.ActiveStreams == nil {
 			response.ActiveStreams = &ActiveStreamsStruct{
@@ -595,7 +699,7 @@ func GetCurrentlyUsedChannels(sm *StreamManager, response *APIResponseStruct) er
 			}
 		}
 		// for every Playlist found Create a new Playlist struct and add it to the map
-		response.ActiveStreams.Playlists[playlistID] = CreatePlaylistStruct(playlist.name, sm.playlists[playlistID].streams)
+		response.ActiveStreams.Playlists[playlistID] = CreatePlaylistStruct(playlist.Name, sm.Playlists[playlistID].Streams)
 	}
 	return nil
 }
@@ -612,8 +716,8 @@ func CreatePlaylistStruct(name string, streams map[string]*Stream) *PlaylistStru
 
 	// Iterate over every stream within the map
 	for _, stream := range streams {
-		*playlist.ActiveChannels = append(*playlist.ActiveChannels, stream.name)
-		playlist.ClientConnections += len(stream.clients)
+		*playlist.ActiveChannels = append(*playlist.ActiveChannels, stream.Name)
+		playlist.ClientConnections += len(stream.Clients)
 	}
 	return playlist
 }

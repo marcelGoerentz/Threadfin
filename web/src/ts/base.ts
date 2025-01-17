@@ -9,14 +9,22 @@ var WS_AVAILABLE = false
 declare var bootstrap: any;
 declare var ClipboardJS: any;
 
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-// new ClipboardJS('.copy-btn');
-var clipboard = new ClipboardJS('.copy-btn');
-clipboard.on('success', function(e) {
-  const tooltip = bootstrap.Tooltip.getInstance(e.trigger);
-  tooltip.setContent({ '.tooltip-inner': 'Copied!' });
+var tooltipTriggerList: NodeListOf<Element>;
+var tooltipList: any[];
 
+const clipboard = new ClipboardJS('.copy-btn');
+clipboard.on('success', function(e) {
+  const tooltip = bootstrap.Tooltip.getInstance(e.trigger as HTMLElement);
+  if (tooltip) {
+    const prevContent = tooltip._config.title;
+    tooltip.setContent({ '.tooltip-inner': 'Copied!' });
+    tooltip.show();
+    setTimeout(() => {
+      tooltip.setContent({ '.tooltip-inner': prevContent });
+    }, 3000);
+  } else {
+    console.error('Tooltip instance not found for element:', e.trigger);
+  }
 });
 clipboard.on('error', function(e) {
   console.log(e);
@@ -48,11 +56,17 @@ menuItems.push(new MainMenuItem("logout", "{{.mainMenu.item.logout}}", "logout.p
 var settingsCategory = new Array()
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.general}}", "ThreadfinAutoUpdate,ssdp,tuner,epgSource,epgCategories,epgCategoriesColors,dummy,dummyChannel,ignoreFilters,api"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.customization}}", "uploadCustomImage"))
+settingsCategory.push(new SettingsCategoryItem("{{.settings.category.webclient}}", "webclient.language"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.files}}", "update,files.update,temp.path,cache.images,omitPorts,xepg.replace.missing.images,xepg.replace.channel.title,enableNonAscii"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.network}}", "bindingIPs,threadfinDomain,useHttps,forceClientHttps,forceHttps"))
-settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}", "buffer,udpxy,buffer.size.kb,storeBufferInRAM,buffer.timeout,user.agent,ffmpeg.path,ffmpeg.options,vlc.path,vlc.options"))
+settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}", "buffer,udpxy,buffer.size.kb,storeBufferInRAM,buffer.timeout,buffer.autoReconnect,user.agent,ffmpeg.path,ffmpeg.options,vlc.path,vlc.options"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.backup}}", "backup.path,backup.keep"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.authentication}}", "authentication.web,authentication.pms,authentication.m3u,authentication.xml,authentication.api"))
+
+var serverInformation: ServerInformationItem[] = new Array()
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.serverInfo}}", "version,errors,warnings"))
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.streamInfo}}", "dvr,m3uUrl,xepgUrl,streams,xepg"))
+serverInformation.push(new ServerInformationItem("{{.serverInfo.header.changeVersion}}", "changeVersion"))
 
 function showElement(elmID, show: boolean) {
   if (elmID == "popupCustom" || elmID == "popup") {
@@ -755,6 +769,28 @@ function updateLog() {
 
 }
 
+// Get the button:
+let backToTop = document.getElementById("backToTop");
+backToTop.setAttribute("title", "{{.button.backToTop}}")
+
+
+// When the user scrolls down 20px from the top of the document, show the button
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+  if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+    backToTop.style.display = "block";
+  } else {
+    backToTop.style.display = "none";
+  }
+}
+
+// When the user clicks on the button, scroll to the top of the document
+function topFunction() {
+  document.body.scrollTop = 0; // For Safari
+  document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+}
+
 
 interface Server {
   clientInfo: clientInfo;
@@ -778,8 +814,8 @@ interface Server {
 
 interface clientInfo {
   arch: string;
-  branch: string;
-  DVR: string;
+  beta: boolean;
+  dvr: string;
   epgSource: string;
   errors: string;
   m3uUrl: string;

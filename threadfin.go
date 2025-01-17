@@ -7,13 +7,17 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+	"time"
 
 	"threadfin/src"
 )
@@ -29,7 +33,7 @@ type GitHubStruct struct {
 
 // GitHub : GitHub Account
 // If you want to fork this project, enter your Github account here. This prevents a newer version of Threadfin from updating your version.
-var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadfin", Update: true}
+var GitHub = GitHubStruct{Branch: "master", User: "marcelGoerentz", Repo: "Threadfin", Update: true}
 
 /*
 	Branch: GitHub Branch
@@ -38,16 +42,16 @@ var GitHub = GitHubStruct{Branch: "Main", User: "marcelGoerentz", Repo: "Threadf
 	Update: Automatic updates from the GitHub repository [true|false]
 */
 
-// Name : Programmname
+// Name : Program name
 const Name = "Threadfin"
 
-// Version : Version, die Build Nummer wird in der main func geparst.
-const Version = "1.7.0"
+// Version : Major, Minor, Patch, Build
+const Version = "1.8.0.0"
 
-// DBVersion : Datanbank Version
+// DBVersion : Database version
 const DBVersion = "0.5.0"
 
-// APIVersion : API Version
+// APIVersion : API version
 const APIVersion = "2.0.0"
 
 var homeDirectory = fmt.Sprintf("%s%s.%s%s", src.GetUserHomeDirectory(), string(os.PathSeparator), strings.ToLower(Name), string(os.PathSeparator))
@@ -56,10 +60,9 @@ var sampleRestore = fmt.Sprintf("%spath%sto%sfile%s", string(os.PathSeparator), 
 
 var configFolder = flag.String("config", "", ": Config Folder        ["+samplePath+"] (default: "+homeDirectory+")")
 var port = flag.Int("port", 34400, ": Server port")
-var useHttps = flag.Bool("useHttps", false , ": Use Https Webserver [place server.crt and server.key in config folder]")
+var useHttps = flag.Bool("useHttps", false, ": Use Https Webserver [place server.crt and server.key in config folder]")
 var restore = flag.String("restore", "", ": Restore from backup  ["+sampleRestore+"threadfin_backup.zip]")
 
-var gitBranch = flag.String("branch", "", ": Git Branch           [main|beta] (default: main)")
 var debug = flag.Int("debug", 0, ": Debug level          [0 - 3] (default: 0)")
 var info = flag.Bool("info", false, ": Show system info")
 var h = flag.Bool("h", false, ": Show help")
@@ -69,17 +72,33 @@ var dev = flag.Bool("dev", false, ": Activates the developer mode, the source co
 
 func main() {
 
-	// Build-Nummer von der Versionsnummer trennen
-	var build = strings.Split(Version, ".")
+	webserver := &src.WebServer{}
+
+	// Handle signals
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGABRT, syscall.SIGTERM, syscall.SIGHUP)
+	go handleSignals(sigs, done, webserver)
+
+	// Split build from version string
+	var versionParts = strings.Split(Version, ".")
 
 	var system = &src.System
 	system.APIVersion = APIVersion
-	system.Branch = strings.ToTitle(GitHub.Branch)
-	system.Build = build[len(build)-1:][0]
+	system.Build = versionParts[len(versionParts)-1:][0]
 	system.DBVersion = DBVersion
 	system.GitHub = GitHub
 	system.Name = Name
-	system.Version = strings.Join(build[0:len(build)-1], ".")
+	system.Version = strings.Join(versionParts[:len(versionParts)-1], ".")
+
+	// Check which version has been build
+	if Beta {
+		system.Beta = true
+		system.Branch = "beta"
+	} else {
+		system.Beta = false
+		system.Branch = "master"
+	}
 
 	// Panic !!!
 	defer func() {
@@ -127,7 +146,7 @@ func main() {
 
 	system.Dev = *dev
 
-	// Systeminformationen anzeigen
+	// Show system information
 	if *info {
 
 		system.Flag.Info = true
@@ -143,45 +162,16 @@ func main() {
 
 	}
 
-	// Webserver Port
+	// Webserver port
 	if *port != 0 {
 		system.Flag.Port = fmt.Sprintf("%d", *port)
 	}
 
-	// Https Webserver
+	// Https webserver
 	system.Flag.UseHttps = *useHttps
 
-
 	// Kill all remaining processes and remove PIDs file
-	tempFolder := os.TempDir() + string(os.PathSeparator) +  strings.ToLower(Name) + string(os.PathSeparator)
-	folders, err := os.ReadDir(tempFolder)
-	if err == nil {
-		for _, folder := range folders {
-			folderName := fmt.Sprintf("%s%s", tempFolder, folder.Name())
-			pids, err := getPIDsFromFile(folderName)
-			if err != nil {
-				fmt.Printf("Error scanning file PIDs: %v", err)
-			} else {
-				if len(pids) > 0 {
-					for _, pid := range pids {
-						err := killProcess(pid)
-						if err != nil {
-							fmt.Printf("Error killing process %s: %v", pid, err)
-						} else {
-							fmt.Printf("Successfully killed process %s", pid)
-						}
-					}
-					os.Remove(folderName + string(os.PathSeparator) + "PIDs")
-				}
-			}
-		}
-	}
-
-	// Branch
-	system.Flag.Branch = *gitBranch
-	if len(system.Flag.Branch) > 0 {
-		fmt.Println("Git Branch is now:", system.Flag.Branch)
-	}
+	killAllProcesses()
 
 	// Debug Level
 	system.Flag.Debug = *debug
@@ -190,12 +180,12 @@ func main() {
 		return
 	}
 
-	// Speicherort für die Konfigurationsdateien
+	// Config folder place
 	if len(*configFolder) > 0 {
 		system.Folder.Config = *configFolder
 	}
 
-	// Backup wiederherstellen
+	// Restore from backup
 	if len(*restore) > 0 {
 
 		system.Flag.Restore = *restore
@@ -210,42 +200,112 @@ func main() {
 		if err != nil {
 			src.ShowError(err, 0)
 		}
-
 		os.Exit(0)
 	}
 
-	err = src.Init()
+	// Initialize threadfin
+	err := src.Init()
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
 
-	err = src.BinaryUpdate()
+	// Update binary
+	err = src.BinaryUpdate(false)
 	if err != nil {
 		src.ShowError(err, 0)
 	}
 
+	// Build the database
 	err = src.StartSystem(false)
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
 
+	// Update playlists and xml files
 	err = src.InitMaintenance()
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
 
-	err = src.StartWebserver()
+	// Start the Webserver
+	err = webserver.StartWebserver()
 	if err != nil {
 		src.ShowError(err, 0)
 		os.Exit(0)
 	}
 
+	// Wait for the Signal to end the program
+	<-done
+	src.ShowInfo("Threadfin:Exiting Threadfin")
 }
 
-func getPIDsFromFile(tempFolder string) ([]string, error){
+/*
+handleSignals should be called in a go routine and will handle incoming system signals
+It will make sure that all running processes will be killed before exiting the program
+*/
+func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer) {
+	for sig := range sigs {
+		switch sig {
+		case syscall.SIGHUP:
+			src.ShowInfo("Threadfin:Updating configuration")
+			continue
+		case syscall.SIGINT, syscall.SIGABRT, syscall.SIGTERM:
+
+			// Lock against reconnection for clients
+			webserver.SM.LockAgainstNewStreams = true
+
+			src.ShowInfo("Threadfin:Stop all streams")
+			// Stop all streams
+			stopAllStreams(webserver)
+
+			src.ShowInfo("Threadfin:Killing all processes")
+			// Kill all processes
+			killAllProcesses()
+
+			// Shutdown the webserver gracefully
+			shutdownWebserver(webserver)
+
+			// Send signal that everything has ended
+			done <- true
+			return
+		default:
+			src.ShowDebug("Threadfin: Uncatched signal!", 1)
+			continue
+		}
+	}
+	time.Sleep(100 * time.Millisecond)
+}
+
+// stopAllStreams will stop all existing streams and buffers
+func stopAllStreams(webserver *src.WebServer) {
+	if webserver != nil {
+		if webserver.SM != nil {
+			webserver.SM.StopAllStreams()
+		}
+	}
+}
+
+/*
+getTempFolder will get the first temp folder within the threadfin temp folder or returns an empty string if there is no folder
+*/
+func getTempFolder() string {
+	tempFolder := os.TempDir() + string(os.PathSeparator) + strings.ToLower(Name) + string(os.PathSeparator)
+	folders, err := os.ReadDir(tempFolder)
+	if err == nil {
+		for _, folder := range folders {
+			return fmt.Sprintf("%s%s", tempFolder, folder.Name())
+		}
+	}
+	return ""
+}
+
+/*
+getPIDsFromFile will open the PIDs file within the given Folder and returns the list of PIDs saved in it
+*/
+func getPIDsFromFile(tempFolder string) ([]string, error) {
 	pids := []string{}
 	// Open the file
 	pidsFile := tempFolder + string(os.PathSeparator) + "PIDs"
@@ -259,7 +319,7 @@ func getPIDsFromFile(tempFolder string) ([]string, error){
 		return nil, err_open
 	}
 	defer file.Close() // Close the file when done
-	
+
 	// Create a scanner
 	scanner := bufio.NewScanner(file)
 
@@ -268,7 +328,7 @@ func getPIDsFromFile(tempFolder string) ([]string, error){
 		line := scanner.Text()
 		pids = append(pids, line)
 	}
-	
+
 	return pids, nil
 }
 
@@ -276,4 +336,30 @@ func getPIDsFromFile(tempFolder string) ([]string, error){
 func killProcess(pid string) error {
 	cmd := exec.Command("kill", "-9", pid)
 	return cmd.Run()
+}
+
+// killAllProcesses kills processes that had been saved in PID
+func killAllProcesses() {
+	tempFolder := getTempFolder()
+	if tempFolder != "" {
+		pids, err := getPIDsFromFile(tempFolder)
+		if err == nil {
+			for _, pid := range pids {
+				src.ShowDebug(fmt.Sprintf("Threadfin:Killing process: %s\n", pid), 1)
+				killProcess(pid)
+			}
+		}
+	}
+}
+
+// shutdownWebserver will stop the webserer
+func shutdownWebserver(webserver *src.WebServer) {
+	if webserver.Server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+		err := webserver.Server.Shutdown(ctx)
+		if err != nil {
+			src.ShowError(err, 0) // TODO: Add error code
+		}
+	}
 }

@@ -60,6 +60,7 @@ func (ic *ImageCache) GetImageURL(url string) (string) {
 	ic.mutex.Unlock()
 
 	if ic.caching {
+		// Create the filename and path to the file
 		filename := createFileNameFromURL(url, key)
 		path_to_file := ic.basePath + filename
 		url_to_file := ic.baseURL + "/images/" + filename
@@ -67,14 +68,12 @@ func (ic *ImageCache) GetImageURL(url string) (string) {
 		// Enqueue the Image for the download
 		ic.EnqueueURL(url, path_to_file)
 
-		// Save file name in cache
 		ic.mutex.Lock()
-		ic.cache[key] = url_to_file
+		ic.cache[key] = url_to_file // Save url to file in cache
 		ic.mutex.Unlock()
 		return url_to_file
 	} else {
-		// Save original url in cache
-		return url
+		return url // Return original url if caching is disabled
 	}
 }
 
@@ -90,8 +89,7 @@ func (ic *ImageCache) DownloadImage(url string, filename string) (error) {
 		// Download the image
 		resp, err := client.Get(url)
 		if err != nil {
-			ic.ErrorHandlingWhenDownloading(url)
-			return errors.New("error when downloading the image")
+			return ic.handleDownloadError(url, "error when downloading the image")
 		}
 		defer resp.Body.Close()
 
@@ -100,41 +98,38 @@ func (ic *ImageCache) DownloadImage(url string, filename string) (error) {
 				url = "https://" + strings.Split(url, "//")[1]
 				resp, err = client.Get(url)
 				if err != nil {
-					ic.ErrorHandlingWhenDownloading(url)
-					return errors.New("error when downloading the image")
+					return ic.handleDownloadError(url, "error when downloading the image")
 				}
 				if resp.StatusCode != http.StatusOK {
-					ic.ErrorHandlingWhenDownloading(url)
-					return errors.New("received bad status code")
+					return ic.handleDownloadError(url, "received bad status code")
 				}
 			} else {
-				ic.ErrorHandlingWhenDownloading(url)
-				return errors.New("received bad status code")
+				return ic.handleDownloadError(url, "received bad status code")
 			}
 		}
 
 		// Save the image to disk
 		file, err := os.Create(filename)
 		if err != nil {
-			ic.ErrorHandlingWhenDownloading(url)
-			return errors.New("unable to create the file")
+			return ic.handleDownloadError(url, "unable to create the file")
 		}
 		defer file.Close()
 
 		_, err = io.Copy(file, resp.Body)
 		if err != nil {
-			ic.ErrorHandlingWhenDownloading(url)
-			return errors.New("can't save the image to the file")
+			os.Remove(filename)
+			return ic.handleDownloadError(url, "can't save the image to the file")
 		}
 		return nil
 	}
 	return nil
 }
 
-func (ic *ImageCache) ErrorHandlingWhenDownloading(url string) {
+func (ic *ImageCache) handleDownloadError(url, message string) error {
 	ic.mutex.Lock()
 	defer ic.mutex.Unlock()
-	ic.cache[url]=url
+	ic.cache[url]=url  // Save original url in cache
+	return errors.New(message)
 }
 
 // Block until downloads have been completed

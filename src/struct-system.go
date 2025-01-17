@@ -14,6 +14,7 @@ type SystemStruct struct {
 	AppName                string
 	ARCH                   string
 	BackgroundProcess      bool
+	Beta                   bool
 	Branch                 string
 	Build                  string
 	Compatibility          string
@@ -50,13 +51,13 @@ type SystemStruct struct {
 	}
 
 	Flag struct {
-		Branch    string
-		Debug     int
-		Info      bool
-		Port      string
-		UseHttps  bool
-		Restore   string
-		SSDP      bool
+		Branch   string
+		Debug    int
+		Info     bool
+		Port     string
+		UseHttps bool
+		Restore  string
+		SSDP     bool
 	}
 
 	Folder struct {
@@ -128,8 +129,8 @@ type AssetsStruct struct {
 // DataStruct : Alle Daten werden hier abgelegt. (Lineup, XMLTV)
 type DataStruct struct {
 	Cache struct {
-		Images   *imgcache.ImageCache
-		PMS         map[string]string
+		Images *imgcache.ImageCache
+		PMS    map[string]string
 
 		StreamingURLS map[string]StreamInfo
 		XMLTV         map[string]XMLTV
@@ -289,7 +290,9 @@ type SettingsStruct struct {
 	Buffer            string   `json:"buffer"`
 	BufferSize        int      `json:"buffer.size.kb"`
 	BufferTimeout     float64  `json:"buffer.timeout"`
+	BufferAutoReconnect bool   `json:"buffer.autoReconnect"`
 	CacheImages       bool     `json:"cache.images"`
+	ChangeVersion     bool     `json:"changeVersion"`
 	EpgSource         string   `json:"epgSource"`
 	FFmpegOptions     string   `json:"ffmpeg.options"`
 	FFmpegPath        string   `json:"ffmpeg.path"`
@@ -307,7 +310,7 @@ type SettingsStruct struct {
 	FilesUpdate               bool                  `json:"files.update"`
 	Filter                    map[int64]interface{} `json:"filter"`
 	Key                       string                `json:"key,omitempty"`
-	Language                  string                `json:"language"`
+	WebClientLanguage         string                `json:"webclient.language"`
 	LogEntriesRAM             int                   `json:"log.entries.ram"`
 	M3U8AdaptiveBandwidthMBPS int                   `json:"m3u8.adaptive.bandwidth.mbps"`
 	MappingFirstChannel       float64               `json:"mapping.first.channel"`

@@ -1,7 +1,8 @@
-* {
+*{
+  /*
   -webkit-appearance: none;
   -moz-appearance: none;
-  -ms-appearance: none;
+  -ms-appearance: none;*/
   font-family: "Arial", sans-serif;
   letter-spacing: 2px;
 }
@@ -71,7 +72,8 @@ h5 {
   font-size: 16px;
   letter-spacing: 1px;
   line-height: 1.2em;
-  margin: 25px 0px 10px 0px;
+  margin: 0px auto;
+  margin-left: 10px;
 }
 
 hr {
@@ -117,8 +119,10 @@ li:hover {
 select {
   cursor: pointer;
   width: calc(100% + 2px);
+  height: auto;
   border: solid 0px #00E6FF;
   border-radius: 0px;
+  box-sizing: border-box;
   outline: none;
   color: #fff;
   padding: 9px 10px;
@@ -133,7 +137,7 @@ select:focus {
 }
 
 input {
-  -webkit-appearance: none;
+  -webkit-appearance: unset;
   margin: 0px;
   padding: 2.5px 10px;
   outline: none;
@@ -182,31 +186,28 @@ input[type=password] {
   padding: 8px 10px;
 }
 
-input[type="checkbox"] {
+input[type=checkbox] {
   border: solid 1px #00E6FF;
   background-color: #333;
   height: 25px;
   width: 25px;
   cursor: pointer;
-  /*
-  -webkit-appearance: checkbox;
-  */
 }
 
-input[type="checkbox"]:checked {
+input[type=checkbox]:checked {
   color: #fff;
-  background-color: #00E6FF;
+  background-color: #00E6FF !important;
   /*display: inline-block;*/
 }
 
-input[type="checkbox"]:before {
+input[type=checkbox]:before {
   position: initial;
   left: 0px;
   margin-left: -4px;
   content: " ";
 }
 
-input[type="checkbox"]:checked:before {
+input[type=checkbox]:checked:before {
   position: initial;
   left: 0px;
   margin-left: -3px;
@@ -214,16 +215,13 @@ input[type="checkbox"]:checked:before {
   color: #000;
 }
 
-input[type="checkbox"].bulk:checked:before {
-  position: relative;
+input[type=checkbox].bulk:checked:before {
+  position: initial;
   left: 0px;
-  top: -11px;
   margin-left: -3px;
   content: "✓";
-  font-size: 1.5em;
   color: #000;
 }
-
 
 input[type=button].cancel {
 
@@ -314,8 +312,6 @@ input[type=button].center {
   margin-bottom: 30px;
 }
 
-.block {}
-
 .none {
   display: none;
 }
@@ -351,8 +347,6 @@ input[type=button].center {
 table {
   width: 100%
 }
-
-.menu-notActive {}
 
 #branch {
   color: red;
@@ -448,19 +442,67 @@ table {
 
 }
 
-.banner {
+.notification {
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  padding: 10px; /* Adjust padding as needed */
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 50%;
-  background-color: #000000;
-  color: #ffffff;
-  padding: 10px;
-  text-align: left;
-  font-size: 16px;
-  display: none;
-  z-index: 99999;
-  margin: auto;
+  bottom: 20px; /* Adjust position as needed */
+  right: 20px; /* Adjust position as needed */
+  z-index: 1000;
+  display: none; /* Initially hidden */
+  width: 300px; /* Adjust width as needed */
+  max-height: calc(80vh - 10px); /* Adjust height as needed */
+  border-radius: 10px; /* Optional: rounded corners */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Optional: add shadow for better visibility */
+}
+
+.notification .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification .content {
+  flex-grow: 1; /* Allow content to grow and take available space */
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+  margin-bottom: 10px; /* Ensure there's a gap to the bottom */
+}
+
+.fa-style {
+  color: #FFF;
+  font-size: 25px;
+}
+
+.fa-style:hover {
+  transform: scale(1.2);
+}
+
+.notificationContent {
+  border-radius: 10px;
+}
+
+.updateNow {
+  margin-bottom: 5px;
+}
+
+#backToTop {
+  display: none; /* Hidden by default */
+  position: fixed; /* Fixed/sticky position */
+  bottom: 50px; /* Place the button at the bottom of the page */
+  right: 50px; /* Place the button 30px from the right */
+  z-index: 99; /* Make sure it does not overlap */
+  border: none; /* Remove borders */
+  outline: none; /* Remove outline */
+  background-color: #000;
+  cursor: pointer; /* Add a mouse pointer on hover */
+  padding: 5px 10px 10px 10px; /* Some padding */
+  border-radius: 5px; /* Rounded corners */
+}
+
+#backToTop:hover {
+  background-color: #00E6FF; /* Add a dark-grey background on hover */
 }
 
 @-webkit-keyframes spin {

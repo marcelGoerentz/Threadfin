@@ -4,80 +4,47 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"net"
+	"os"
 
 	"github.com/avfs/avfs"
-	"github.com/avfs/avfs/vfs/memfs"
-	"github.com/avfs/avfs/vfs/osfs"
 )
 
-/*
-InitBufferVFS will set the bufferVFS variable
-*/
-func InitBufferVFS(virtual bool) {
-
-	if virtual {
-		bufferVFS = memfs.New()
-	} else {
-		bufferVFS = osfs.New()
-	}
-
-}
-
-func StartBuffer(stream *Stream, useBackup bool, backupNumber int, errorChan chan ErrorInfo) *Buffer {
-	if useBackup {
-		UpdateStreamURLForBackup(stream, backupNumber)
-	}
-
-	if err := PrepareBufferFolder(stream.Folder); err != nil {
-		ShowError(err, 4008)
-		HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
-		return nil
+func (b *Buffer) StartBuffer(stream *Stream,) {
+	b.Stream = stream
+	var err error = nil
+	if err = b.PrepareBufferFolder(stream.Folder); err != nil {
+		// If something went wrong when setting up the buffer storage don't run at all
+		stream.ReportError(err, BufferFolderError, "", true)
+		return
 	}
 
 	switch Settings.Buffer {
-		case "ffmpeg", "vlc":
-			if buffer, err := StartThirdPartyBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
-				return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
-			} else {
-				return buffer
-			}
-		case "threadfin":
-			if buffer, err := StartThreadfinBuffer(stream, useBackup, backupNumber, errorChan); err != nil {
-				return HandleBufferError(err, backupNumber, useBackup, stream, errorChan)
-			} else {
-				return buffer
-			}
-		default:
-			return nil
+	case "ffmpeg", "vlc":
+		b.IsThirdPartyBuffer = true
+		err = StartThirdPartyBuffer(stream)
+	case "threadfin":
+		err = StartThreadfinBuffer(stream)
+	default:
+		return
 	}
-}
-
-/*
-HandleBufferError will retry running the Buffer function with the next backup number
-*/
-func HandleBufferError(err error, backupNumber int, useBackup bool, stream *Stream, errorChan chan ErrorInfo) *Buffer {
-	ShowError(err, 4011)
-	if !useBackup || (useBackup && backupNumber >= 0 && backupNumber <= 3) {
-		backupNumber++
-		if stream.BackupChannel1URL != "" || stream.BackupChannel2URL != "" || stream.BackupChannel3URL != "" {
-			return StartBuffer(stream, true, backupNumber, errorChan)
-		}
+	if err != nil {
+		b.Stream.handleBufferError(err)
 	}
-	return nil
 }
 
 /*
 HandleByteOutput save the byte ouptut of the command or http request as files
 */
-func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan ErrorInfo) {
-	bufferSize := Settings.BufferSize * 1024 // Puffergröße in Bytes
+func (b *Buffer) HandleByteOutput(stdOut io.ReadCloser) {
+	TS_PACKAGE_MIN_SIZE := 188
+	bufferSize := Settings.BufferSize * 1024 // in bytes
 	buffer := make([]byte, bufferSize)
 	var fileSize int
 	init := true
-	tmpFolder := stream.Folder
-	tmpSegment := 1
+	tmpFolder := b.Stream.Folder + string(os.PathSeparator)
+	tmpSegment := b.Stream.LatestSegment
 
+	var bufferVFS = b.FileSystem
 	var f avfs.File
 	var err error
 	var tmpFile string
@@ -88,45 +55,46 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
-				ShowError(err, 4010)
-				errorChan <- ErrorInfo{CreateFileError, stream, ""}
+				ShowError(err, CreateFileError)
+				b.Stream.ReportError(err, CreateFileError, "", true)
 				return
 			}
 			init = false
 		}
 		n, err := reader.Read(buffer)
+		if n == 0 && err == nil {
+			continue
+		}
 		if err == io.EOF {
 			f.Close()
-			showDebug("Buffer reached EOF!", 3)
-			errorChan <- ErrorInfo{EndOfFileError, stream, ""}
+			ShowDebug("Buffer reached EOF!", 3)
+			b.Stream.ReportError(err, EndOfFileError, "", true)
 			return
 		}
 		if err != nil {
-			if  _, ok := err.(*net.OpError); !ok || stream.Buffer.isThirdPartyBuffer {
-				ShowError(err, 4012)
-			}
 			f.Close()
-			errorChan <- ErrorInfo{ReadIntoBufferError, stream, ""}
+			bufferVFS.Remove(tmpFile)
+			b.Stream.ReportError(err, ReadIntoBufferError, "", true)
 			return
 		}
 		if _, err := f.Write(buffer[:n]); err != nil {
-			ShowError(err, 4013)
 			f.Close()
-			errorChan <- ErrorInfo{WriteToBufferError, stream, ""}
+			bufferVFS.Remove(tmpFile)
+			b.Stream.ReportError(err, WriteToBufferError, "", true)
 			return
 		}
 		fileSize += n
-		// Prüfen, ob Dateigröße den Puffer überschreitet
-		if fileSize >= bufferSize {
+		// Check if the file size exceeds the threshold
+		if fileSize >= TS_PACKAGE_MIN_SIZE * 1024 {
 			tmpSegment++
 			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
-			// Datei schließen und neue Datei öffnen
+			// Close the current file and create a new one
 			f.Close()
+			b.Stream.LatestSegment = tmpSegment
 			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
-				ShowError(err, 4010)
-				errorChan <- ErrorInfo{CreateFileError, stream, ""}
+				b.Stream.ReportError(err, CreateFileError, "", true)
 				return
 			}
 			fileSize = 0
@@ -135,34 +103,14 @@ func HandleByteOutput(stdOut io.ReadCloser, stream *Stream, errorChan chan Error
 }
 
 /*
-UpdateStreamURLForBackup will set the ther stream url when a backup will be used
-*/
-func UpdateStreamURLForBackup(stream *Stream, backupNumber int) {
-	switch backupNumber {
-	case 1:
-		stream.URL = stream.BackupChannel1URL
-		showHighlight("START OF BACKUP 1 STREAM")
-		showInfo("Backup Channel 1 URL: " + stream.URL)
-	case 2:
-		stream.URL = stream.BackupChannel2URL
-		showHighlight("START OF BACKUP 2 STREAM")
-		showInfo("Backup Channel 2 URL: " + stream.URL)
-	case 3:
-		stream.URL = stream.BackupChannel3URL
-		showHighlight("START OF BACKUP 3 STREAM")
-		showInfo("Backup Channel 3 URL: " + stream.URL)
-	}
-}
-
-/*
 PrepareBufferFolder will clean the buffer folder and check if the folder exists
 */
-func PrepareBufferFolder(folder string) error {
-	if err := bufferVFS.RemoveAll(getPlatformPath(folder)); err != nil {
+func (b *Buffer) PrepareBufferFolder(folder string) error {
+	if err := b.FileSystem.RemoveAll(getPlatformPath(folder)); err != nil {
 		return fmt.Errorf("failed to remove buffer folder: %w", err)
 	}
 
-	if err := checkVFSFolder(folder, bufferVFS); err != nil {
+	if err := checkVFSFolder(folder, b.FileSystem); err != nil {
 		return fmt.Errorf("failed to check buffer folder: %w", err)
 	}
 

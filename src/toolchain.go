@@ -1,7 +1,6 @@
 package src
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
@@ -35,7 +34,7 @@ func checkFolder(path string) (err error) {
 		if err == nil {
 
 			debug = fmt.Sprintf("Create Folder:%s", path)
-			showDebug(debug, 1)
+			ShowDebug(debug, 1)
 
 		} else {
 			return err
@@ -59,26 +58,27 @@ func checkVFSFolder(path string, vfs avfs.VFS) (err error) {
 		// If we are on Windows and the cache location path is NOT on C:\ we need to create the volume it is located on
 		// Failure to do so here will result in a panic error and the stream not playing
 		if Settings.StoreBufferInRAM {
-			vm := vfs.(avfs.VolumeManager)
-			pathIterator := avfs.NewPathIterator(vfs, path)
-			if vfs.OSType() == avfs.OsWindows && pathIterator.VolumeName() != "C:" {
-				vm.VolumeAdd(path)
+			if vfs.OSType() == avfs.OsWindows {
+				vm := vfs.(avfs.VolumeManager)
+				pathIterator := avfs.NewPathIterator(vfs, path)
+				if pathIterator.VolumeName() != "C:" {
+					vm.VolumeAdd(path)
+				}
 			}
 
-			err = vfs.MkdirAll(getPlatformPath(path), 0755)
+			err = vfs.MkdirAll(getPlatformPath(path + string(os.PathSeparator)), 0755)
 			if err == nil {
-
-				debug = fmt.Sprintf("Create virtual filesystem Folder:%s", path)
-				showDebug(debug, 1)
-
+				debug = fmt.Sprintf("Create virtual filesystem Folder: %s", path)
+				ShowDebug(debug, 1)
 			} else {
 				return err
 			}
+
 		} else {
 			err = os.MkdirAll(path, 0755)
 			if err == nil {
 				debug = fmt.Sprintf("Created folder on disk: %s", path)
-				showDebug(debug, 1)
+				ShowDebug(debug, 1)
 			} else {
 				return err
 			}
@@ -165,7 +165,7 @@ func checkFilePermission(dir string) (err error) {
 
 // Ordnerpfad für das laufende OS generieren
 func getPlatformPath(path string) string {
-	return filepath.Dir(path) + string(os.PathSeparator)
+	return filepath.Dir(path)
 }
 
 // Dateipfad für das laufende OS generieren
@@ -249,12 +249,24 @@ func mapToJSON(tmpMap interface{}) string {
 	return string(jsonString)
 }
 
-func jsonToMap(content string) map[string]interface{} {
+func jsonToMap(content string) (tmpMap map[string]interface{}, err error) {
 
-	var tmpMap = make(map[string]interface{})
-	json.Unmarshal([]byte(content), &tmpMap)
+	tmpMap = make(map[string]interface{})
+	err = json.Unmarshal([]byte(content), &tmpMap)
+	return 
+}
 
-	return (tmpMap)
+func loadJSONFileToMap(file string) (tmpMap map[string]interface{}, err error) {
+	f, err := os.Open(getPlatformFile(file))
+	if err == nil {
+		defer f.Close()
+	}
+
+	content, err := io.ReadAll(f)
+	if err == nil {
+		return jsonToMap(string(content))
+	}
+	return
 }
 
 /*
@@ -290,20 +302,6 @@ func saveMapToJSONFile(file string, tmpMap interface{}) error {
 	}
 
 	return nil
-}
-
-func loadJSONFileToMap(file string) (tmpMap map[string]interface{}, err error) {
-	f, err := os.Open(getPlatformFile(file))
-	if err == nil {
-		defer f.Close()
-	}
-
-	content, err := io.ReadAll(f)
-
-	if err == nil {
-		err = json.Unmarshal([]byte(content), &tmpMap)
-	}
-	return
 }
 
 // Binary
@@ -421,14 +419,15 @@ func randomString(n int) string {
 	return string(bytes)
 }
 
-func parseTemplate(content string, tmpMap map[string]interface{}) (result string) {
+func parseTemplate(content string, tmpMap map[string]interface{}) (result string, err error) {
 
 	t := template.Must(template.New("template").Parse(content))
 
-	var tpl bytes.Buffer
+	var tpl strings.Builder
 
-	if err := t.Execute(&tpl, tmpMap); err != nil {
+	if err = t.Execute(&tpl, tmpMap); err != nil {
 		ShowError(err, 0)
+		return
 	}
 	result = tpl.String()
 

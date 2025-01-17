@@ -1,28 +1,38 @@
 package src
 
 import (
+	"context"
 	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"threadfin/src/internal/authentication"
-	"golang.org/x/net/http2"
+
 	"github.com/gorilla/websocket"
+	"golang.org/x/net/http2"
 )
 
 var streamManager = NewStreamManager()
+var webServer *WebServer = nil
 
 // StartWebserver : Startet den Webserver
-func StartWebserver() (err error) {
+func (ws *WebServer) StartWebserver() (err error) {
+
+	webServer = ws
+	addMimeExtensions()
+	ws.SM = streamManager
 
 	var port = Settings.Port
 	var serverMux = http.NewServeMux()
@@ -41,38 +51,43 @@ func StartWebserver() (err error) {
 	serverMux.HandleFunc("/ppv/disable", disablePPV)
 	//serverMux.HandleFunc("/auto/", Auto)
 
+	// Create server structure
+	srv := &http.Server{
+		Addr:    port,
+		Handler: serverMux,
+	}
+
+	ws.Server = srv
+
 	regexIpV4, _ := regexp.Compile(`(?:\d{1,3}\.){3}\d{1,3}`)
 	regexIpV6, _ := regexp.Compile(`(?:[A-Fa-f0-9]{0,4}:){3,7}[a-fA-F0-9]{1,4}`)
 	var customIps []string
 	var customIpsV4 = regexIpV4.FindAllString(Settings.BindingIPs, -1)
 	var customIpsV6 = regexIpV6.FindAllString(Settings.BindingIPs, -1)
 	if customIpsV4 != nil || customIpsV6 != nil {
-		customIps = make([]string, len(customIpsV4) + len(customIpsV6))
+		customIps = make([]string, len(customIpsV4)+len(customIpsV6))
 		copy(customIps, customIpsV4)
 		copy(customIps[len(customIpsV4):], customIpsV6)
 	}
 
 	if customIps != nil {
 		for _, address := range customIps {
-			showInfo("DVR IP:" + address + ":" + Settings.Port)
-			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
+			ShowInfo("DVR IP:" + address + ":" + Settings.Port)
+			ShowHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, address, Settings.Port))
 			if Settings.UseHttps {
 				go func(address string) {
-					srv := &http.Server{
-						Addr:    port,
-						Handler: serverMux,
-					}
 					//activate HTTP2
 					http2.ConfigureServer(srv, &http2.Server{})
 					if err = srv.ListenAndServeTLS(System.Folder.Config+"server.crt", System.Folder.Config+"server.key"); err != nil {
-						ShowError(err, 1001)
+						//ShowError(err, 1001)
 						return
 					}
 				}(address)
 			} else {
 				go func(address string) {
-					if err = http.ListenAndServe(address+":"+port, serverMux); err != nil {
-						ShowError(err, 1001)
+					srv.Addr = address + ":" + port
+					if err = srv.ListenAndServe(); err != nil {
+						//ShowError(err, 1001)
 						return
 					}
 				}(address)
@@ -81,39 +96,63 @@ func StartWebserver() (err error) {
 		}
 	} else {
 		for _, ip := range System.IPAddressesV4 {
-			showInfo("DVR IP:" + ip + ":" + Settings.Port)
-			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+			ShowInfo("DVR IP:" + ip + ":" + Settings.Port)
+			ShowHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 
 		for _, ip := range System.IPAddressesV6 {
-			showInfo("DVR IP:" + ip + ":" + Settings.Port)
-			showHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
+			ShowInfo("DVR IP:" + ip + ":" + Settings.Port)
+			ShowHighlight(fmt.Sprintf("Web Interface:%s://%s:%s/web/", System.ServerProtocol, ip, Settings.Port))
 		}
 		if Settings.UseHttps {
 			go func() {
-				srv := &http.Server{
-					Addr:    port,
-					Handler: serverMux,
-				}
-
 				//activate HTTP2
 				http2.ConfigureServer(srv, &http2.Server{})
 				if err = srv.ListenAndServeTLS(System.Folder.Config+"server.crt", System.Folder.Config+"server.key"); err != nil {
-					ShowError(err, 1001)
+					//ShowError(err, 1001)
 					return
 				}
 			}()
 		} else {
 			go func() {
-				if err = http.ListenAndServe(":"+port, serverMux); err != nil {
-					ShowError(err, 1001)
+				srv.Addr = ":" + port
+				if err = srv.ListenAndServe(); err != nil {
+					//ShowError(err, 1001)
 					return
 				}
 			}()
 		}
 	}
+	return
+}
 
-	select {}
+func (ws *WebServer) restartWebserver() error {
+	for _, playlist := range streamManager.Playlists {
+		for streamID, stream := range playlist.Streams {
+			stream.StopStream(streamID)
+		}
+	}
+	ShutDownWebserver(ws)
+	return ws.StartWebserver()
+
+}
+
+func ShutDownWebserver(ws *WebServer) {
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	err := ws.Server.Shutdown(ctx)
+	if err != nil {
+		ShowError(err, 0) // TODO: Add error code
+	}
+}
+
+func addMimeExtensions() {
+	mime.AddExtensionType(".m3u8", "application/vnc.apple.mpegurl")
+	mime.AddExtensionType(".m3u8", "application/x-mpegURL")
+	mime.AddExtensionType(".m3u", "application/m3u")
+	mime.AddExtensionType(".m3u", "audio/m3u")
+	mime.AddExtensionType(".m3u", "audio/x-m3u")
+	mime.AddExtensionType(".m3u", "audio/x-mp3-playlist")
 }
 
 // Index : Web Server /
@@ -124,7 +163,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	var path = r.URL.Path
 	var debug = fmt.Sprintf("Web Server Request:Path: %s", path)
 
-	showDebug(debug, 2)
+	ShowDebug(debug, 2)
 
 	switch path {
 
@@ -242,36 +281,36 @@ func stream(w http.ResponseWriter, r *http.Request) {
 	switch Settings.Buffer {
 
 	case "-":
-		showInfo(fmt.Sprintf("Buffer:false [%s]", Settings.Buffer))
+		ShowInfo(fmt.Sprintf("Buffer:false [%s]", Settings.Buffer))
 
 	case "threadfin":
 		if strings.Contains(streamInfo.URL, "rtsp://") || strings.Contains(streamInfo.URL, "rtp://") {
 			err = errors.New("RTSP and RTP streams are not supported")
 			ShowError(err, 2004)
 
-			showInfo("Streaming URL:" + streamInfo.URL)
+			ShowInfo("Streaming URL:" + streamInfo.URL)
 			http.Redirect(w, r, streamInfo.URL, http.StatusFound)
 
-			showInfo("Streaming Info:URL was passed to the client")
+			ShowInfo("Streaming Info:URL was passed to the client")
 			return
 		}
 
-		showInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
+		ShowInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
 
 	default:
-		showInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
+		ShowInfo(fmt.Sprintf("Buffer:true [%s]", Settings.Buffer))
 
 	}
 
 	if Settings.Buffer != "-" {
-		showInfo(fmt.Sprintf("Buffer Size:%d KB", Settings.BufferSize))
+		ShowInfo(fmt.Sprintf("Buffer Size:%d KB", Settings.BufferSize))
 	}
 
 	log.Println("Stream Info: ", streamInfo)
 	log.Println("M3U Info: ", Settings.Files.M3U)
 
-	showInfo(fmt.Sprintf("Channel Name:%s", streamInfo.Name))
-	showInfo(fmt.Sprintf("Client User-Agent:%s", r.Header.Get("User-Agent")))
+	ShowInfo(fmt.Sprintf("Channel Name:%s", streamInfo.Name))
+	ShowInfo(fmt.Sprintf("Client User-Agent:%s", r.Header.Get("User-Agent")))
 
 	// Prüfen ob der Buffer verwendet werden soll
 	switch Settings.Buffer {
@@ -293,7 +332,7 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if proxyIP != "" && proxyPort != "" {
-			showInfo("Streaming Info: Streaming through proxy.")
+			ShowInfo("Streaming Info: Streaming through proxy.")
 
 			proxyURL, err := url.Parse(fmt.Sprintf("http://%s:%s", proxyIP, proxyPort))
 			if err != nil {
@@ -325,12 +364,12 @@ func stream(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			showInfo("Streaming URL:" + streamInfo.URL)
+			ShowInfo("Streaming URL:" + streamInfo.URL)
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			http.Redirect(w, r, streamInfo.URL, http.StatusFound)
 
-			showInfo("Streaming Info:URL was passed to the client.")
-			showInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
+			ShowInfo("Streaming Info:URL was passed to the client.")
+			ShowInfo("Streaming Info:Threadfin is no longer involved, the client connects directly to the streaming server.")
 		}
 
 	default:
@@ -347,7 +386,7 @@ func setProtocol(streamInfo *StreamInfo, u *url.URL, err error) {
 		case "https", "rtsp", "rtp":
 			return
 		default:
-			showInfo(fmt.Sprintf("Streaming: Unknown protocol: %s", u.Scheme))
+			ShowInfo(fmt.Sprintf("Streaming: Unknown protocol: %s", u.Scheme))
 		}
 	}
 }
@@ -582,7 +621,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 
 		// Daten schreiben
 		case "saveSettings":
-			showInfo("WEB:Saving settings")
+			ShowInfo("WEB:Saving settings")
 			var authenticationUpdate = Settings.AuthenticationWEB
 			var previousStoreBufferInRAM = Settings.StoreBufferInRAM
 			var previousBindingIPs = Settings.BindingIPs
@@ -597,14 +636,16 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if Settings.StoreBufferInRAM != previousStoreBufferInRAM {
-					InitBufferVFS(Settings.StoreBufferInRAM)
+					streamManager.FileSystem = InitBufferVFS(Settings.StoreBufferInRAM)
 				}
 
 				if Settings.BindingIPs != previousBindingIPs || Settings.UseHttps != previousUseHttps {
-					showInfo("WEB:Restart program since listening IP option has been changed!")
-					os.Exit(0)
+					ShowInfo("WEB:Restart program since listening IP option has been changed!")
+					err := webServer.restartWebserver()
+					if err != nil {
+						ShowError(err, 0)
+					}
 				}
-
 			}
 
 		case "saveFilesM3U":
@@ -705,7 +746,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 						response.Alert = "Backup was successfully restored."
 						response.Reload = true
 					}
-					showInfo("Threadfin:" + "Backup successfully restored.")
+					ShowInfo("Threadfin:" + "Backup successfully restored.")
 				}
 
 			}
@@ -732,8 +773,15 @@ func WS(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					ShowError(err, 1017)
 				}
-				showDebug("Sucessfully uploaded custom image", 1)
+				ShowDebug("Sucessfully uploaded custom image", 1)
 			}
+
+		case "changeVersion":
+			System.Beta = !System.Beta // Toggle Beta
+			BinaryUpdate(true)
+
+		case "updateThreadfin":
+			BinaryUpdate(true)
 
 		case "saveWizard":
 			nextStep, errNew := saveWizard(request)
@@ -830,36 +878,45 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	var lang = make(map[string]interface{})
 	var err error
 
-	var requestFile = strings.Replace(r.URL.Path, "/web", "html", -1)
+	var requestFile = strings.Replace(r.URL.Path, "/web", "web/public", 1)
+	var webBasePath = "web/public/"
 	var content, contentType, file string
 
 	var language LanguageUI
 
 	if System.Dev {
 
-		lang, err = loadJSONFileToMap(fmt.Sprintf("html/lang/%s.json", Settings.Language))
+		lang, err = loadJSONFileToMap(fmt.Sprintf("%slang/%s.json", webBasePath, Settings.WebClientLanguage))
 		if err != nil {
 			ShowError(err, 000)
 		}
 
 	} else {
 
-		var languageFile = "html/lang/en.json"
+		var languageFile = fmt.Sprintf("%slang/%s.json", webBasePath, Settings.WebClientLanguage)
 
 		if value, ok := webUI[languageFile].(string); ok {
 			content = string(GetHTMLString(value))
-			lang = jsonToMap(content)
+			lang, err = jsonToMap(content)
 		}
+	}
 
+	if err !=  nil {
+		ShowError(err, 0 ) //TODO: Define error code
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	err = json.Unmarshal([]byte(mapToJSON(lang)), &language)
 	if err != nil {
 		ShowError(err, 000)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if getFilenameFromPath(requestFile) == "html" {
+	basePath := getFilenameFromPath(requestFile)
+
+	if basePath == "public" {
 
 		switch System.ConfigurationWizard {
 
@@ -999,7 +1056,13 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 
 	if contentType == "text/html" || contentType == "application/javascript" {
-		content = parseTemplate(content, lang)
+		if ContainsString(strings.Split(requestFile, "/"), "index.html") {
+			content = strings.Replace(content, "en", Settings.WebClientLanguage, 1)
+		}
+		parsed_content, err := parseTemplate(content, lang)
+		if err == nil {
+			content = parsed_content
+		}
 	}
 
 	w.Write([]byte(content))
@@ -1171,7 +1234,7 @@ func populateStatusResponse(response *APIResponseStruct) {
 func populateSystemInfo() *SystemInfoStruct {
 	var systemInfo SystemInfoStruct
 	systemInfo.APIVersion = System.APIVersion
-	systemInfo.ThreadfinVersion = System.Version
+	systemInfo.ThreadfinVersion = System.Version + "(" + System.Build + ")"
 	systemInfo.EpgSource = Settings.EpgSource
 	systemInfo.SystemURLs = populateSystemURLs()
 	systemInfo.ChannelInfo = populateChannelInfo()
@@ -1249,17 +1312,8 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 	defaults.ClientInfo.SystemIPs = System.IPAddressesList
 	defaults.Notification = System.Notification
 	defaults.Log = WebScreenLog
-
-	switch System.Branch {
-
-	case "master":
-		defaults.ClientInfo.Version = System.Version
-
-	default:
-		defaults.ClientInfo.Version = fmt.Sprintf("%s (%s)", System.Version, System.Build)
-		defaults.ClientInfo.Branch = System.Branch
-
-	}
+	defaults.ClientInfo.Version = System.Version + " (" + System.Build + ")"
+	defaults.ClientInfo.Beta = System.Beta
 
 	if data {
 
@@ -1369,35 +1423,34 @@ func httpStatusError(w http.ResponseWriter, httpStatusCode int) {
 	http.Error(w, fmt.Sprintf("%s [%d]", http.StatusText(httpStatusCode), httpStatusCode), httpStatusCode)
 }
 
-func getContentType(filename string) (contentType string) {
-
-	if strings.HasSuffix(filename, ".html") {
-		contentType = "text/html"
-	} else if strings.HasSuffix(filename, ".css") {
-		contentType = "text/css"
-	} else if strings.HasSuffix(filename, ".js") {
-		contentType = "application/javascript"
-	} else if strings.HasSuffix(filename, ".png") {
-		contentType = "image/png"
-	} else if strings.HasSuffix(filename, ".jpg") {
-		contentType = "image/jpeg"
-	} else if strings.HasSuffix(filename, ".gif") {
-		contentType = "image/gif"
-	} else if strings.HasSuffix(filename, ".svg") {
-		contentType = "image/svg+xml"
-	} else if strings.HasSuffix(filename, ".mp4") {
-		contentType = "video/mp4"
-	} else if strings.HasSuffix(filename, ".webm") {
-		contentType = "video/webm"
-	} else if strings.HasSuffix(filename, ".ogg") {
-		contentType = "video/ogg"
-	} else if strings.HasSuffix(filename, ".mp3") {
-		contentType = "audio/mp3"
-	} else if strings.HasSuffix(filename, ".wav") {
-		contentType = "audio/wav"
-	} else {
-		contentType = "text/plain"
+func getContentType(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	switch ext {
+	case ".html":
+		return "text/html"
+	case ".css":
+		return "text/css"
+	case ".js":
+		return "application/javascript"
+	case ".png":
+		return "image/png"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".gif":
+		return "image/gif"
+	case ".svg":
+		return "image/svg+xml"
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".ogg":
+		return "video/ogg"
+	case ".mp3":
+		return "audio/mp3"
+	case ".wav":
+		return "audio/wav"
+	default:
+		return "text/plain"
 	}
-
-	return
 }

@@ -3,29 +3,45 @@ on:
   push:
     branches:
       - beta
-    paths: 
-      - 'threadfin.go'
-permissions:
-  contents: write
+
 jobs:
   buildBinaries:
     name: Build and release binaries
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.set-build-number.outputs.new_version }}
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
         with:
           ref: beta
 
-      - name: Delete release and Tag
-        run: gh release --cleanup-tag --yes delete latest-beta
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set build number
+        id: set-build-number
+        run: |
+          bash ${GITHUB_WORKSPACE}/Utility/set_build_number.sh ${{ vars.BUILD_NUMBER }}
+
+      - name: Update repo variable
+        run: |
+          bash ${GITHUB_WORKSPACE}/Utility/update_build_number_variable.sh ${{ secrets.API_TOKEN }} ${{ github.repository }} ${{ env.NEW_BUILD }}
+
+      - name: Build webUI
+        run: |
+          tsc -p  ${GITHUB_WORKSPACE}/web/tsconfig.json
+          python  ${GITHUB_WORKSPACE}/Utility/create_new_webUI.py
+
+      - name: Upload webUI as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webUI-artifact
+          path: ./src/webUI.go
 
       - name: Set up and Build
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.23
         id: go
 
       - name: Build binaries
@@ -38,16 +54,27 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          name: Latest Devolopment Build (Beta)
-          tag_name: latest-beta
+          name: v${{ env.NEW_VERSION }} (Beta)
+          tag_name: v${{ env.NEW_VERSION }}-beta
           files: dist/*
   
   buildDockerImages:
     name: Build and push Docker images
     runs-on: ubuntu-latest
+    needs: buildBinaries
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set NEW_VERSION
+        run: echo "NEW_VERSION=${{ needs.buildBinaries.outputs.new_version }}" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Download webUI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webUI-artifact
+          path: ./src
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -59,12 +86,15 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Build and Push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
-          build-args: BRANCH=beta
+          build-args: |
+            BUILD_FLAG=beta
+            VERSION=${{ env.NEW_VERSION }}
           push: true
           no-cache: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v8
           tags: |
-            mgoerentz/threadfin:${{  github.ref_name }}
+            mgoerentz/threadfin:latest-beta
+            mgoerentz/threadfin:v${{ env.NEW_VERSION }}-beta

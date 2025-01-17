@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Threadfin</title>
+  <!-- font-awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/screen.css" type="text/css">
+  <link rel="stylesheet" href="css/base.css" type="text/css">
+  <link rel="icon" href="img/threadfin.ico">
+</head>
+
+<body onload="javascript: PageReady();">
+
+  <div id="loading" class="modal fade">
+    <div class="modal-dialog loader"></div>
+  </div>
+
+  <div id="popup" class="modal fade">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content" id="popupModalContent">
+        <div class="modal-header" id="popupHeader"></div>
+          <div class="modal-body" id="popupBody">
+            <div class="container-fluid" id="popupBodyContainer">
+              <div class="row" id="popupRow">
+                <div id="popupCustom">
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="server_information"></div>
+  
+  <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-black">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/web" title="logo">
+        <span id="logo"></span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0" id="main-menu">
+        </ul>
+        <ul>
+          <li class="nav-link" data-bs-toggle="modal" data-bs-target="#server_information" id="server_information_button"><i class="fas fa-info-circle"></i> Server Information</li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="container-flex">
+    <div class="row">
+      <div class="col-md-12 col-sm-12">
+        <div id="content" class="table-responsive"></div>
+      </div>
+    </div>
+    <div class="row" id="myStreamsBox">
+      <div class="col-md-5 col-sm-12 table-responsive float-start">
+        <table class="table table-dark table-bordered caption-top" id="activeStreams"></table>
+      </div>
+      <div class="col-md-5 col-sm-12 table-responsive float-end">
+        <table class="table table-dark table-bordered caption-top" id="inactiveStreams"></table>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification_containter" class="notification">
+    <div class="content">
+      <div class="header d-flex justify-content-between align-items-center">
+        <h5 class="title" id="notification_title"></h5>
+        <button type="button" class="btn-close btn-close-white" id="closeNotification"></button>
+      </div>
+      <div class="modal-body notificationContent">
+          <p id="notification_text"></p>
+          <input type="button" class="updateNow" id="updateNowButton">
+      </div>
+    </div>
+  </div>
+
+  <button type="button" onclick="topFunction()" id="backToTop">
+    <img src="icons/chevron-double-up.svg" alt="Go to top">
+  </button>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script language="javascript" type="text/javascript" src="js/server_information.js"></script>
+  <script language="javascript" type="text/javascript" src="js/network.js"></script>
+  <script language="javascript" type="text/javascript" src="js/option_dialogue.js"></script>
+  <script language="javascript" type="text/javascript" src="js/menu.js"></script>
+  <script language="javascript" type="text/javascript" src="js/settings.js"></script>
+  <script language="javascript" type="text/javascript" src="js/logs.js"></script>
+  <script language="javascript" type="text/javascript" src="js/base.js"></script>
+  <script language="javascript" type="text/javascript" src="js/version_check.js"></script>
+
+</body></html>

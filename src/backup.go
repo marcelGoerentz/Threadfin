@@ -22,7 +22,7 @@ func ThreadfinAutoBackup() (err error) {
 		System.Folder.Backup = Settings.BackupPath
 	}
 
-	showInfo("Backup Path:" + System.Folder.Backup)
+	ShowInfo("Backup Path:" + System.Folder.Backup)
 
 	err = checkFolder(System.Folder.Backup)
 	if err != nil {
@@ -56,7 +56,7 @@ func ThreadfinAutoBackup() (err error) {
 
 			os.RemoveAll(System.Folder.Backup + oldBackupFiles[i])
 			debug = fmt.Sprintf("Delete backup file:%s", oldBackupFiles[i])
-			showDebug(debug, 1)
+			ShowDebug(debug, 1)
 
 		}
 
@@ -84,9 +84,9 @@ func ThreadfinAutoBackup() (err error) {
 	if err == nil {
 
 		debug = fmt.Sprintf("Create backup file:%s", target)
-		showDebug(debug, 1)
+		ShowDebug(debug, 1)
 
-		showInfo("Backup file:" + target)
+		ShowInfo("Backup file:" + target)
 
 	}
 
@@ -223,9 +223,9 @@ func ThreadfinRestoreFromCLI(archive string) (err error) {
 	var confirm string
 
 	println()
-	showInfo(fmt.Sprintf("Version:%s Build: %s", System.Version, System.Build))
-	showInfo(fmt.Sprintf("Backup File:%s", archive))
-	showInfo(fmt.Sprintf("System Folder:%s", getPlatformPath(System.Folder.Config)))
+	ShowInfo(fmt.Sprintf("Version:%s Build: %s", System.Version, System.Build))
+	ShowInfo(fmt.Sprintf("Backup File:%s", archive))
+	ShowInfo(fmt.Sprintf("System Folder:%s", getPlatformPath(System.Folder.Config)))
 	println()
 
 	fmt.Print("All data will be replaced with those from the backup. Should the files be restored? [yes|no]:")
@@ -258,7 +258,7 @@ func ThreadfinRestoreFromCLI(archive string) (err error) {
 			return
 		}
 
-		showHighlight(fmt.Sprintf("Restor:Backup was successfully restored. %s can now be started normally", System.Name))
+		ShowHighlight(fmt.Sprintf("Restor:Backup was successfully restored. %s can now be started normally", System.Name))
 
 	}
 	return

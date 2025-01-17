@@ -1,5 +1,12 @@
 package src
 
+import "net/http"
+
+type WebServer struct {
+	Server *http.Server
+	SM     *StreamManager
+}
+
 // RequestStruct : Anfragen über die Websocket Schnittstelle
 type RequestStruct struct {
 	// Befehle an Threadfin
@@ -29,6 +36,7 @@ type RequestStruct struct {
 		Buffer                   *string   `json:"buffer,omitempty"`
 		BufferSize               *int      `json:"buffer.size.kb,omitempty"`
 		BufferTimeout            *float64  `json:"buffer.timeout,omitempty"`
+		BufferAutoReconnect		 *bool	   `json:"buffer.autoReconnect,omitempty"`
 		CacheImages              *bool     `json:"cache.images,omitempty"`
 		EpgSource                *string   `json:"epgSource,omitempty"`
 		FFmpegOptions            *string   `json:"ffmpeg.options,omitempty"`
@@ -59,6 +67,7 @@ type RequestStruct struct {
 		Dummy                    *bool     `json:"dummy,omitempty"`
 		DummyChannel             *string   `json:"dummyChannel,omitempty"`
 		IgnoreFilters            *bool     `json:"ignoreFilters,omitempty"`
+		WebClientLanguage        *string   `json:"webclient.language,omitempty"`
 	} `json:"settings,omitempty"`
 
 	// Upload Logo
@@ -86,20 +95,20 @@ type RequestStruct struct {
 // ResponseStruct : Antworten an den Client (WEB)
 type ResponseStruct struct {
 	ClientInfo struct {
-		ARCH           string   `json:"arch"`
-		Branch         string   `json:"branch,omitempty"`
-		DVR            string   `json:"DVR"`
-		EpgSource      string   `json:"epgSource"`
-		Errors         int      `json:"errors"`
-		M3U            string   `json:"m3u-url"`
-		OS             string   `json:"os"`
-		Streams        string   `json:"streams"`
-		SystemIPs	   []string `json:"systemIPs"`
-		UUID           string   `json:"uuid"`
-		Version        string   `json:"version"`
-		Warnings       int      `json:"warnings"`
-		XEPGCount      int64    `json:"xepg"`
-		XML            string   `json:"xepg-url"`
+		ARCH      string   `json:"arch"`
+		Beta      bool     `json:"beta,omitempty"`
+		DVR       string   `json:"dvr"`
+		EpgSource string   `json:"epgSource"`
+		Errors    int      `json:"errors"`
+		M3U       string   `json:"m3uUrl"`
+		OS        string   `json:"os"`
+		Streams   string   `json:"streams"`
+		SystemIPs []string `json:"systemIPs"`
+		UUID      string   `json:"uuid"`
+		Version   string   `json:"version"`
+		Warnings  int      `json:"warnings"`
+		XEPGCount int64    `json:"xepg"`
+		XML       string   `json:"xepgUrl"`
 	} `json:"clientInfo,omitempty"`
 
 	Data struct {
@@ -146,10 +155,10 @@ type APIRequestStruct struct {
 
 // APIResponseStruct : Antwort an den Client (API)
 type APIResponseStruct struct {
-	Error      string                 `json:"error,omitempty"`
+	Error         string               `json:"error,omitempty"`
 	SystemInfo    *SystemInfoStruct    `json:"systemInfo,omitempty"`
 	ActiveStreams *ActiveStreamsStruct `json:"activeStreams,omitempty"`
-	Token      string                 `json:"token,omitempty"`
+	Token         string               `json:"token,omitempty"`
 }
 
 type ActiveStreamsStruct struct {
@@ -157,15 +166,15 @@ type ActiveStreamsStruct struct {
 }
 
 type PlaylistStruct struct {
-	PlaylistName string `json:"playlistName"`
-	ActiveChannels *[]string `json:"activeChannels"`
-	ClientConnections int `json:"clienConnections"`
+	PlaylistName      string    `json:"playlistName"`
+	ActiveChannels    *[]string `json:"activeChannels"`
+	ClientConnections int       `json:"clienConnections"`
 }
 
 type SystemInfoStruct struct {
 	ThreadfinVersion string            `json:"appVersion"`
 	APIVersion       string            `json:"apiVersion"`
-	EpgSource		 string            `json:"epgSource"`
+	EpgSource        string            `json:"epgSource"`
 	SystemURLs       SystemURLsStruct  `json:"systemURLs"`
 	ChannelInfo      ChannelInfoStruct `json:"channelInfo"`
 }
@@ -173,7 +182,7 @@ type SystemInfoStruct struct {
 type SystemURLsStruct struct {
 	DVR  string `json:"dvr"`
 	M3U  string `json:"m3u"`
-    XEPG string `json:"xepg"`
+	XEPG string `json:"xepg"`
 }
 
 type ChannelInfoStruct struct {
@@ -190,9 +199,8 @@ type WebScreenLogStruct struct {
 }
 
 type BufferInfoStruct struct {
-	Name string
-	Path string
+	Name       string
+	Path       string
 	PlaylistID string
-	URL string
-	
+	URL        string
 }
