@@ -16,7 +16,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
         with:
-          ref: maser
+          ref: master
 
       - name: Set build number
         id: set-build-number
