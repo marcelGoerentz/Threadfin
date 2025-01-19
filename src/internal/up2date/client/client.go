@@ -237,7 +237,7 @@ func (c *ClientInfo) DoUpdateNew() error {
     }
 
 	// Backup the old executable
-	backupPath := exePath + ".old"
+	backupPath := os.TempDir() + string(os.PathSeparator) + c.Filename + ".old"
 	_ = os.Remove(backupPath)
 
 	// Move the existing executable
@@ -277,11 +277,10 @@ func shutdownWebserver(server *http.Server) error {
 }
 
 func restartApplication(exePath string, args []string, env []string) error {
-	
 
     cmd := exec.Command(exePath, args[1:]...) // Pass all arguments except the first one (which is the executable path)
     cmd.Env = env
-    err := cmd.Start()
+    err := cmd.Start() // Start the new executable
     if err != nil {
         return err
 	}
@@ -291,11 +290,10 @@ func restartApplication(exePath string, args []string, env []string) error {
 		var pid = os.Getpid()
 		var process, _ = os.FindProcess(pid)
 
-		process.Kill() // Kill this application
+		process.Kill() // Kill this instance of the application
 		process.Wait()
-
 	} else {
-		os.Exit(0) // Stop this application 
+		os.Exit(0) // Stop this instance of the application 
 	}
     return nil
 }

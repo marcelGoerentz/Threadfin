@@ -253,19 +253,7 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 			continue
 		case syscall.SIGINT, syscall.SIGABRT, syscall.SIGTERM:
 
-			// Lock against reconnection for clients
-			webserver.SM.LockAgainstNewStreams = true
-
-			src.ShowInfo("Threadfin:Stop all streams")
-			// Stop all streams
-			stopAllStreams(webserver)
-
-			src.ShowInfo("Threadfin:Killing all processes")
-			// Kill all processes
-			killAllProcesses()
-
-			// Shutdown the webserver gracefully
-			shutdownWebserver(webserver)
+			CloseWebserverGracefully(webserver)
 
 			// Send signal that everything has ended
 			done <- true
@@ -276,6 +264,23 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
+}
+
+//
+func CloseWebserverGracefully(webserver *src.WebServer){
+	// Lock against reconnection for clients
+	webserver.SM.LockAgainstNewStreams = true
+
+	src.ShowInfo("Threadfin:Stop all streams")
+	// Stop all streams
+	stopAllStreams(webserver)
+
+	src.ShowInfo("Threadfin:Killing all processes")
+	// Kill all processes
+	killAllProcesses()
+
+	// Shutdown the webserver gracefully
+	shutdownWebserver(webserver)
 }
 
 // stopAllStreams will stop all existing streams and buffers
