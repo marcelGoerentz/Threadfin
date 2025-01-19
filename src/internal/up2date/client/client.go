@@ -1,6 +1,7 @@
 package up2date
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -30,6 +31,8 @@ type ClientInfo struct {
 	SHA256DownloadURL string `json:"sha256DownloadURL,omitempty"`
 
 	Response ServerResponse `json:"response,omitempty"`
+
+	Server *http.Server
 }
 
 // ServerResponse : Response from server after client request
@@ -250,20 +253,50 @@ func (c *ClientInfo) DoUpdateNew() error {
 		return err
 	}
 
+	// Stop the webserver
+	if err = shutdownWebserver(c.Server); err != nil {
+		return err
+	}
+
 	// Restart the application
 	restartApplication(exePath, os.Args, os.Environ())
 
 	return nil
 }
 
+func shutdownWebserver(server *http.Server) error {
+	if server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+		err := server.Shutdown(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func restartApplication(exePath string, args []string, env []string) error {
+	
+
     cmd := exec.Command(exePath, args[1:]...) // Pass all arguments except the first one (which is the executable path)
     cmd.Env = env
     err := cmd.Start()
     if err != nil {
         return err
 	}
-    os.Exit(0)
+
+	if runtime.GOOS == "windows" {
+
+		var pid = os.Getpid()
+		var process, _ = os.FindProcess(pid)
+
+		process.Kill() // Kill this application
+		process.Wait()
+
+	} else {
+		os.Exit(0) // Stop this application 
+	}
     return nil
 }
 
