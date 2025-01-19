@@ -12,6 +12,7 @@ for os in "${os_list[@]}"; do
             bin_string="${bin_string}_beta"
         fi
         bin_string="${bin_string}_${os}_${arch}"
+        sha_string="${bin_string}"
         if [ "$os" = "windows" ]; then 
             bin_string="${bin_string}.exe"
         fi
@@ -21,5 +22,7 @@ for os in "${os_list[@]}"; do
         else
             go build -o "dist/${bin_string}"
         fi
+        echo "Calculating sha256 for ${bin_string}"
+        sha256sum "dist/${bin_string}" > "dist/${sha_string}.sha256"
     done
 done
