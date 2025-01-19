@@ -2,7 +2,7 @@ package src
 
 import (
 	"fmt"
-	up2date "threadfin/src/internal/up2date/client"
+	updater "threadfin/src/internal/updater"
 )
 
 // BinaryUpdate : Binary Update Prozess. Git Branch master und beta wird von GitHub geladen.
@@ -20,7 +20,7 @@ func BinaryUpdate(forceUpdate bool) bool {
 		}
 	}
 
-	var updater = up2date.Init(System.Branch, System.Update.Name, System.Update.Git)
+	var updater = updater.Init(System.Branch, System.Update.Name, System.Update.Git)
 
 	if System.Beta {
 		updater.Branch = "beta"
