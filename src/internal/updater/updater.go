@@ -59,12 +59,6 @@ type AssetsStruct struct {
 	ContentType string `json:"content_type"`
 }
 
-// Updater : Client infos
-var Updater ClientInfo
-
-// UpdateURL : URL for the new binary
-var UpdateURL string
-
 // Init : Init
 func Init(branch, name, url string) *ClientInfo {
 	return &ClientInfo{
@@ -99,7 +93,9 @@ func (c *ClientInfo) GetBinaryDownloadURL(releasesURL string) error {
 	if c.Branch == "beta" {
 		for _, release := range git {
 			if release.Prerelease {
-				c.Response.Version = release.TagName
+				if c.Response.Version == "" {
+					c.Response.Version = release.TagName
+				}
 				c.Response.Assets = append(c.Response.Assets, release.Assets...)
 			}
 		}
@@ -109,7 +105,9 @@ func (c *ClientInfo) GetBinaryDownloadURL(releasesURL string) error {
 	if c.Branch == "master" {
 		for _, release := range git {
 			if !release.Prerelease {
-				c.Response.Version = release.TagName
+				if c.Response.Version == "" {
+					c.Response.Version = release.TagName
+				}
 				c.Response.Assets = append(c.Response.Assets, release.Assets...)
 			}
 		}
@@ -127,7 +125,6 @@ func (c *ClientInfo) GetBinaryDownloadURL(releasesURL string) error {
 				c.BinaryDownloadURL = asset.DownloadUrl
 				foundBinaryURL = true
 			}
-			foundSHA256URL = true
 			if foundBinaryURL && foundSHA256URL {
 				c.Filename = asset.Name
 				c.Response.Status = true
@@ -213,6 +210,11 @@ func (c *ClientInfo) DoUpdateNew() error {
 
 	if err := c.verifyChecksum(tmpBinary.Name()); err != nil {
 		os.Remove(tmpBinary.Name())
+		return err
+	}
+
+	// Check the signature
+	if ok, err := checkSignature(tmpBinary.Name()); !ok {
 		return err
 	}
 
@@ -318,7 +320,7 @@ func copyFile(src, dst string) error {
 func (c *ClientInfo) verifyChecksum(filePath string) error {
 	// Download the expected checksum
 	if c.SHA256DownloadURL == "" {
-		return nil
+		return fmt.Errorf("no URL for the checksum")
 	}
 	resp, err := http.Get(c.SHA256DownloadURL)
 	if err != nil {
