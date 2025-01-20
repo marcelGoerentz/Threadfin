@@ -3,21 +3,19 @@ package src
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"sort"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/avfs/avfs"
 	"github.com/avfs/avfs/vfs/memfs"
 	"github.com/avfs/avfs/vfs/osfs"
+	"github.com/google/uuid"
 )
 
 /*
@@ -25,9 +23,9 @@ NewStreamManager creates and returns a new StreamManager struct and will check p
 */
 func NewStreamManager() *StreamManager {
 	sm := &StreamManager{
-		Playlists: map[string]*Playlist{},
-		errorChan: make(chan ErrorInfo),
-		stopChan:  make(chan bool),
+		Playlists:  map[string]*Playlist{},
+		errorChan:  make(chan ErrorInfo),
+		stopChan:   make(chan bool),
 		FileSystem: nil,
 	}
 
@@ -50,7 +48,7 @@ func NewStreamManager() *StreamManager {
 					// Buffer disconnect error
 					clients := stream.Clients
 					if len(clients) > 0 && errorInfo.BufferClosed {
-						if stream.DoAutoReconnect  && stream.Buffer.IsThirdPartyBuffer {
+						if stream.DoAutoReconnect && stream.Buffer.IsThirdPartyBuffer {
 							stream.Buffer.StartBuffer(stream)
 						} else {
 							stream.StopStream(streamID)
@@ -138,7 +136,7 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid
 	stream := &Stream{
 		Name:              streamInfo.Name,
-		Buffer:            &Buffer{Config: &BufferConfig{}, FileSystem: fileSystem},
+		Buffer:            &StreamBuffer{Config: &BufferConfig{}, FileSystem: fileSystem},
 		ErrorChan:         errorChan,
 		Ctx:               ctx,
 		Cancel:            cancel,
@@ -153,9 +151,8 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 		DoAutoReconnect:   Settings.BufferAutoReconnect,
 	}
 	stream.Buffer.StartBuffer(stream)
-	if stream.Buffer == nil {
-		return nil
-	}
+	go stream.Buffer.writeToPipes()
+	go stream.Buffer.findBufferedFiles()
 	return stream
 }
 
@@ -348,7 +345,7 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 					} else {
 						close(stream.Buffer.StopChan)
 					}
-					
+
 					ShowInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
 					var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)
 					ShowDebug(debug, 1)
@@ -415,19 +412,18 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 	}
 	defer sm.StopStream(playlistID, streamInfo.URLid, clientID)
 
+	pipeReader, pipeWriter := io.Pipe()
 	// Add a new client to the client map
 	client := &Client{
 		r: r,
 		w: w,
+		pipeWriter: pipeWriter,
+		pipeReader: pipeReader,
 	}
 	stream := sm.Playlists[playlistID].Streams[streamInfo.URLid]
 	stream.Clients[clientID] = *client
 
-	// If it was the first client start t
-	if len(stream.Clients) == 1 {
-		// Send Data to the clients, this should run only once per stream
-		go stream.SendData()
-	}
+	go stream.sendDataToClient(clientID, client)
 
 	// Wait for the client context to get closed
 	<-r.Context().Done()
@@ -448,167 +444,20 @@ func (sm *StreamManager) GetPlaylistIDandStreamID(stream *Stream) (string, strin
 	return "", ""
 }
 
-/*
-SendData sends Data to the clients connected to the stream
-With errorChan it reports occuring errors to the StreamManager instance
-*/
-func (s *Stream) SendData() {
-	var oldSegments []string
-
+func (s * Stream) sendDataToClient(clientID string, client *Client) {
+	defer client.pipeReader.Close() // Ensure the pipe reader is closed when the function exits
+	buffer := make([]byte, 4096)
 	for {
-		select {
-		case <- s.Ctx.Done():
-			return
-		default:
-			tmpFiles := s.GetBufTmpFiles()
-			for _, f := range tmpFiles {
-				if  ok, err := s.CheckBufferFolder(); !ok {
-					s.ReportError(err, BufferFolderError, "", true)
-					return
-				}
-				oldSegments = append(oldSegments, f)
-				ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
-				s.SendFileToClients(f)
-				if s.GetBufferedSize() > Settings.BufferSize * 1024 {
-					s.DeleteOldestSegment(oldSegments[0])
-					oldSegments = oldSegments[1:]
-				}
-			}
-			if len(tmpFiles) == 0 {
-				time.Sleep(5 * time.Millisecond) // This will ensure that streams will synchronize over the time
-			}
-		}
-	}
-}
-
-func (s *Stream) GetBufferedSize() (size int) {
-	size = 0
-	var tmpFolder = s.Folder + string(os.PathSeparator)
-	if _, err := s.Buffer.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
-
-		files, err := s.Buffer.FileSystem.ReadDir(getPlatformPath(tmpFolder))
+		n, err := client.pipeReader.Read(buffer)
 		if err != nil {
-			ShowError(err, 000)
-			return
-		}
-		for _, file := range files {
-			if !file.IsDir() && filepath.Ext(file.Name()) == ".ts" {
-				file_info, err := s.Buffer.FileSystem.Stat(getPlatformFile(tmpFolder + file.Name()))
-				if err == nil {
-					size += int(file_info.Size())
-				}
+			if err != io.EOF {
+				s.ReportError(fmt.Errorf("Streaming:Error when trying to send file to client %s", clientID), SendFileError, clientID, false)
 			}
+			break
 		}
-	}
-	return size
-}
-
-/*
-GetBufTmpFiles retrieves the files within the buffer folder
-and returns a sorted list with the file names
-*/
-func (s *Stream) GetBufTmpFiles() (tmpFiles []string) {
-
-	var tmpFolder = s.Folder + string(os.PathSeparator)
-	var fileIDs []float64
-
-	if _, err := s.Buffer.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
-
-		files, err := s.Buffer.FileSystem.ReadDir(getPlatformPath(tmpFolder))
-		if err != nil {
-			ShowError(err, 000)
-			return
-		}
-
-		// Check if more then one file is available
-		if len(files) > 1 {
-			// Iterate over the files and collect the IDs
-			for _, file := range files {
-				if !file.IsDir() && filepath.Ext(file.Name()) == ".ts" {
-					fileID := strings.TrimSuffix(file.Name(), ".ts")
-					if f, err := strconv.ParseFloat(fileID, 64); err == nil {
-						fileIDs = append(fileIDs, f)
-					}
-				}
-			}
-
-			sort.Float64s(fileIDs)
-			if len(fileIDs) > 0 {
-				fileIDs = fileIDs[:len(fileIDs)-1]
-			}
-
-			// Create the return array with the sorted files
-			for _, file := range fileIDs {
-				fileName := fmt.Sprintf("%.0f.ts", file)
-				// Check if the file is already within old segments array
-				if !ContainsString(s.OldSegments, fileName) {
-					tmpFiles = append(tmpFiles, fileName)
-					s.OldSegments = append(s.OldSegments, fileName)
-				}
-			}
-		}
-	}
-	return
-}
-
-/*
-DeleteOldesSegment will delete the file provided in the buffer
-*/
-func (s *Stream) DeleteOldestSegment(oldSegment string) {
-	fileToRemove := s.Folder + string(os.PathSeparator) + oldSegment
-	if err := s.Buffer.FileSystem.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
-		ShowError(err, 4007)
-	}
-}
-
-/*
-CheckBufferFolder reports whether the buffer folder exists.
-*/
-func (s *Stream) CheckBufferFolder() (bool, error) {
-	if _, err := s.Buffer.FileSystem.Stat(s.Folder); fsIsNotExistErr(err) {
-		return false, err
-	}
-	return true, nil
-}
-
-// CheckBufferedFile check for the existance of the given file (file path is needed)
-func (s *Stream) CheckBufferedFile(file string) (bool, error) {
-	if _, err := s.Buffer.FileSystem.Stat(file); fsIsNotExistErr(err) {
-		return false, err
-	}
-	return true, nil
-}
-
-/*
-SendFileToClients reports whether sending the File to the clients was successful
-It will also use the errorChan to report to the StreamManager if there is an error sending the file to a specifc client
-*/
-func (s *Stream) SendFileToClients(fileName string) {
-	var filePath string = fmt.Sprint(s.Folder + string(os.PathSeparator) + fileName)
-	if  ok, err := s.CheckBufferedFile(filePath); !ok {
-		s.ReportError(err, 4019, "", false)
-		return
-	}
-	file, err := s.Buffer.FileSystem.Open(filePath)
-	if err != nil {
-		s.ReportError(err, OpenFileError, "", false)
-		return
-	}
-	defer file.Close()
-	l, err := file.Stat()
-	if err != nil {
-		s.ReportError(err, FileStatError, "", false)
-		return
-	}
-	buffer := make([]byte, l.Size())
-	if _, err := file.Read(buffer); err != nil {
-		s.ReportError(err, ReadFileError, "", false)
-		return
-	}
-	for clientID, client := range s.Clients {
-		ShowDebug(fmt.Sprintf("Streaming:Sending file %s to client %s", fileName, clientID), 3)
-		if _, err := client.w.Write(buffer); err != nil {
+		if _, err := client.w.Write(buffer[:n]); err != nil {
 			s.ReportError(fmt.Errorf("Streaming:Error when trying to send file to client %s", clientID), SendFileError, clientID, false)
+			break
 		}
 	}
 }
@@ -619,6 +468,7 @@ func (s *Stream) ReportError(err error, errCode int, clientID string, closed boo
 
 func (s *Stream) StopStream(streamID string) {
 	for clientID, client := range s.Clients {
+		client.pipeWriter.Close()
 		CloseClientConnection(client.w)
 		delete(s.Clients, clientID)
 		ShowInfo(fmt.Sprintf("Streaming:Client kicked %s, total: %d", streamID, len(s.Clients)))
@@ -637,6 +487,7 @@ func (s *Stream) StopStream(streamID string) {
 
 func (s *Stream) RemoveClientFromStream(streamID, clientID string) {
 	if client, exists := s.Clients[clientID]; exists {
+		client.pipeWriter.Close()
 		CloseClientConnection(client.w)
 		delete(s.Clients, clientID)
 		ShowInfo(fmt.Sprintf("Streaming:Removed client from %s, total: %d", streamID, len(s.Clients)))

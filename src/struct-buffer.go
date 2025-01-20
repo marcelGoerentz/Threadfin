@@ -2,6 +2,7 @@ package src
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"os/exec"
 	"sync"
@@ -11,12 +12,12 @@ import (
 
 // StreamManager verwaltet die Streams und ffmpeg-Prozesse
 type StreamManager struct {
-	Playlists map[string]*Playlist
-	errorChan chan ErrorInfo
-	stopChan  chan bool
+	Playlists             map[string]*Playlist
+	errorChan             chan ErrorInfo
+	stopChan              chan bool
 	LockAgainstNewStreams bool
-	FileSystem avfs.VFS
-	mu        sync.Mutex
+	FileSystem            avfs.VFS
+	mu                    sync.Mutex
 }
 
 type Playlist struct {
@@ -26,16 +27,14 @@ type Playlist struct {
 
 // Stream repräsentiert einen einzelnen Stream
 type Stream struct {
-	Name    string
-	Clients map[string]Client
-	Buffer  *Buffer
+	Name      string
+	Clients   map[string]Client
+	Buffer    *StreamBuffer
 	ErrorChan chan ErrorInfo
-	Ctx     context.Context
-	Cancel  context.CancelFunc
+	Ctx       context.Context
+	Cancel    context.CancelFunc
 
 	Folder            string
-	LatestSegment	  int
-	OldSegments       []string
 	URL               string
 	BackupChannel1URL string
 	BackupChannel2URL string
@@ -45,13 +44,18 @@ type Stream struct {
 	DoAutoReconnect   bool
 }
 
-type Buffer struct {
-	FileSystem		   avfs.VFS
+type StreamBuffer struct {
+	mutex              sync.Mutex
+	FileSystem         avfs.VFS
 	IsThirdPartyBuffer bool
 	Cmd                *exec.Cmd
 	Config             *BufferConfig
-	Stream			   *Stream // Reference to the parents struct
+	Stream             *Stream // Reference to the parents struct
 	StopChan           chan struct{}
+	files              []string
+	newFile            chan string
+	LatestSegment     int
+	OldSegments       []string
 }
 
 type BufferConfig struct {
@@ -61,15 +65,17 @@ type BufferConfig struct {
 }
 
 type Client struct {
-	w http.ResponseWriter
-	r *http.Request
+	w          http.ResponseWriter
+	r          *http.Request
+	pipeWriter *io.PipeWriter
+	pipeReader *io.PipeReader
 }
 
 type ErrorInfo struct {
-	Error     error
-	ErrorCode int
-	Stream    *Stream
-	ClientID  string
+	Error        error
+	ErrorCode    int
+	Stream       *Stream
+	ClientID     string
 	BufferClosed bool
 }
 
@@ -80,8 +86,8 @@ const (
 	EndOfFileError        = 4011
 	ReadIntoBufferError   = 4012
 	WriteToBufferError    = 4013
-	OpenFileError         = 4014  //errMsg = "Not able to open buffered file"
-	FileStatError         = 4015	//errMsg = "Could not get file statics of buffered file"
-	ReadFileError         = 4016  //errMsg = "Could not read buffered file before sending to clients"
+	OpenFileError         = 4014 //errMsg = "Not able to open buffered file"
+	FileStatError         = 4015 //errMsg = "Could not get file statics of buffered file"
+	ReadFileError         = 4016 //errMsg = "Could not read buffered file before sending to clients"
 	FileDoesNotExistError = 4019 //errMsg = "Buffered file does not exist anymore"
 )
