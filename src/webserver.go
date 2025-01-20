@@ -373,6 +373,10 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		}
 
 	default:
+		w.Header().Set("Content-Type", "video/mp2t")
+		w.Header().Set("Cache-Control", "max-age=3600")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Keep-Alive", "timeout=10, max=100")
 		streamManager.ServeStream(streamInfo, w, r)
 	}
 }

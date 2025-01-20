@@ -27,8 +27,9 @@ type Playlist struct {
 
 // Stream repräsentiert einen einzelnen Stream
 type Stream struct {
+	mu        sync.Mutex
 	Name      string
-	Clients   map[string]Client
+	Clients   map[string]*Client
 	Buffer    *StreamBuffer
 	ErrorChan chan ErrorInfo
 	Ctx       context.Context
@@ -45,17 +46,16 @@ type Stream struct {
 }
 
 type StreamBuffer struct {
-	mutex              sync.Mutex
 	FileSystem         avfs.VFS
 	IsThirdPartyBuffer bool
 	Cmd                *exec.Cmd
 	Config             *BufferConfig
 	Stream             *Stream // Reference to the parents struct
 	StopChan           chan struct{}
-	files              []string
-	newFile            chan string
-	LatestSegment     int
-	OldSegments       []string
+	LatestSegment      int
+	OldSegments        []string
+	PipeWriter         *io.PipeWriter
+	PipeReader         *io.PipeReader
 }
 
 type BufferConfig struct {
@@ -65,10 +65,8 @@ type BufferConfig struct {
 }
 
 type Client struct {
-	w          http.ResponseWriter
-	r          *http.Request
-	pipeWriter *io.PipeWriter
-	pipeReader *io.PipeReader
+	w http.ResponseWriter
+	r *http.Request
 }
 
 type ErrorInfo struct {

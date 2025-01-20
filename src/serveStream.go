@@ -134,9 +134,16 @@ CreateStream will create and return a new Stream struct, it will also start the 
 func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan ErrorInfo) *Stream {
 	ctx, cancel := context.WithCancel(context.Background())
 	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid
+	pipeReader, pipeWriter := io.Pipe()
+	buffer := &StreamBuffer{
+		Config:     &BufferConfig{},
+		FileSystem: fileSystem,
+		PipeWriter: pipeWriter,
+		PipeReader: pipeReader,
+	}
 	stream := &Stream{
 		Name:              streamInfo.Name,
-		Buffer:            &StreamBuffer{Config: &BufferConfig{}, FileSystem: fileSystem},
+		Buffer:            buffer,
 		ErrorChan:         errorChan,
 		Ctx:               ctx,
 		Cancel:            cancel,
@@ -145,14 +152,13 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 		BackupChannel2URL: streamInfo.BackupChannel2URL,
 		BackupChannel3URL: streamInfo.BackupChannel3URL,
 		Folder:            folder,
-		Clients:           make(map[string]Client),
+		Clients:           make(map[string]*Client),
 		BackupNumber:      0,
 		UseBackup:         false,
 		DoAutoReconnect:   Settings.BufferAutoReconnect,
 	}
-	stream.Buffer.StartBuffer(stream)
-	go stream.Buffer.writeToPipes()
-	go stream.Buffer.findBufferedFiles()
+	buffer.StartBuffer(stream)
+	go buffer.addBufferedFilesToPipe()
 	return stream
 }
 
@@ -412,18 +418,18 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 	}
 	defer sm.StopStream(playlistID, streamInfo.URLid, clientID)
 
-	pipeReader, pipeWriter := io.Pipe()
 	// Add a new client to the client map
 	client := &Client{
 		r: r,
 		w: w,
-		pipeWriter: pipeWriter,
-		pipeReader: pipeReader,
 	}
 	stream := sm.Playlists[playlistID].Streams[streamInfo.URLid]
-	stream.Clients[clientID] = *client
+	stream.Clients[clientID] = client
 
-	go stream.sendDataToClient(clientID, client)
+	// Make sure Broadcast is running only once
+	if len(stream.Clients) == 1 {
+		go stream.Broadcast()
+	}
 
 	// Wait for the client context to get closed
 	<-r.Context().Done()
@@ -444,20 +450,41 @@ func (sm *StreamManager) GetPlaylistIDandStreamID(stream *Stream) (string, strin
 	return "", ""
 }
 
-func (s * Stream) sendDataToClient(clientID string, client *Client) {
-	defer client.pipeReader.Close() // Ensure the pipe reader is closed when the function exits
-	buffer := make([]byte, 4096)
-	for {
-		n, err := client.pipeReader.Read(buffer)
-		if err != nil {
-			if err != io.EOF {
-				s.ReportError(fmt.Errorf("Streaming:Error when trying to send file to client %s", clientID), SendFileError, clientID, false)
+func (s *Stream) Broadcast() {
+    buffer := make([]byte, 4096)
+    for {
+		select {
+		case <- s.Buffer.StopChan:
+			return
+		default:
+			n, err := s.Buffer.PipeReader.Read(buffer)
+			if err != nil {
+				if err != io.EOF {
+					fmt.Printf("Streaming:Error when reading from pipe: %v\n", err)
+				}
+				break
 			}
-			break
+			
+			s.mu.Lock()
+			for clientID, client := range s.Clients {
+				// go s.sendDataToClient(clientID, client, data)
+				_, err := client.w.Write(buffer[0:n])
+				if err != nil {
+					fmt.Printf("Streaming:Error when trying to send file to client %s: %v\n", clientID, err)
+				}
+			}
+			s.mu.Unlock()
 		}
-		if _, err := client.w.Write(buffer[:n]); err != nil {
-			s.ReportError(fmt.Errorf("Streaming:Error when trying to send file to client %s", clientID), SendFileError, clientID, false)
-			break
+    }
+}
+
+func (s *Stream) sendDataToClient(clientID string, client *Client, data []byte) {
+	select {
+	case <- client.r.Context().Done():
+		close(s.Buffer.StopChan)
+	default:
+		if _, err := client.w.Write(data); err != nil {
+			fmt.Printf("Streaming:Error when trying to send file to client %s: %v\n", clientID, err)
 		}
 	}
 }
@@ -467,8 +494,8 @@ func (s *Stream) ReportError(err error, errCode int, clientID string, closed boo
 }
 
 func (s *Stream) StopStream(streamID string) {
+	s.Buffer.PipeWriter.Close()
 	for clientID, client := range s.Clients {
-		client.pipeWriter.Close()
 		CloseClientConnection(client.w)
 		delete(s.Clients, clientID)
 		ShowInfo(fmt.Sprintf("Streaming:Client kicked %s, total: %d", streamID, len(s.Clients)))
@@ -486,8 +513,8 @@ func (s *Stream) StopStream(streamID string) {
 }
 
 func (s *Stream) RemoveClientFromStream(streamID, clientID string) {
+	s.Buffer.PipeWriter.Close()
 	if client, exists := s.Clients[clientID]; exists {
-		client.pipeWriter.Close()
 		CloseClientConnection(client.w)
 		delete(s.Clients, clientID)
 		ShowInfo(fmt.Sprintf("Streaming:Removed client from %s, total: %d", streamID, len(s.Clients)))

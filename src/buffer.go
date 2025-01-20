@@ -140,7 +140,7 @@ func (sb *StreamBuffer) GetBufTmpFiles() (tmpFiles []string) {
 		}
 
 		// Check if more then one file is available
-		if len(files) > 1 {
+		if len(files) >= 1 {
 			// Iterate over the files and collect the IDs
 			for _, file := range files {
 				if !file.IsDir() && filepath.Ext(file.Name()) == ".ts" {
@@ -192,12 +192,16 @@ func (sb *StreamBuffer) GetBufferedSize() (size int) {
 	return size
 }
 
-func (sb *StreamBuffer) findBufferedFiles() {
+func (sb *StreamBuffer) addBufferedFilesToPipe() {
 	for {
 		select {
-		case <- sb.StopChan:
+		case <-sb.StopChan:
 			return
 		default:
+			if sb.GetBufferedSize() < Settings.BufferSize * 1024 {
+				time.Sleep(25 * time.Millisecond) // Wait for new files
+				continue
+			}
 			tmpFiles := sb.GetBufTmpFiles()
 			for _, f := range tmpFiles {
 				if ok, err := sb.CheckBufferFolder(); !ok {
@@ -205,15 +209,13 @@ func (sb *StreamBuffer) findBufferedFiles() {
 					return
 				}
 				sb.OldSegments = append(sb.OldSegments, f)
-				ShowDebug(fmt.Sprintf("Streaming:Sending file %s to clients", f), 1)
-				sb.addFile(f) // Add file so it will be copied to the pipes
-				if sb.GetBufferedSize() > Settings.BufferSize*1024 {
-					sb.DeleteOldestSegment()
-					sb.OldSegments = sb.OldSegments[1:]
+				ShowDebug(fmt.Sprintf("Streaming:Broadcasting file %s to clients", f), 1)
+				err := sb.writeToPipe(f) // Add file so it will be copied to the pipes
+				if err != nil {
+					sb.Stream.ReportError(err, 0, "", false)
+
 				}
-			}
-			if len(tmpFiles) == 0 {
-				time.Sleep(5 * time.Millisecond) // This will ensure that streams will synchronize over the time
+				sb.DeleteOldestSegment()
 			}
 		}
 	}
@@ -247,32 +249,16 @@ func (sb *StreamBuffer) CheckBufferedFile(file string) (bool, error) {
 	return true, nil
 }
 
-func (sb *StreamBuffer) addFile(file string) {
-	sb.mutex.Lock()
-	defer sb.mutex.Unlock()
-	sb.files = append(sb.files, file)
-	sb.newFile <- file 
-}
-
-func (sb *StreamBuffer) writeToPipes() {
-	for {
-        select {
-        case file := <-sb.newFile:
-            f, err := os.Open(file)
-            if err != nil {
-                continue
-            }
-            for clientID, client := range sb.Stream.Clients {
-                _, err = io.Copy(client.pipeWriter, f)
-                if err != nil {
-                    fmt.Println("Error writing to pipe for client", clientID)
-                }
-            }
-            f.Close()
-		case <- sb.StopChan:
-			return
-		default:
-			time.Sleep(5 * time.Millisecond)
-        }
-    }
+func (sb *StreamBuffer) writeToPipe(file string) error {
+	f, err := sb.FileSystem.Open(filepath.Join(sb.Stream.Folder, file))
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(sb.PipeWriter, f)
+	if err != nil {
+		f.Close()
+		sb.Stream.ReportError(err, 0, "", true)
+	}
+	f.Close()
+	return nil
 }
