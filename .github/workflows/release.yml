@@ -47,6 +47,7 @@ jobs:
       - name: Build binaries
         run: |
           go mod tidy && go mod vendor
+          echo "$PRIVATE_KEY=${{ secrets.SIGNING_KEY }}" >> $GITHUB_ENV
           bash ${GITHUB_WORKSPACE}/Utility/create_binaries.sh
 
       - name: Create a Release

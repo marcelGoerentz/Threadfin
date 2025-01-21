@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
       new_version: ${{ steps.set-build-number.outputs.new_version }}
     steps:
       - name: Check out code into the Go module directory
@@ -59,6 +60,7 @@ jobs:
       - name: Build binaries
         run: |
           go mod tidy && go mod vendor
+          echo "$PRIVATE_KEY=${{ secrets.SIGNING_KEY }}" >> $GITHUB_ENV
           bash ${GITHUB_WORKSPACE}/Utility/create_binaries.sh beta
 
       - name: Create a Release
