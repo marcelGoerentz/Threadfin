@@ -46,7 +46,7 @@ var GitHub = GitHubStruct{Branch: "master", User: "marcelGoerentz", Repo: "Threa
 const Name = "Threadfin"
 
 // Version : Major, Minor, Patch, Build
-const Version = "1.8.0.0"
+const Version = "1.8.1.0"
 
 // DBVersion : Database version
 const DBVersion = "0.5.0"
@@ -211,9 +211,8 @@ func main() {
 	}
 
 	// Update binary
-	err = src.BinaryUpdate(false)
-	if err != nil {
-		src.ShowError(err, 0)
+	if src.BinaryUpdate(false) {
+		os.Exit(0)
 	}
 
 	// Build the database
@@ -254,19 +253,7 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 			continue
 		case syscall.SIGINT, syscall.SIGABRT, syscall.SIGTERM:
 
-			// Lock against reconnection for clients
-			webserver.SM.LockAgainstNewStreams = true
-
-			src.ShowInfo("Threadfin:Stop all streams")
-			// Stop all streams
-			stopAllStreams(webserver)
-
-			src.ShowInfo("Threadfin:Killing all processes")
-			// Kill all processes
-			killAllProcesses()
-
-			// Shutdown the webserver gracefully
-			shutdownWebserver(webserver)
+			CloseWebserverGracefully(webserver)
 
 			// Send signal that everything has ended
 			done <- true
@@ -277,6 +264,23 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
+}
+
+//
+func CloseWebserverGracefully(webserver *src.WebServer){
+	// Lock against reconnection for clients
+	webserver.SM.LockAgainstNewStreams = true
+
+	src.ShowInfo("Threadfin:Stop all streams")
+	// Stop all streams
+	stopAllStreams(webserver)
+
+	src.ShowInfo("Threadfin:Killing all processes")
+	// Kill all processes
+	killAllProcesses()
+
+	// Shutdown the webserver gracefully
+	shutdownWebserver(webserver)
 }
 
 // stopAllStreams will stop all existing streams and buffers
