@@ -303,7 +303,7 @@ func (s *Stream) Broadcast() {
 			
 			s.mu.Lock()
 			for _, client := range s.Clients {
-				client.buffer.Write(buffer[:n])
+				client.buffer.Write(buffer[0:n])
 				select {
                 case client.flushChannel <- struct{}{}:
 					<-client.doneChannel
