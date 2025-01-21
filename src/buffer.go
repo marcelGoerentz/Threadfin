@@ -143,7 +143,6 @@ func (sb *StreamBuffer) GetBufTmpFiles() (tmpFiles []string) {
 	var fileIDs []float64
 
 	if _, err := sb.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
-
 		files, err := sb.FileSystem.ReadDir(getPlatformPath(tmpFolder))
 		if err != nil {
 			ShowError(err, 000)
@@ -223,7 +222,6 @@ func (sb *StreamBuffer) addBufferedFilesToPipe() {
 				err := sb.writeToPipe(f) // Add file so it will be copied to the pipes
 				if err != nil {
 					sb.Stream.ReportError(err, 0, "", false)
-
 				}
 				sb.DeleteOldestSegment()
 			}
@@ -262,14 +260,28 @@ func (sb *StreamBuffer) CheckBufferedFile(file string) (bool, error) {
 
 func (sb *StreamBuffer) writeToPipe(file string) error {
 	f, err := sb.FileSystem.Open(filepath.Join(sb.Stream.Folder, file))
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(sb.PipeWriter, f)
-	if err != nil {
-		f.Close()
-		sb.Stream.ReportError(err, 0, "", true)
-	}
-	f.Close()
-	return nil
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+
+    buf := make([]byte, 4096) // 4KB buffer
+    for {
+        n, err := f.Read(buf)
+        if err != nil && err != io.EOF {
+            sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+            return err
+        }
+        if n == 0 {
+            break
+        }
+
+        _, err = sb.PipeWriter.Write(buf[:n])
+        if err != nil {
+            sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+            return err
+        }
+    }
+
+    return nil
 }

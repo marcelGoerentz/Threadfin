@@ -35,6 +35,9 @@ type Stream struct {
 	UseBackup         bool
 	BackupNumber      int
 	DoAutoReconnect   bool
+
+	StopTimer *time.Timer
+	TimerCancel context.CancelFunc
 }
 
 type Client struct {
@@ -303,7 +306,7 @@ func (s *Stream) Broadcast() {
 			
 			s.mu.Lock()
 			for _, client := range s.Clients {
-				client.buffer.Write(buffer[0:n])
+				client.buffer.Write(buffer[:n])
 				select {
                 case client.flushChannel <- struct{}{}:
 					<-client.doneChannel

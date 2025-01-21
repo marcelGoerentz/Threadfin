@@ -271,28 +271,29 @@ type Notification struct {
 
 // SettingsStruct : Inhalt der settings.json
 type SettingsStruct struct {
-	API               bool     `json:"api"`
-	AuthenticationAPI bool     `json:"authentication.api"`
-	AuthenticationM3U bool     `json:"authentication.m3u"`
-	AuthenticationPMS bool     `json:"authentication.pms"`
-	AuthenticationWEB bool     `json:"authentication.web"`
-	AuthenticationXML bool     `json:"authentication.xml"`
-	BackupKeep        int      `json:"backup.keep"`
-	BackupPath        string   `json:"backup.path"`
-	Branch            string   `json:"git.branch,omitempty"`
-	Buffer            string   `json:"buffer"`
-	BufferSize        int      `json:"buffer.size.kb"`
-	BufferTimeout     float64  `json:"buffer.timeout"`
-	BufferAutoReconnect bool   `json:"buffer.autoReconnect"`
-	CacheImages       bool     `json:"cache.images"`
-	ChangeVersion     bool     `json:"changeVersion"`
-	EpgSource         string   `json:"epgSource"`
-	FFmpegOptions     string   `json:"ffmpeg.options"`
-	FFmpegPath        string   `json:"ffmpeg.path"`
-	VLCOptions        string   `json:"vlc.options"`
-	VLCPath           string   `json:"vlc.path"`
-	FileM3U           []string `json:"file,omitempty"`  // Beim Wizard wird die M3U in ein Slice gespeichert
-	FileXMLTV         []string `json:"xmltv,omitempty"` // Altes Speichersystem der Provider XML Datei Slice (Wird für die Umwandlung auf das neue benötigt)
+	API               bool       `json:"api"`
+	AuthenticationAPI bool       `json:"authentication.api"`
+	AuthenticationM3U bool       `json:"authentication.m3u"`
+	AuthenticationPMS bool       `json:"authentication.pms"`
+	AuthenticationWEB bool       `json:"authentication.web"`
+	AuthenticationXML bool       `json:"authentication.xml"`
+	BackupKeep        int        `json:"backup.keep"`
+	BackupPath        string     `json:"backup.path"`
+	Branch            string     `json:"git.branch,omitempty"`
+	Buffer            string     `json:"buffer"`
+	BufferSize        int        `json:"buffer.size.kb"`
+	BufferTimeout     float64    `json:"buffer.timeout"`
+	BufferAutoReconnect bool     `json:"buffer.autoReconnect"`
+	BufferTerminationTimeout int `json:"buffer.terminationTimeout"`
+	CacheImages       bool       `json:"cache.images"`
+	ChangeVersion     bool       `json:"changeVersion"`
+	EpgSource         string     `json:"epgSource"`
+	FFmpegOptions     string     `json:"ffmpeg.options"`
+	FFmpegPath        string     `json:"ffmpeg.path"`
+	VLCOptions        string     `json:"vlc.options"`
+	VLCPath           string     `json:"vlc.path"`
+	FileM3U           []string   `json:"file,omitempty"`  // Beim Wizard wird die M3U in ein Slice gespeichert
+	FileXMLTV         []string   `json:"xmltv,omitempty"` // Altes Speichersystem der Provider XML Datei Slice (Wird für die Umwandlung auf das neue benötigt)
 
 	Files struct {
 		HDHR  map[string]interface{} `json:"hdhr"`
