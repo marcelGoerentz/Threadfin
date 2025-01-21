@@ -14,27 +14,38 @@ import (
 	"github.com/avfs/avfs"
 )
 
-func (sb *StreamBuffer) StartBuffer(stream *Stream) {
+type StreamBuffer struct {
+	FileSystem         avfs.VFS
+	IsThirdPartyBuffer bool
+	Stream             *Stream // Reference to the parents struct
+	StopChan           chan struct{}
+	LatestSegment      int
+	OldSegments        []string
+	PipeWriter         *io.PipeWriter
+	PipeReader         *io.PipeReader
+}
+
+const (
+	BufferFolderError     = 4008
+	SendFileError         = 4009
+	CreateFileError       = 4010
+	EndOfFileError        = 4011
+	ReadIntoBufferError   = 4012
+	WriteToBufferError    = 4013
+	OpenFileError         = 4014 //errMsg = "Not able to open buffered file"
+	FileStatError         = 4015 //errMsg = "Could not get file statics of buffered file"
+	ReadFileError         = 4016 //errMsg = "Could not read buffered file before sending to clients"
+	FileDoesNotExistError = 4019 //errMsg = "Buffered file does not exist anymore"
+)
+
+func (sb *StreamBuffer) StartBuffer(stream *Stream) error {
 	sb.Stream = stream
-	var err error = nil
-	if err = sb.PrepareBufferFolder(stream.Folder); err != nil {
+	if err := sb.PrepareBufferFolder(stream.Folder + string(os.PathSeparator)); err != nil {
 		// If something went wrong when setting up the buffer storage don't run at all
 		stream.ReportError(err, BufferFolderError, "", true)
-		return
+		return err
 	}
-
-	switch Settings.Buffer {
-	case "ffmpeg", "vlc":
-		sb.IsThirdPartyBuffer = true
-		err = StartThirdPartyBuffer(stream)
-	case "threadfin":
-		err = StartThreadfinBuffer(stream)
-	default:
-		return
-	}
-	if err != nil {
-		sb.Stream.handleBufferError(err)
-	}
+	return nil
 }
 
 /*
@@ -208,7 +219,6 @@ func (sb *StreamBuffer) addBufferedFilesToPipe() {
 					sb.Stream.ReportError(err, BufferFolderError, "", true)
 					return
 				}
-				sb.OldSegments = append(sb.OldSegments, f)
 				ShowDebug(fmt.Sprintf("Streaming:Broadcasting file %s to clients", f), 1)
 				err := sb.writeToPipe(f) // Add file so it will be copied to the pipes
 				if err != nil {
@@ -225,10 +235,11 @@ func (sb *StreamBuffer) addBufferedFilesToPipe() {
 DeleteOldesSegment will delete the file provided in the buffer
 */
 func (sb *StreamBuffer) DeleteOldestSegment() {
-	fileToRemove := sb.Stream.Folder + string(os.PathSeparator) + sb.OldSegments[0]
-	if err := sb.FileSystem.RemoveAll(getPlatformFile(fileToRemove)); err != nil {
+	fileToRemove := filepath.Join(sb.Stream.Folder, sb.OldSegments[0])
+	if err := sb.FileSystem.Remove(fileToRemove); err != nil {
 		ShowError(err, 4007)
 	}
+	sb.OldSegments = sb.OldSegments[1:]
 }
 
 /*
