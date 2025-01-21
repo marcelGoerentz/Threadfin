@@ -1,5 +1,11 @@
 #!/bin/bash
 
+set -e
+
+if [ -z "$PRIVATE_KEY" ]; then
+    echo "PRIVATE_KEY environment variable is not set. Exiting..."
+    exit 1
+fi
 
 function exitOnFailure {
     echo "Build failed for ${1}/${2}. Exiting..."
