@@ -12,6 +12,9 @@ jobs:
       contents: write
     outputs:
       new_version: ${{ steps.set-build-number.outputs.new_version }}
+    env:
+      PRIVATE_KEY: ${{ secrets.SIGNING_KEY }}
+
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
