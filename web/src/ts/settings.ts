@@ -606,6 +606,7 @@ function saveSettings() {
                 break;
 
               case 'buffer.timeout':
+              case 'buffer.terminationTimeout':
                 value = parseFloat(value);
 
               case 'bindingIPs':
