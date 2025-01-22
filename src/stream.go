@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/avfs/avfs"
@@ -67,6 +66,7 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 		FileSystem: fileSystem,
 		PipeWriter: pipeWriter,
 		PipeReader: pipeReader,
+		StopChan: make(chan struct{}),
 	}
 	var buffer BufferInterface
 	switch Settings.Buffer {
@@ -276,24 +276,12 @@ func CloseClientConnection(w http.ResponseWriter) {
 
 func (s *Stream) Broadcast() {
     buffer := make([]byte, 4096)
-	var stopChan chan struct{}
-	var pipeReader *io.PipeReader
-	switch sb := s.Buffer.(type) {
-	case *StreamBuffer:
-		stopChan = sb.StopChan
-		pipeReader = sb.PipeReader
-	case *ThreadfinBuffer:
-		stopChan = sb.StopChan
-		pipeReader = sb.PipeReader
-	case *ThirdPartyBuffer:
-		stopChan = sb.StopChan
-		pipeReader = sb.PipeReader
-	default:
-		panic("unkknow buffer type")
-	}
+	var stopChan chan struct{} = s.Buffer.GetStopChan()
+	var pipeReader *io.PipeReader = s.Buffer.GetPipeReader()
     for {
 		select {
 		case <- stopChan:
+			// Pipe was closed stop reading from it!
 			return
 		default:
 			n, err := pipeReader.Read(buffer)
@@ -305,13 +293,14 @@ func (s *Stream) Broadcast() {
 			}
 			
 			s.mu.Lock()
-			for _, client := range s.Clients {
+			for clientID, client := range s.Clients {
 				client.buffer.Write(buffer[:n])
 				select {
                 case client.flushChannel <- struct{}{}:
 					<-client.doneChannel
                 default:
-                    // Skip sending if the channel is full
+					// Skip sending if the channel is full
+					ShowDebug(fmt.Sprintf("Skipped sending data to client: %s", clientID), 3)
                 }
 			}
 			s.mu.Unlock()
@@ -339,22 +328,19 @@ func (s *Stream) ReportError(err error, errCode int, clientID string, closed boo
 }
 
 func (s *Stream) StopStream(streamID string) {
-	var buffer = s.Buffer.(*StreamBuffer)
-	buffer.PipeWriter.Close()
+	var pipeWriter *io.PipeWriter
+	switch buffer := s.Buffer.(type) {
+	case *ThirdPartyBuffer:
+		pipeWriter = buffer.PipeWriter
+	}
+	pipeWriter.Close()
 	for clientID, client := range s.Clients {
 		CloseClientConnection(client.w)
 		delete(s.Clients, clientID)
 		ShowInfo(fmt.Sprintf("Streaming:Client kicked %s, total: %d", streamID, len(s.Clients)))
 		if len(s.Clients) == 0 {
 			s.Cancel() // Tell everyone about the ending of the stream
-			switch sb := s.Buffer.(type){
-			case *ThirdPartyBuffer:
-				sb.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
-				sb.Cmd.Wait()
-				DeletPIDfromDisc(fmt.Sprintf("%d", sb.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
-			default:
-				close(buffer.StopChan)
-			}
+			s.Buffer.CloseBuffer()
 		}
 	}
 }

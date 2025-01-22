@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/avfs/avfs"
@@ -126,11 +125,15 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 				return "", ""
 			}
 		} else {
-			if stream.StopTimer != nil {
-                stream.StopTimer.Stop()
-                stream.StopTimer = nil
-                stream.TimerCancel = nil
-            }
+			if len(stream.Clients) == 0 {
+				if stream.StopTimer != nil {
+					stream.StopTimer.Stop()
+					stream.StopTimer = nil
+					stream.TimerCancel = nil
+				}
+				stream.Buffer.SetStopChan(make(chan struct{}))
+				go stream.Buffer.addBufferedFilesToPipe()
+			}
 			// Here we can check if multiple clients for one stream is allowed!
 			ShowInfo(fmt.Sprintf("Streaming:Client joined %s, total: %d", streamID, len(stream.Clients)+1))
 		}
@@ -174,23 +177,13 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 				delete(stream.Clients, clientID)
 				ShowInfo(fmt.Sprintf("Streaming:Client left %s, total: %d", streamID, len(stream.Clients)))
 				if len(stream.Clients) == 0 {
+					stream.Buffer.StopBuffer()
 					// Start a timer to stop the stream after a delay
                     cancel := func() {
 						sm.mu.Lock()
 						defer sm.mu.Unlock()
 						stream.Cancel() // Tell everyone about the ending of the stream
-						switch buffer := stream.Buffer.(type) {
-						case *ThirdPartyBuffer:
-							buffer.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
-							buffer.Cmd.Wait()
-							DeletPIDfromDisc(fmt.Sprintf("%d", buffer.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
-						case *ThreadfinBuffer:
-							close(buffer.StopChan)
-						case *StreamBuffer:
-							close(buffer.StopChan)
-						default:
-							panic("unknown buffer type")
-						}
+						stream.Buffer.CloseBuffer()
 
 						ShowInfo(fmt.Sprintf("Streaming:Stopped streaming for %s", streamID))
 						var debug = fmt.Sprintf("Streaming:Remove temporary files (%s)", stream.Folder)

@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 type ThirdPartyBuffer struct {
@@ -38,6 +40,17 @@ func (sb *ThirdPartyBuffer) StartBuffer(stream *Stream) error {
 		stream.handleBufferError(err)
 	}
 	return nil
+}
+
+func (sb *ThirdPartyBuffer) StopBuffer() {
+	close(sb.StopChan)
+}
+
+func (sb *ThirdPartyBuffer) CloseBuffer() {
+	sb.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+	sb.Cmd.Wait()
+	DeletPIDfromDisc(fmt.Sprintf("%d", sb.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
+	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, ""))
 }
 
 // SetBufferConfig returns the the arguments from the buffer settings in the config file

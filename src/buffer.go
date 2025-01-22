@@ -48,6 +48,27 @@ func (sb *StreamBuffer) StartBuffer(stream *Stream) error {
 	return nil
 }
 
+func (sb *StreamBuffer) StopBuffer() {
+	close(sb.StopChan)
+}
+
+func (sb *StreamBuffer) CloseBuffer() {
+	sb.StopBuffer()
+	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, ""))
+}
+
+func (sb *StreamBuffer) GetPipeReader() *io.PipeReader{
+	return sb.PipeReader
+}
+
+func (sb *StreamBuffer) GetStopChan() chan struct{} {
+	return sb.StopChan
+}
+
+func (sb *StreamBuffer) SetStopChan(stopChan chan struct{}) {
+	sb.StopChan = stopChan
+}
+
 /*
 HandleByteOutput save the byte ouptut of the command or http request as files
 */
@@ -118,12 +139,19 @@ func (sb *StreamBuffer) HandleByteOutput(stdOut io.ReadCloser) {
 	}
 }
 
+func (sb *StreamBuffer) RemoveBufferedFiles(folder string) error {
+	if err := sb.FileSystem.RemoveAll(getPlatformPath(folder)); err != nil {
+		return fmt.Errorf("failed to remove buffer folder: %w", err)
+	}
+	return nil
+}
+
 /*
 PrepareBufferFolder will clean the buffer folder and check if the folder exists
 */
 func (sb *StreamBuffer) PrepareBufferFolder(folder string) error {
-	if err := sb.FileSystem.RemoveAll(getPlatformPath(folder)); err != nil {
-		return fmt.Errorf("failed to remove buffer folder: %w", err)
+	if err := sb.RemoveBufferedFiles(folder); err != nil {
+		return err
 	}
 
 	if err := checkVFSFolder(folder, sb.FileSystem); err != nil {
@@ -265,23 +293,30 @@ func (sb *StreamBuffer) writeToPipe(file string) error {
     }
     defer f.Close()
 
-    buf := make([]byte, 4096) // 4KB buffer
-    for {
-        n, err := f.Read(buf)
-        if err != nil && err != io.EOF {
-            sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
-            return err
-        }
-        if n == 0 {
-            break
-        }
 
-        _, err = sb.PipeWriter.Write(buf[:n])
-        if err != nil {
-            sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
-            return err
-        }
-    }
+	buf := make([]byte, 4096) // 4KB buffer
+	for {
+		select {
+		case <- sb.StopChan:
+			// Pipe was closed quit writing to it
+			return nil
+		default:
+			n, err := f.Read(buf)
+			if err != nil && err != io.EOF {
+				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+				return err
+			} else if err == io.EOF {
+				return nil
+			}
+			if n == 0 {
+				break
+			}
 
-    return nil
+			_, err = sb.PipeWriter.Write(buf[:n])
+			if err != nil {
+				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+				return err
+			}
+		}
+	}
 }

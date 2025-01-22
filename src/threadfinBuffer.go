@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -20,7 +21,6 @@ func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
 		return err
 	}
 
-	stopChan := make(chan struct{})
 	ShowInfo(fmt.Sprintf("Streaming:Buffer:%s", "Threadfin"))
 	ShowInfo("Streaming URL:" + stream.URL)
 
@@ -64,7 +64,7 @@ func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
 
 		for {
 			select {
-			case <-stopChan:
+			case <-sb.StopChan:
 				resp.Body.Close()
 				time.Sleep(200 * time.Millisecond) // Let the buffer stop before going on
 				return
@@ -73,8 +73,16 @@ func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
 			}
 		}
 	}()
-	sb.StopChan = stopChan
 	return nil
+}
+
+func (sb *ThreadfinBuffer) StopBuffer() {
+	// Right now nothing to do here!
+}
+
+func (sb *ThreadfinBuffer) CloseBuffer() {
+	close(sb.StopChan)
+	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, ""))
 }
 
 func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {
