@@ -47,10 +47,11 @@ func (sb *ThirdPartyBuffer) StopBuffer() {
 }
 
 func (sb *ThirdPartyBuffer) CloseBuffer() {
+	close(sb.CloseChan)
 	sb.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
 	sb.Cmd.Wait()
 	DeletPIDfromDisc(fmt.Sprintf("%d", sb.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
-	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, ""))
+	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
 }
 
 // SetBufferConfig returns the the arguments from the buffer settings in the config file
@@ -247,40 +248,4 @@ func DeletPIDfromDisc(delete_pid string) error {
 		}
 	}
 	return nil
-}
-
-func (sb *ThirdPartyBuffer) HandleByteOutput(stdOut io.ReadCloser) {
-    sb.StreamBuffer.HandleByteOutput(stdOut)
-}
-
-func (sb *ThirdPartyBuffer) PrepareBufferFolder(folder string) error {
-    return sb.StreamBuffer.PrepareBufferFolder(folder)
-}
-
-func (sb *ThirdPartyBuffer) GetBufTmpFiles() []string {
-    return sb.StreamBuffer.GetBufTmpFiles()
-}
-
-func (sb *ThirdPartyBuffer) GetBufferedSize() int {
-    return sb.StreamBuffer.GetBufferedSize()
-}
-
-func (sb *ThirdPartyBuffer) addBufferedFilesToPipe() {
-    sb.StreamBuffer.addBufferedFilesToPipe()
-}
-
-func (sb *ThirdPartyBuffer) DeleteOldestSegment() {
-    sb.StreamBuffer.DeleteOldestSegment()
-}
-
-func (sb *ThirdPartyBuffer) CheckBufferFolder() (bool, error) {
-    return sb.StreamBuffer.CheckBufferFolder()
-}
-
-func (sb *ThirdPartyBuffer) CheckBufferedFile(file string) (bool, error) {
-    return sb.StreamBuffer.CheckBufferedFile(file)
-}
-
-func (sb *ThirdPartyBuffer) writeToPipe(file string) error {
-    return sb.StreamBuffer.writeToPipe(file)
 }

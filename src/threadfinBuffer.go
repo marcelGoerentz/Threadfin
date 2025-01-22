@@ -82,7 +82,8 @@ func (sb *ThreadfinBuffer) StopBuffer() {
 
 func (sb *ThreadfinBuffer) CloseBuffer() {
 	close(sb.StopChan)
-	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, ""))
+	close(sb.CloseChan)
+	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
 }
 
 func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {
@@ -107,40 +108,4 @@ func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {
 		return "", "", err
 	}
 	return videoURL, audioURL, nil
-}
-
-func (sb *ThreadfinBuffer) HandleByteOutput(stdOut io.ReadCloser) {
-    sb.StreamBuffer.HandleByteOutput(stdOut)
-}
-
-func (sb *ThreadfinBuffer) PrepareBufferFolder(folder string) error {
-    return sb.StreamBuffer.PrepareBufferFolder(folder)
-}
-
-func (sb *ThreadfinBuffer) GetBufTmpFiles() []string {
-    return sb.StreamBuffer.GetBufTmpFiles()
-}
-
-func (sb *ThreadfinBuffer) GetBufferedSize() int {
-    return sb.StreamBuffer.GetBufferedSize()
-}
-
-func (sb *ThreadfinBuffer) addBufferedFilesToPipe() {
-    sb.StreamBuffer.addBufferedFilesToPipe()
-}
-
-func (sb *ThreadfinBuffer) DeleteOldestSegment() {
-    sb.StreamBuffer.DeleteOldestSegment()
-}
-
-func (sb *ThreadfinBuffer) CheckBufferFolder() (bool, error) {
-    return sb.StreamBuffer.CheckBufferFolder()
-}
-
-func (sb *ThreadfinBuffer) CheckBufferedFile(file string) (bool, error) {
-    return sb.StreamBuffer.CheckBufferedFile(file)
-}
-
-func (sb *ThreadfinBuffer) writeToPipe(file string) error {
-    return sb.StreamBuffer.writeToPipe(file)
 }

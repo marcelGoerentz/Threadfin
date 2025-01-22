@@ -67,6 +67,7 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 		PipeWriter: pipeWriter,
 		PipeReader: pipeReader,
 		StopChan: make(chan struct{}),
+		CloseChan: make(chan struct{}),
 	}
 	var buffer BufferInterface
 	switch Settings.Buffer {

@@ -19,6 +19,7 @@ type StreamBuffer struct {
 	IsThirdPartyBuffer bool
 	Stream             *Stream // Reference to the parents struct
 	StopChan           chan struct{}
+	CloseChan		   chan struct{}
 	LatestSegment      int
 	OldSegments        []string
 	PipeWriter         *io.PipeWriter
@@ -40,7 +41,7 @@ const (
 
 func (sb *StreamBuffer) StartBuffer(stream *Stream) error {
 	sb.Stream = stream
-	if err := sb.PrepareBufferFolder(stream.Folder + string(os.PathSeparator)); err != nil {
+	if err := sb.PrepareBufferFolder(filepath.Join(stream.Folder, "0.ts")); err != nil {
 		// If something went wrong when setting up the buffer storage don't run at all
 		stream.ReportError(err, BufferFolderError, "", true)
 		return err
@@ -54,7 +55,8 @@ func (sb *StreamBuffer) StopBuffer() {
 
 func (sb *StreamBuffer) CloseBuffer() {
 	sb.StopBuffer()
-	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, ""))
+	close(sb.CloseChan)
+	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
 }
 
 func (sb *StreamBuffer) GetPipeReader() *io.PipeReader{
@@ -87,60 +89,67 @@ func (sb *StreamBuffer) HandleByteOutput(stdOut io.ReadCloser) {
 	var tmpFile string
 	reader := bufio.NewReader(stdOut)
 	for {
-		if init {
-			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
-			f, err = bufferVFS.Create(tmpFile)
-			if err != nil {
+		select {
+		case <- sb.CloseChan:
+			// If the stream got stopped, stop the output
+			return
+		default:
+			if init {
+				tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
+				f, err = bufferVFS.Create(tmpFile)
+				if err != nil {
+					f.Close()
+					ShowError(err, CreateFileError)
+					sb.Stream.ReportError(err, CreateFileError, "", true)
+					return
+				}
+				init = false
+			}
+			n, err := reader.Read(buffer)
+			if n == 0 && err == nil {
+				continue
+			}
+			if err == io.EOF {
 				f.Close()
-				ShowError(err, CreateFileError)
-				sb.Stream.ReportError(err, CreateFileError, "", true)
+				ShowDebug("Buffer reached EOF!", 3)
+				sb.Stream.ReportError(err, EndOfFileError, "", true)
 				return
 			}
-			init = false
-		}
-		n, err := reader.Read(buffer)
-		if n == 0 && err == nil {
-			continue
-		}
-		if err == io.EOF {
-			f.Close()
-			ShowDebug("Buffer reached EOF!", 3)
-			sb.Stream.ReportError(err, EndOfFileError, "", true)
-			return
-		}
-		if err != nil {
-			f.Close()
-			bufferVFS.Remove(tmpFile)
-			sb.Stream.ReportError(err, ReadIntoBufferError, "", true)
-			return
-		}
-		if _, err := f.Write(buffer[:n]); err != nil {
-			f.Close()
-			bufferVFS.Remove(tmpFile)
-			sb.Stream.ReportError(err, WriteToBufferError, "", true)
-			return
-		}
-		fileSize += n
-		// Check if the file size exceeds the threshold
-		if fileSize >= TS_PACKAGE_MIN_SIZE*1024 {
-			tmpSegment++
-			tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
-			// Close the current file and create a new one
-			f.Close()
-			sb.LatestSegment = tmpSegment
-			f, err = bufferVFS.Create(tmpFile)
 			if err != nil {
 				f.Close()
-				sb.Stream.ReportError(err, CreateFileError, "", true)
+				bufferVFS.Remove(tmpFile)
+				sb.Stream.ReportError(err, ReadIntoBufferError, "", true)
 				return
 			}
-			fileSize = 0
+			if _, err := f.Write(buffer[:n]); err != nil {
+				f.Close()
+				bufferVFS.Remove(tmpFile)
+				sb.Stream.ReportError(err, WriteToBufferError, "", true)
+				return
+			}
+			fileSize += n
+			// Check if the file size exceeds the threshold
+			if fileSize >= TS_PACKAGE_MIN_SIZE*1024 {
+				tmpSegment++
+				tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
+				// Close the current file and create a new one
+				f.Close()
+				sb.LatestSegment = tmpSegment
+				f, err = bufferVFS.Create(tmpFile)
+				if err != nil {
+					f.Close()
+					sb.Stream.ReportError(err, CreateFileError, "", true)
+					return
+				}
+				fileSize = 0
+			}
 		}
 	}
 }
 
 func (sb *StreamBuffer) RemoveBufferedFiles(folder string) error {
-	if err := sb.FileSystem.RemoveAll(getPlatformPath(folder)); err != nil {
+	test := filepath.Dir(folder)
+	if err := sb.FileSystem.RemoveAll(test); err != nil {
 		return fmt.Errorf("failed to remove buffer folder: %w", err)
 	}
 	return nil
@@ -154,8 +163,51 @@ func (sb *StreamBuffer) PrepareBufferFolder(folder string) error {
 		return err
 	}
 
-	if err := checkVFSFolder(folder, sb.FileSystem); err != nil {
-		return fmt.Errorf("failed to check buffer folder: %w", err)
+	if err := sb.createBufferFolder(filepath.Dir(folder)); err != nil {
+		return fmt.Errorf("failed to create buffer folder: %w", err)
+	}
+
+	return nil
+}
+
+func (sb *StreamBuffer) createBufferFolder(path string) (err error) {
+
+	var debug string
+	_, err = sb.FileSystem.Stat(path)
+
+	if fsIsNotExistErr(err) {
+		// Folder does not exist, will now be created
+
+		// If we are on Windows and the cache location path is NOT on C:\ we need to create the volume it is located on
+		// Failure to do so here will result in a panic error and the stream not playing
+		if Settings.StoreBufferInRAM {
+			if sb.FileSystem.OSType() == avfs.OsWindows {
+				vm := sb.FileSystem.(avfs.VolumeManager)
+				pathIterator := avfs.NewPathIterator(sb.FileSystem, path)
+				if pathIterator.VolumeName() != "C:" {
+					vm.VolumeAdd(path)
+				}
+			}
+
+			err = sb.FileSystem.MkdirAll(path, 0755)
+			if err == nil {
+				debug = fmt.Sprintf("Create virtual filesystem Folder: %s", path)
+				ShowDebug(debug, 1)
+			} else {
+				return err
+			}
+
+		} else {
+			err = sb.FileSystem.MkdirAll(path, 0755)
+			if err == nil {
+				debug = fmt.Sprintf("Created folder on disk: %s", path)
+				ShowDebug(debug, 1)
+			} else {
+				return err
+			}
+		}
+
+		return nil
 	}
 
 	return nil
@@ -167,11 +219,11 @@ and returns a sorted list with the file names
 */
 func (sb *StreamBuffer) GetBufTmpFiles() (tmpFiles []string) {
 
-	var tmpFolder = sb.Stream.Folder + string(os.PathSeparator)
+	var tmpFolder = sb.Stream.Folder
 	var fileIDs []float64
 
 	if _, err := sb.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
-		files, err := sb.FileSystem.ReadDir(getPlatformPath(tmpFolder))
+		files, err := sb.FileSystem.ReadDir(tmpFolder)
 		if err != nil {
 			ShowError(err, 000)
 			return
@@ -210,17 +262,17 @@ func (sb *StreamBuffer) GetBufTmpFiles() (tmpFiles []string) {
 
 func (sb *StreamBuffer) GetBufferedSize() (size int) {
 	size = 0
-	var tmpFolder = sb.Stream.Folder + string(os.PathSeparator)
+	var tmpFolder = sb.Stream.Folder
 	if _, err := sb.FileSystem.Stat(tmpFolder); !fsIsNotExistErr(err) {
 
-		files, err := sb.FileSystem.ReadDir(getPlatformPath(tmpFolder))
+		files, err := sb.FileSystem.ReadDir(tmpFolder)
 		if err != nil {
 			ShowError(err, 000)
 			return
 		}
 		for _, file := range files {
 			if !file.IsDir() && filepath.Ext(file.Name()) == ".ts" {
-				file_info, err := sb.FileSystem.Stat(getPlatformFile(tmpFolder + file.Name()))
+				file_info, err := sb.FileSystem.Stat(filepath.Join(tmpFolder, file.Name()))
 				if err == nil {
 					size += int(file_info.Size())
 				}
