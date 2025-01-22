@@ -4,6 +4,8 @@ import "io"
 
 type BufferInterface interface {
 	StartBuffer(stream *Stream) error
+    StopBuffer()
+    CloseBuffer()
     HandleByteOutput(stdOut io.ReadCloser)
     PrepareBufferFolder(folder string) error
     GetBufTmpFiles() []string
@@ -13,4 +15,7 @@ type BufferInterface interface {
     CheckBufferFolder() (bool, error)
     CheckBufferedFile(file string) (bool, error)
     writeToPipe(file string) error
+    GetPipeReader() *io.PipeReader
+    GetStopChan() chan struct{}
+    SetStopChan(chan struct{})
 }
