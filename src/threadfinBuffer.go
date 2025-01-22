@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -20,7 +21,6 @@ func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
 		return err
 	}
 
-	stopChan := make(chan struct{})
 	ShowInfo(fmt.Sprintf("Streaming:Buffer:%s", "Threadfin"))
 	ShowInfo("Streaming URL:" + stream.URL)
 
@@ -64,7 +64,7 @@ func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
 
 		for {
 			select {
-			case <-stopChan:
+			case <-sb.StopChan:
 				resp.Body.Close()
 				time.Sleep(200 * time.Millisecond) // Let the buffer stop before going on
 				return
@@ -73,8 +73,17 @@ func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
 			}
 		}
 	}()
-	sb.StopChan = stopChan
 	return nil
+}
+
+func (sb *ThreadfinBuffer) StopBuffer() {
+	// Right now nothing to do here!
+}
+
+func (sb *ThreadfinBuffer) CloseBuffer() {
+	close(sb.StopChan)
+	close(sb.CloseChan)
+	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
 }
 
 func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {
@@ -99,40 +108,4 @@ func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {
 		return "", "", err
 	}
 	return videoURL, audioURL, nil
-}
-
-func (sb *ThreadfinBuffer) HandleByteOutput(stdOut io.ReadCloser) {
-    sb.StreamBuffer.HandleByteOutput(stdOut)
-}
-
-func (sb *ThreadfinBuffer) PrepareBufferFolder(folder string) error {
-    return sb.StreamBuffer.PrepareBufferFolder(folder)
-}
-
-func (sb *ThreadfinBuffer) GetBufTmpFiles() []string {
-    return sb.StreamBuffer.GetBufTmpFiles()
-}
-
-func (sb *ThreadfinBuffer) GetBufferedSize() int {
-    return sb.StreamBuffer.GetBufferedSize()
-}
-
-func (sb *ThreadfinBuffer) addBufferedFilesToPipe() {
-    sb.StreamBuffer.addBufferedFilesToPipe()
-}
-
-func (sb *ThreadfinBuffer) DeleteOldestSegment() {
-    sb.StreamBuffer.DeleteOldestSegment()
-}
-
-func (sb *ThreadfinBuffer) CheckBufferFolder() (bool, error) {
-    return sb.StreamBuffer.CheckBufferFolder()
-}
-
-func (sb *ThreadfinBuffer) CheckBufferedFile(file string) (bool, error) {
-    return sb.StreamBuffer.CheckBufferedFile(file)
-}
-
-func (sb *ThreadfinBuffer) writeToPipe(file string) error {
-    return sb.StreamBuffer.writeToPipe(file)
 }

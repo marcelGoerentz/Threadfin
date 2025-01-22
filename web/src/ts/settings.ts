@@ -100,6 +100,10 @@ class SettingsCategory {
         setting = this.createTextInput(settingsKey, '{{.settings.bufferTimeout.title}}', '{{.settings.bufferTimeout.placeholder}}');
         break;
 
+      case 'buffer.terminationTimeout':
+        setting = this.createTextInput(settingsKey, '{{.settings.bufferTerminationTimeout.title}}', '{{.settings.bufferTerminationTimeout.placeholder}}');
+        break;
+
       case 'ffmpeg.path':
         setting = this.createTextInput(settingsKey, '{{.settings.ffmpegPath.title}}', '{{.settings.ffmpegPath.placeholder}}');
         break;
@@ -363,6 +367,10 @@ class SettingsCategory {
 
       case 'buffer.size.kb':
         text = '{{.settings.bufferSize.description}}';
+        break;
+
+      case 'buffer.terminationTimeout':
+        text ='{{.settings.bufferTerminationTimeout.description}}';
         break;
 
       case 'buffer.autoReconnect':
