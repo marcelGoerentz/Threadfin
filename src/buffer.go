@@ -16,10 +16,11 @@ import (
 
 type StreamBuffer struct {
 	FileSystem         avfs.VFS
-	IsThirdPartyBuffer bool
 	Stream             *Stream // Reference to the parents struct
 	StopChan           chan struct{}
+	Stopped			   bool
 	CloseChan		   chan struct{}
+	Closed			   bool
 	LatestSegment      int
 	OldSegments        []string
 	PipeWriter         *io.PipeWriter
@@ -50,12 +51,18 @@ func (sb *StreamBuffer) StartBuffer(stream *Stream) error {
 }
 
 func (sb *StreamBuffer) StopBuffer() {
-	close(sb.StopChan)
+	if !sb.Stopped {
+		sb.Stopped = true
+		close(sb.StopChan)
+	}
 }
 
 func (sb *StreamBuffer) CloseBuffer() {
 	sb.StopBuffer()
-	close(sb.CloseChan)
+	if ! sb.Closed {
+		close(sb.CloseChan)
+		sb.Closed = true
+	}
 	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
 }
 
