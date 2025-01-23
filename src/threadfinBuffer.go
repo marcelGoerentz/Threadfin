@@ -13,7 +13,6 @@ import (
 
 type ThreadfinBuffer struct{
 	StreamBuffer
-
 }
 
 func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
@@ -76,14 +75,12 @@ func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
 	return nil
 }
 
-func (sb *ThreadfinBuffer) StopBuffer() {
-	// Right now nothing to do here!
-}
-
 func (sb *ThreadfinBuffer) CloseBuffer() {
-	close(sb.StopChan)
-	close(sb.CloseChan)
-	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	if !sb.Closed {
+		sb.Closed = true
+		close(sb.CloseChan)
+		sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	}
 }
 
 func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {

@@ -47,11 +47,14 @@ func (sb *ThirdPartyBuffer) StopBuffer() {
 }
 
 func (sb *ThirdPartyBuffer) CloseBuffer() {
-	close(sb.CloseChan)
-	sb.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
-	sb.Cmd.Wait()
-	DeletPIDfromDisc(fmt.Sprintf("%d", sb.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
-	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	if !sb.Closed{
+		sb.Closed = true
+		close(sb.CloseChan)
+		sb.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+		sb.Cmd.Wait()
+		DeletPIDfromDisc(fmt.Sprintf("%d", sb.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
+		sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	}
 }
 
 // SetBufferConfig returns the the arguments from the buffer settings in the config file

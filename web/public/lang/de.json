@@ -462,6 +462,11 @@
       "title": "Puffergröße",
       "description": "Puffergröße in MB.<br>M3U8: Wenn das TS-Segment kleiner als die Puffergröße ist, wird die Dateigröße des Segments verwendet."
     },
+    "bufferTerminationTimeout": {
+      "title": "Puffer-Schließ-Timeout",
+      "description": "Zeit in Sekunden, die der Puffer nach dem Verlassen des letzten Clients aktiv bleibt",
+      "placeholder": "Zeit in Sekunden"
+    },
     "storeBufferInRAM":
     {
       "title": "Puffer im RAM speichern",
