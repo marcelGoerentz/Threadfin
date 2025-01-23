@@ -299,15 +299,14 @@ class SettingsCategory {
 
         var tdRight = document.createElement('TD');
         var button = this.Content.createInput('button', 'upload', '{{.button.uploadCustomImage}}');
+
         button.setAttribute('onclick', 'javascript: uploadCustomImage();');
         tdRight.appendChild(button)
         setting.appendChild(tdLeft);
         setting.appendChild(tdRight);
         break;
     }
-
     return setting;
-
   }
 
   createDescription(settingsKey: string): any {
