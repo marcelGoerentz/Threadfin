@@ -394,6 +394,7 @@ func (sb *StreamBuffer) writeBytesToPipe(data []byte) error {
 				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
 				return err
 			}
+			time.Sleep(800 * time.Millisecond)
 		}
 	}
 }
