@@ -3,7 +3,11 @@ package src
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"os"
+	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 
@@ -79,7 +83,7 @@ func NewStreamManager() *StreamManager {
 StartStream starts the ffmpeg process for buffering a stream
 It will check if the stream already exists
 */
-func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWriter) (clientID string, playlistID string) {
+func (sm *StreamManager) StartStream(streamInfo *StreamInfo) (clientID string, playlistID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -102,7 +106,7 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 		sm.Playlists[playlistID] = playlist
 
 		// check if a new stream is possible
-		if sm.IsNewStreamPossible(streamInfo, w) {
+		if sm.IsNewStreamPossible(streamInfo) {
 			// create a new buffer and add the stream to the map within the new playlist
 			sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.FileSystem, sm.errorChan)
 			if sm.Playlists[playlistID].Streams[streamID] == nil {
@@ -110,19 +114,29 @@ func (sm *StreamManager) StartStream(streamInfo StreamInfo, w http.ResponseWrite
 			}
 			ShowInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
 		} else {
-			return "", ""
+			streamInfo.URLid = "TunerLimitReached"
+			if _, exists := sm.Playlists[playlistID].Streams["TunerLimitReached"]; !exists {
+				stream := CreateTunerLimitReachedStream()
+				sm.Playlists[playlistID].Streams["TunerLimitReached"] = stream
+				HandleStreamLimit(stream)
+			}
 		}
 	} else {
 		// check if the stream already exists
 		stream, exists := sm.Playlists[playlistID].Streams[streamID]
 		if !exists {
 			// check if a new stream is possible
-			if sm.IsNewStreamPossible(streamInfo, w) {
+			if sm.IsNewStreamPossible(streamInfo) {
 				// create a new buffer and add the stream to the map within the existing playlist
 				sm.Playlists[playlistID].Streams[streamID] = CreateStream(streamInfo, sm.FileSystem, sm.errorChan)
 				ShowInfo(fmt.Sprintf("Streaming:Started streaming for %s", streamID))
 			} else {
-				return "", ""
+				streamInfo.URLid = "TunerLimitReached"
+				if _, exists := sm.Playlists[playlistID].Streams["TunerLimitReached"]; !exists {
+					stream := CreateTunerLimitReachedStream()
+					sm.Playlists[playlistID].Streams["TunerLimitReached"] = stream
+					HandleStreamLimit(stream)
+				}
 			}
 		} else {
 			if len(stream.Clients) == 0 {
@@ -152,12 +166,11 @@ func InitBufferVFS(virtual bool) avfs.VFS {
 /*
 IsNewStreamPossible reports whether there is a new connection allowed
 */
-func (sm *StreamManager) IsNewStreamPossible(streamInfo StreamInfo, w http.ResponseWriter) bool {
+func (sm *StreamManager) IsNewStreamPossible(streamInfo *StreamInfo) bool {
 	playlistID := streamInfo.PlaylistID
 	if len(sm.Playlists[playlistID].Streams) < GetTuner(playlistID, GetPlaylistType(playlistID)) {
 		return true
 	} else {
-		HandleStreamLimit(w)
 		return false
 	}
 }
@@ -195,15 +208,15 @@ func (sm *StreamManager) StopStream(playlistID string, streamID string, clientID
 						if err := sm.FileSystem.RemoveAll(stream.Folder); err != nil {
 							ShowError(err, 4005)
 						}
-						delete(sm.Playlists[playlistID].Streams, streamID)
+						delete(sm.Playlists[playlistID].Streams, streamID)				
+						if len(sm.Playlists[playlistID].Streams) == 0 {
+							delete(sm.Playlists, playlistID)
+						}
 					}
 					stream.TimerCancel = cancel
                     stream.StopTimer = time.AfterFunc(time.Duration(Settings.BufferTerminationTimeout) * time.Second, cancel)
 				}
 			}
-		}
-		if len(sm.Playlists[playlistID].Streams) == 0 {
-			delete(sm.Playlists, playlistID)
 		}
 	}
 }
@@ -230,11 +243,8 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 		sm.FileSystem = InitBufferVFS(Settings.StoreBufferInRAM)
 	}
 
-	clientID, playlistID := sm.StartStream(streamInfo, w)
+	clientID, playlistID := sm.StartStream(&streamInfo)
 	if clientID == "" || playlistID == "" {
-		if sm.Playlists[streamInfo.PlaylistID].Streams[streamInfo.URLid] == nil {
-			delete(sm.Playlists, streamInfo.PlaylistID)
-		}
 		return
 	}
 	defer sm.StopStream(playlistID, streamInfo.URLid, clientID)
@@ -255,6 +265,8 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 
 	// Make sure Broadcast is running only once
 	if len(stream.Clients) == 1 {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-type", "video/mpeg2ts")
 		go stream.Broadcast()
 	}
 
@@ -319,4 +331,153 @@ func CreatePlaylistStruct(name string, streams map[string]*Stream) *PlaylistStru
 		playlist.ClientConnections += len(stream.Clients)
 	}
 	return playlist
+}
+
+/*
+GetStreamLimitContent will check if there is already a custuom video that will be provided to client.
+
+Otherwise it will check if there has been uploaded a image that will be converted into an video.
+Finally it will provide either the default content or the new content.
+*/
+func GetStreamLimitContent() ([]byte, bool) {
+	var content []byte
+	var contentOk bool
+	imageFileList, err := os.ReadDir(System.Folder.Custom)
+	if err != nil {
+		ShowError(err, 0)
+	}
+	fileList, err := os.ReadDir(System.Folder.Video)
+	if err == nil {
+		createContent := ShouldCreateContent(fileList)
+		if createContent && len(imageFileList) > 0 {
+			err := CreateAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
+			if err == nil {
+				contentOk = true
+			} else {
+				ShowError(err, 0)
+				return nil, false
+			}
+			content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
+			if err != nil {
+				ShowError(err, 0)
+			}
+			contentOk = true
+		}
+	}
+	if !contentOk {
+		if value, ok := webUI["web/public/video/stream-limit.ts"]; ok && !contentOk {
+			contentOk = true
+			content = GetHTMLString(value.(string))
+		}
+	}
+	return content, contentOk
+}
+
+/*
+HandleStreamLimit sends an info to the client that the stream limit has been reached.
+The content that will provided to client will be fetched with GetStreamLimitContent() function
+*/
+func HandleStreamLimit(stream *Stream) {
+	ShowInfo("Streaming Status:No new connections available. Tuner limit reached.")
+	ShowInfo("Streaming limit reached content instead")
+	content, contentOk := GetStreamLimitContent()
+	if contentOk {
+        // Write content to the pipe in a loop
+        go func() {
+			stream.Buffer.writeBytesToPipe(content)
+        }()
+	}
+}
+
+/*
+ShouldCreateContent reports whether a new video file shall be created.
+It removes existing files if necessary.
+*/
+func ShouldCreateContent(fileList []fs.DirEntry) bool {
+	switch len(fileList) {
+	case 0:
+		return true
+	case 1:
+		return false
+	default:
+		for _, file := range fileList {
+			os.Remove(System.Folder.Video + file.Name())
+		}
+		return true
+	}
+}
+
+/*
+GetTuner returns the maximum number of connections for a playlist.
+It will check if the buffer type is matching the third party buffers
+*/
+func GetTuner(id, playlistType string) (tuner int) {
+	switch Settings.Buffer {
+	case "-":
+		tuner = Settings.Tuner
+
+	case "ffmpeg", "vlc", "threadfin":
+		i, err := strconv.Atoi(getProviderParameter(id, playlistType, "tuner"))
+		if err == nil {
+			tuner = i
+		} else {
+			ShowError(err, 0)
+			tuner = 1
+		}
+	}
+	return
+}
+
+/*
+GetPlaylistType returns the type of the playlist based on the playlist ID
+*/
+func GetPlaylistType(playlistID string) string {
+	switch playlistID[0:1] {
+	case "M":
+		return "m3u"
+	case "H":
+		return "hdhr"
+	default:
+		return ""
+	}
+}
+
+/*
+CreateAlternativNoMoreStreamsVideo generates a new video file based on the image provided as path to it.
+It will use the third party tool defined in the settings and starts a process for generating the video file
+*/
+func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
+	cmd := new(exec.Cmd)
+	path, arguments := prepareArguments(pathToFile)
+	if len(arguments) == 0 {
+		if _, err := os.Stat(Settings.FFmpegPath); err != nil {
+			return fmt.Errorf("ffmpeg path is not valid. Can not convert custom image to video")
+		}
+	}
+
+	cmd = exec.Command(path, arguments...)
+
+	if len(cmd.Args) > 0 && path != "" {
+		ShowInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
+		err := cmd.Run()
+		if err != nil {
+			return err
+		}
+		ShowInfo("Streaming Status:Successfully created video from custom image")
+		return nil
+	} else {
+		return fmt.Errorf("path for third party tool ")
+	}
+}
+
+// TODO: Add description
+func prepareArguments(pathToFile string) (string, []string) {
+	switch Settings.Buffer {
+	case "ffmpeg", "threadfin", "-":
+		return Settings.FFmpegPath, []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
+	case "vlc":
+		return Settings.VLCPath, []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
+	default:
+		return "", []string{}
+	}
 }

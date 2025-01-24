@@ -5,11 +5,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
 	"os"
-	"os/exec"
-	"strconv"
 	"sync"
 	"time"
 
@@ -58,7 +55,7 @@ type ErrorInfo struct {
 /*
 CreateStream will create and return a new Stream struct, it will also start the new buffer.
 */
-func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan ErrorInfo) *Stream {
+func CreateStream(streamInfo *StreamInfo, fileSystem avfs.VFS, errorChan chan ErrorInfo) *Stream {
 	ctx, cancel := context.WithCancel(context.Background())
 	folder := System.Folder.Temp + streamInfo.PlaylistID + string(os.PathSeparator) + streamInfo.URLid
 	pipeReader, pipeWriter := io.Pipe()
@@ -107,157 +104,29 @@ func CreateStream(streamInfo StreamInfo, fileSystem avfs.VFS, errorChan chan Err
 	return stream
 }
 
-/*
-GetStreamLimitContent will check if there is already a custuom video that will be provided to client.
-
-Otherwise it will check if there has been uploaded a image that will be converted into an video.
-Finally it will provide either the default content or the new content.
-*/
-func GetStreamLimitContent() ([]byte, bool) {
-	var content []byte
-	var contentOk bool
-	imageFileList, err := os.ReadDir(System.Folder.Custom)
-	if err != nil {
-		ShowError(err, 0)
+func CreateTunerLimitReachedStream() *Stream {
+	ctx, cancel := context.WithCancel(context.Background())
+	// Create a minimal Stream object
+	pipeReader, pipeWriter := io.Pipe()
+	streamBuffer := &StreamBuffer{
+		PipeWriter: pipeWriter,
+		PipeReader: pipeReader,
+		StopChan: make(chan struct{}),
+		CloseChan: make(chan struct{}),
 	}
-	fileList, err := os.ReadDir(System.Folder.Video)
-	if err == nil {
-		createContent := ShouldCreateContent(fileList)
-		if createContent && len(imageFileList) > 0 {
-			err := CreateAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
-			if err == nil {
-				contentOk = true
-			} else {
-				ShowError(err, 0)
-				return nil, false
-			}
-			content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
-			if err != nil {
-				ShowError(err, 0)
-			}
-			contentOk = true
-		}
+	var buffer BufferInterface = streamBuffer
+	stream := &Stream{
+		Clients: make(map[string]*Client),
+		Buffer: buffer,
+		Name: "Tuner limit reached",
+		Ctx: ctx,
+		Cancel: cancel,
+		DoAutoReconnect: false,
+		Folder: "",
 	}
-	if !contentOk {
-		if value, ok := webUI["html/video/stream-limit.ts"]; ok && !contentOk {
-			contentOk = true
-			content = GetHTMLString(value.(string))
-		}
-	}
-	return content, contentOk
-}
+	streamBuffer.Stream = stream
 
-/*
-HandleStreamLimit sends an info to the client that the stream limit has been reached.
-The content that will provided to client will be fetched with GetStreamLimitContent() function
-*/
-func HandleStreamLimit(w http.ResponseWriter) {
-	ShowInfo("Streaming Status: No new connections available. Tuner limit reached.")
-	content, contentOk := GetStreamLimitContent()
-	if contentOk {
-		w.Header().Set("Content-type", "video/mpeg")
-		w.WriteHeader(http.StatusOK)
-		for i := 0; i < 600; i++ {
-			if _, err := w.Write(content); err != nil {
-				ShowError(err, 0)
-				return
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-	}
-}
-
-/*
-ShouldCreateContent reports whether a new video file shall be created.
-It removes existing files if necessary.
-*/
-func ShouldCreateContent(fileList []fs.DirEntry) bool {
-	switch len(fileList) {
-	case 0:
-		return true
-	case 1:
-		return false
-	default:
-		for _, file := range fileList {
-			os.Remove(System.Folder.Video + file.Name())
-		}
-		return true
-	}
-}
-
-/*
-GetTuner returns the maximum number of connections for a playlist.
-It will check if the buffer type is matching the third party buffers
-*/
-func GetTuner(id, playlistType string) (tuner int) {
-	switch Settings.Buffer {
-	case "-":
-		tuner = Settings.Tuner
-
-	case "ffmpeg", "vlc", "threadfin":
-		i, err := strconv.Atoi(getProviderParameter(id, playlistType, "tuner"))
-		if err == nil {
-			tuner = i
-		} else {
-			ShowError(err, 0)
-			tuner = 1
-		}
-	}
-	return
-}
-
-/*
-GetPlaylistType returns the type of the playlist based on the playlist ID
-*/
-func GetPlaylistType(playlistID string) string {
-	switch playlistID[0:1] {
-	case "M":
-		return "m3u"
-	case "H":
-		return "hdhr"
-	default:
-		return ""
-	}
-}
-
-/*
-CreateAlternativNoMoreStreamsVideo generates a new video file based on the image provided as path to it.
-It will use the third party tool defined in the settings and starts a process for generating the video file
-*/
-func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
-	cmd := new(exec.Cmd)
-	path, arguments := prepareArguments(pathToFile)
-	if len(arguments) == 0 {
-		if _, err := os.Stat(Settings.FFmpegPath); err != nil {
-			return fmt.Errorf("ffmpeg path is not valid. Can not convert custom image to video")
-		}
-	}
-
-	cmd = exec.Command(path, arguments...)
-
-	if len(cmd.Args) > 0 && path != "" {
-		ShowInfo("Streaming Status:Creating video from uploaded image for a customized no more stream video")
-		err := cmd.Run()
-		if err != nil {
-			return err
-		}
-		ShowInfo("Streaming Status:Successfully created video from custom image")
-		return nil
-	} else {
-		return fmt.Errorf("path for third party tool ")
-	}
-}
-
-// TODO: Add description
-func prepareArguments(pathToFile string) (string, []string) {
-	switch Settings.Buffer {
-	case "ffmpeg", "threadfin", "-":
-		return Settings.FFmpegPath, []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
-	case "vlc":
-		return Settings.VLCPath, []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
-	default:
-		return "", []string{}
-	}
+	return stream
 }
 
 func CloseClientConnection(w http.ResponseWriter) {

@@ -63,7 +63,9 @@ func (sb *StreamBuffer) CloseBuffer() {
 		close(sb.CloseChan)
 		sb.Closed = true
 	}
-	sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	if sb.Stream.Folder != "" {
+		sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	}
 }
 
 func (sb *StreamBuffer) GetPipeReader() *io.PipeReader{
@@ -372,6 +374,22 @@ func (sb *StreamBuffer) writeToPipe(file string) error {
 			}
 
 			_, err = sb.PipeWriter.Write(buf[:n])
+			if err != nil {
+				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+				return err
+			}
+		}
+	}
+}
+
+func (sb *StreamBuffer) writeBytesToPipe(data []byte) error {
+	for {
+		select {
+		case <- sb.StopChan:
+			// Pipe was closed quit writing to it
+			return nil
+		default:
+			_, err := sb.PipeWriter.Write(data)
 			if err != nil {
 				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
 				return err

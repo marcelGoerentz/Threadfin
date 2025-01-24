@@ -15,6 +15,7 @@ type BufferInterface interface {
     CheckBufferFolder() (bool, error)
     CheckBufferedFile(file string) (bool, error)
     writeToPipe(file string) error
+    writeBytesToPipe(data []byte) error
     GetPipeReader() *io.PipeReader
     GetStopChan() chan struct{}
     SetStopChan(chan struct{})
