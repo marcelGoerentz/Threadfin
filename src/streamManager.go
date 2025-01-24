@@ -379,10 +379,19 @@ func HandleStreamLimit(stream *Stream) {
 	ShowInfo("Streaming Status:No new connections available. Tuner limit reached.")
 	ShowInfo("Streaming limit reached content instead")
 	content, contentOk := GetStreamLimitContent()
+	var stopChannel = stream.Buffer.GetStopChan()
 	if contentOk {
         // Write content to the pipe in a loop
         go func() {
-			stream.Buffer.writeBytesToPipe(content)
+			for {
+				select {
+				case <- stopChannel:
+					return
+				default:
+					stream.Buffer.writeBytesToPipe(content)
+					time.Sleep(750 * time.Millisecond)
+				}
+			}
         }()
 	}
 }
