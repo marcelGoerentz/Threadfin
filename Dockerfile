@@ -19,8 +19,8 @@ FROM base AS beta
 RUN go build -tags beta .
 
 FROM ${BUILD_FLAG} AS builder
-ARG BRANCH
-RUN echo "Build ${BRANCH} version"
+ARG BUILD_FLAG
+RUN echo "Build ${BUILD_FLAG} version"
 
 # Second stage. Creating an image
 # -----------------------------------------------------------------------------

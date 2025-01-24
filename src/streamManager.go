@@ -351,16 +351,14 @@ func GetStreamLimitContent() ([]byte, bool) {
 		createContent := ShouldCreateContent(fileList)
 		if createContent && len(imageFileList) > 0 {
 			err := CreateAlternativNoMoreStreamsVideo(System.Folder.Custom + imageFileList[0].Name())
-			if err == nil {
-				contentOk = true
-			} else {
-				ShowError(err, 0)
-				return nil, false
-			}
-			content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
 			if err != nil {
 				ShowError(err, 0)
 			}
+		}
+		content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
+		if err != nil {
+			ShowError(err, 0)
+		} else {
 			contentOk = true
 		}
 	}
@@ -474,9 +472,9 @@ func CreateAlternativNoMoreStreamsVideo(pathToFile string) error {
 func prepareArguments(pathToFile string) (string, []string) {
 	switch Settings.Buffer {
 	case "ffmpeg", "threadfin", "-":
-		return Settings.FFmpegPath, []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
+		return Settings.FFmpegPath, []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
 	case "vlc":
-		return Settings.VLCPath, []string{"-loop", "1", "-i", pathToFile, "-c:v", "libx264", "-t", "1", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080", fmt.Sprintf("%sstream-limit.ts", System.Folder.Video)}
+		return Settings.VLCPath, []string{"--no-audio", "--loop", "--sout", fmt.Sprintf("'#transcode{vcodec=h264,vb=1024,scale=1,width=1920,height=1080,acodec=none,venc=x264{preset=ultrafast}}:standard{access=file,mux=ts,dst=%sstream-limit.ts}'", System.Folder.Video), System.Folder.Video, pathToFile}
 	default:
 		return "", []string{}
 	}
