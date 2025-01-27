@@ -17,7 +17,6 @@ import (
 type StreamBuffer struct {
 	FileSystem         avfs.VFS
 	Stream             *Stream // Reference to the parents struct
-	RealData		   bool
 	StopChan           chan struct{}
 	Stopped			   bool
 	CloseChan		   chan struct{}
@@ -144,7 +143,6 @@ func (sb *StreamBuffer) HandleByteOutput(stdOut io.ReadCloser) {
 				tmpFile = fmt.Sprintf("%s%d.ts", tmpFolder, tmpSegment)
 				// Close the current file and create a new one
 				f.Close()
-				sb.RealData = true
 				sb.LatestSegment = tmpSegment
 				f, err = bufferVFS.Create(tmpFile)
 				if err != nil {
@@ -294,41 +292,27 @@ func (sb *StreamBuffer) GetBufferedSize() (size int) {
 }
 
 func (sb *StreamBuffer) addBufferedFilesToPipe() {
-	var waitContent []byte
-	var contentOk = false
-	if value, ok := webUI["web/public/video/stream-loading.ts"]; ok {
-		contentOk = true
-		waitContent = GetHTMLString(value.(string))
-	}
-
 	for {
 		select {
 		case <-sb.StopChan:
 			return
 		default:
-			if !sb.RealData {
-				if contentOk {
-					sb.writeBytesToPipe(waitContent)
-					time.Sleep(800 * time.Millisecond)
+			if sb.GetBufferedSize() < Settings.BufferSize * 1024 {
+				time.Sleep(25 * time.Millisecond) // Wait for new files
+				continue
+			}
+			tmpFiles := sb.GetBufTmpFiles()
+			for _, f := range tmpFiles {
+				if ok, err := sb.CheckBufferFolder(); !ok {
+					sb.Stream.ReportError(err, BufferFolderError, "", true)
+					return
 				}
-			} else {
-				if sb.GetBufferedSize() < Settings.BufferSize * 1024 {
-					time.Sleep(25 * time.Millisecond) // Wait for new files
-					continue
+				ShowDebug(fmt.Sprintf("Streaming:Broadcasting file %s to clients", f), 1)
+				err := sb.writeToPipe(f) // Add file so it will be copied to the pipes
+				if err != nil {
+					sb.Stream.ReportError(err, 0, "", false)
 				}
-				tmpFiles := sb.GetBufTmpFiles()
-				for _, f := range tmpFiles {
-					if ok, err := sb.CheckBufferFolder(); !ok {
-						sb.Stream.ReportError(err, BufferFolderError, "", true)
-						return
-					}
-					ShowDebug(fmt.Sprintf("Streaming:Broadcasting file %s to clients", f), 1)
-					err := sb.writeToPipe(f) // Add file so it will be copied to the pipes
-					if err != nil {
-						sb.Stream.ReportError(err, 0, "", false)
-					}
-					sb.DeleteOldestSegment()
-				}
+				sb.DeleteOldestSegment()
 			}
 		}
 	}
@@ -398,10 +382,19 @@ func (sb *StreamBuffer) writeToPipe(file string) error {
 	}
 }
 
-func (sb *StreamBuffer) writeBytesToPipe(data []byte) (err error) {
-	_, err = sb.PipeWriter.Write(data)
-	if err != nil {
-		sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+func (sb *StreamBuffer) writeBytesToPipe(data []byte) error {
+	for {
+		select {
+		case <- sb.StopChan:
+			// Pipe was closed quit writing to it
+			return nil
+		default:
+			_, err := sb.PipeWriter.Write(data)
+			if err != nil {
+				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+				return err
+			}
+			time.Sleep(800 * time.Millisecond)
+		}
 	}
-	return
 }
