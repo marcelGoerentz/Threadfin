@@ -462,6 +462,11 @@
       "title": "Buffer Size",
       "description": "Buffer size in MB.<br>M3U8: If the TS segment smaller then the buffer size, the file size of the segment is used."
     },
+    "bufferTerminationTimeout": {
+      "title": "Buffer Termination Timeout",
+      "description": "Time in seconds that the buffer stays alive after the last client left",
+      "placeholder": "Time in seconds"
+    },
     "storeBufferInRAM":
     {
       "title": "Store buffer in RAM",

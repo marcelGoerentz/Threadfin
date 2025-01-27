@@ -100,6 +100,10 @@ class SettingsCategory {
         setting = this.createTextInput(settingsKey, '{{.settings.bufferTimeout.title}}', '{{.settings.bufferTimeout.placeholder}}');
         break;
 
+      case 'buffer.terminationTimeout':
+        setting = this.createTextInput(settingsKey, '{{.settings.bufferTerminationTimeout.title}}', '{{.settings.bufferTerminationTimeout.placeholder}}');
+        break;
+
       case 'ffmpeg.path':
         setting = this.createTextInput(settingsKey, '{{.settings.ffmpegPath.title}}', '{{.settings.ffmpegPath.placeholder}}');
         break;
@@ -295,15 +299,14 @@ class SettingsCategory {
 
         var tdRight = document.createElement('TD');
         var button = this.Content.createInput('button', 'upload', '{{.button.uploadCustomImage}}');
+
         button.setAttribute('onclick', 'javascript: uploadCustomImage();');
         tdRight.appendChild(button)
         setting.appendChild(tdLeft);
         setting.appendChild(tdRight);
         break;
     }
-
     return setting;
-
   }
 
   createDescription(settingsKey: string): any {
@@ -364,6 +367,10 @@ class SettingsCategory {
 
       case 'buffer.size.kb':
         text = '{{.settings.bufferSize.description}}';
+        break;
+
+      case 'buffer.terminationTimeout':
+        text ='{{.settings.bufferTerminationTimeout.description}}';
         break;
 
       case 'buffer.autoReconnect':
@@ -598,6 +605,7 @@ function saveSettings() {
                 break;
 
               case 'buffer.timeout':
+              case 'buffer.terminationTimeout':
                 value = parseFloat(value);
 
               case 'bindingIPs':

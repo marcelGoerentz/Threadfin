@@ -36,6 +36,7 @@ type RequestStruct struct {
 		Buffer                   *string   `json:"buffer,omitempty"`
 		BufferSize               *int      `json:"buffer.size.kb,omitempty"`
 		BufferTimeout            *float64  `json:"buffer.timeout,omitempty"`
+		BufferTerminationTimeout *int      `json:"buffer.terminationTimeout,omitempty"`
 		BufferAutoReconnect		 *bool	   `json:"buffer.autoReconnect,omitempty"`
 		CacheImages              *bool     `json:"cache.images,omitempty"`
 		EpgSource                *string   `json:"epgSource,omitempty"`
@@ -59,7 +60,7 @@ type RequestStruct struct {
 		BindingIPs               *string   `json:"bindingIPs,omitempty"`
 		ForceHttpsToUpstream     *bool     `json:"forceHttps,omitempty"`
 		UseHttps                 *bool     `json:"useHttps,omitempty"`
-		ForceClientHttps         *bool     `json:"forceClientHttps"`
+		ForceClientHttps         *bool     `json:"forceClientHttps,omitempty"`
 		ThreadfinDomain          *string   `json:"threadfinDomain,omitempty"`
 		EnableNonAscii           *bool     `json:"enableNonAscii,omitempty"`
 		EpgCategories            *string   `json:"epgCategories,omitempty"`
@@ -135,7 +136,7 @@ type ResponseStruct struct {
 	OpenLink            string                 `json:"openLink,omitempty"`
 	OpenMenu            string                 `json:"openMenu,omitempty"`
 	Reload              bool                   `json:"reload,omitempty"`
-	Settings            SettingsStruct         `json:"settings"`
+	Settings            *SettingsStruct         `json:"settings"`
 	Status              bool                   `json:"status"`
 	Token               string                 `json:"token,omitempty"`
 	Users               map[string]interface{} `json:"users,omitempty"`

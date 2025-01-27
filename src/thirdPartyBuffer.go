@@ -7,42 +7,70 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"syscall"
 )
 
+type ThirdPartyBuffer struct {
+	StreamBuffer
+	Cmd    *exec.Cmd
+	BufferType string
+	Path       string
+	Options    string
+}
+
+
 // StartThirdPartyBuffer starts the third party tool and capture its output for the given stream.
-func StartThirdPartyBuffer(stream *Stream) error {
-         
-	SetBufferConfig(stream.Buffer.Config)
-	bufferConfig := stream.Buffer.Config
-	if bufferConfig.BufferType == "" {
+func (sb *ThirdPartyBuffer) StartBuffer(stream *Stream) error {   
+	if err := sb.StreamBuffer.StartBuffer(stream); err != nil {
+		return err
+	}
+
+	sb.SetBufferConfig()
+	if sb.BufferType == "" {
 		return fmt.Errorf("could not set buffer config")
 	}
 
-	ShowInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", bufferConfig.BufferType, bufferConfig.Path))
+	ShowInfo(fmt.Sprintf("Streaming: Buffer:%s path:%s", sb.BufferType, sb.Path))
 	ShowInfo("Streaming URL:" + stream.URL)
 
-	err := RunBufferCommand(stream)
+	err := sb.RunBufferCommand(stream)
 	if err != nil {
 		stream.handleBufferError(err)
 	}
 	return nil
 }
 
+func (sb *ThirdPartyBuffer) StopBuffer() {
+	close(sb.StopChan)
+}
+
+func (sb *ThirdPartyBuffer) CloseBuffer() {
+	if !sb.Closed{
+		sb.Closed = true
+		close(sb.CloseChan)
+		sb.Cmd.Process.Signal(syscall.SIGKILL) // Kill the third party tool process
+		sb.Cmd.Wait()
+		DeletPIDfromDisc(fmt.Sprintf("%d", sb.Cmd.Process.Pid)) // Delete the PID since the process has been terminated
+		sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	}
+}
+
 // SetBufferConfig returns the the arguments from the buffer settings in the config file
-func SetBufferConfig(config *BufferConfig) {
-	config.BufferType = strings.ToUpper(Settings.Buffer)
-	switch config.BufferType {
+func (sb *ThirdPartyBuffer) SetBufferConfig() {
+	sb.BufferType = strings.ToUpper(Settings.Buffer)
+	switch sb.BufferType {
 	case "FFMPEG":
-		config.Options = Settings.FFmpegOptions
-		config.Path = Settings.FFmpegPath
+		sb.Options = Settings.FFmpegOptions
+		sb.Path = Settings.FFmpegPath
 	case "VLC":
-		config.Options = Settings.VLCOptions
-		config.Path = Settings.VLCPath
+		sb.Options = Settings.VLCOptions
+		sb.Path = Settings.VLCPath
 	default:
-		config.BufferType = ""
-		config.Options = ""
-		config.Path = ""
+		sb.BufferType = ""
+		sb.Options = ""
+		sb.Path = ""
 	}
 }
 
@@ -58,12 +86,12 @@ func SetBufferConfig(config *BufferConfig) {
 // Returns:
 //   - *Buffer: A pointer to a Buffer struct representing the buffer process.
 //   - error: An error object if an error occurs, otherwise nil.
-func RunBufferCommand(stream *Stream) error {
-	bufferConfig := stream.Buffer.Config
-	args := PrepareBufferArguments(bufferConfig.Options, stream.URL)
+func (sb *ThirdPartyBuffer) RunBufferCommand(stream *Stream) error {
+	sb.Stream = stream
+	args := PrepareBufferArguments(sb.Options, stream.URL)
 
-	cmd := exec.Command(bufferConfig.Path, args...)
-	debug := fmt.Sprintf("%s:%s %s", strings.ToUpper(Settings.Buffer), bufferConfig.Path, args)
+	cmd := exec.Command(sb.Path, args...)
+	debug := fmt.Sprintf("%s:%s %s", strings.ToUpper(Settings.Buffer), sb.Path, args)
 	ShowDebug(debug, 1)
 
 	stdOut, stdErr, err := GetCommandPipes(cmd)
@@ -76,12 +104,10 @@ func RunBufferCommand(stream *Stream) error {
 	}
 	WritePIDtoDisk(fmt.Sprintf("%d", cmd.Process.Pid))
 
-	go ShowCommandStdErrInConsole(bufferConfig.BufferType, stdErr)
-	go stream.Buffer.HandleByteOutput(stdOut)
+	go ShowCommandStdErrInConsole(sb.BufferType, stdErr)
+	go sb.HandleByteOutput(stdOut)
 
-	stream.Buffer.IsThirdPartyBuffer = true
-	stream.Buffer.Cmd = cmd
-
+	sb.Cmd = cmd
 	return nil
 }
 

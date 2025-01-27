@@ -11,10 +11,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -46,7 +46,7 @@ var GitHub = GitHubStruct{Branch: "master", User: "marcelGoerentz", Repo: "Threa
 const Name = "Threadfin"
 
 // Version : Major, Minor, Patch, Build
-const Version = "1.8.0.0"
+const Version = "1.8.1.0"
 
 // DBVersion : Database version
 const DBVersion = "0.5.0"
@@ -71,6 +71,8 @@ var h = flag.Bool("h", false, ": Show help")
 var dev = flag.Bool("dev", false, ": Activates the developer mode, the source code must be available. The local files for the web interface are used.")
 
 func main() {
+
+	cleanUpOldInstances()
 
 	webserver := &src.WebServer{}
 
@@ -170,9 +172,6 @@ func main() {
 	// Https webserver
 	system.Flag.UseHttps = *useHttps
 
-	// Kill all remaining processes and remove PIDs file
-	killAllProcesses()
-
 	// Debug Level
 	system.Flag.Debug = *debug
 	if system.Flag.Debug > 3 {
@@ -211,9 +210,8 @@ func main() {
 	}
 
 	// Update binary
-	err = src.BinaryUpdate(false)
-	if err != nil {
-		src.ShowError(err, 0)
+	if src.BinaryUpdate(false) {
+		os.Exit(0)
 	}
 
 	// Build the database
@@ -254,19 +252,7 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 			continue
 		case syscall.SIGINT, syscall.SIGABRT, syscall.SIGTERM:
 
-			// Lock against reconnection for clients
-			webserver.SM.LockAgainstNewStreams = true
-
-			src.ShowInfo("Threadfin:Stop all streams")
-			// Stop all streams
-			stopAllStreams(webserver)
-
-			src.ShowInfo("Threadfin:Killing all processes")
-			// Kill all processes
-			killAllProcesses()
-
-			// Shutdown the webserver gracefully
-			shutdownWebserver(webserver)
+			CloseWebserverGracefully(webserver)
 
 			// Send signal that everything has ended
 			done <- true
@@ -277,6 +263,27 @@ func handleSignals(sigs chan os.Signal, done chan bool, webserver *src.WebServer
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
+}
+
+func cleanUpOldInstances() {
+	killAllProcesses()
+}
+
+//
+func CloseWebserverGracefully(webserver *src.WebServer){
+	// Lock against reconnection for clients
+	webserver.SM.LockAgainstNewStreams = true
+
+	src.ShowInfo("Threadfin:Stop all streams")
+	// Stop all streams
+	stopAllStreams(webserver)
+
+	src.ShowInfo("Threadfin:Killing all processes")
+	// Kill all processes
+	killAllProcesses()
+
+	// Shutdown the webserver gracefully
+	shutdownWebserver(webserver)
 }
 
 // stopAllStreams will stop all existing streams and buffers
@@ -334,8 +341,15 @@ func getPIDsFromFile(tempFolder string) ([]string, error) {
 
 // killProcess kills a process by its PID
 func killProcess(pid string) error {
-	cmd := exec.Command("kill", "-9", pid)
-	return cmd.Run()
+	pidInt, err := strconv.Atoi(pid)
+	if err != nil {
+		return err
+	}
+	proc, err := os.FindProcess(pidInt)
+	if err != nil {
+		return err
+	}
+	return proc.Kill()
 }
 
 // killAllProcesses kills processes that had been saved in PID

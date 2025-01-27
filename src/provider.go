@@ -305,7 +305,16 @@ func downloadFileFromServer(providerURL string, proxyUrl string) (filename strin
 		return
 	}
 
-	httpClient := &http.Client{}
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Allow up to 10 redirects
+			if len(via) >= 10 {
+				return http.ErrUseLastResponse
+			}
+			return nil
+		},
+	}
 
 	if proxyUrl != "" {
 		proxyURL, err := url.Parse(proxyUrl)
@@ -320,14 +329,22 @@ func downloadFileFromServer(providerURL string, proxyUrl string) (filename strin
 		}
 	}
 
-	resp, err := httpClient.Get(providerURL)
+	// Create a Request to set headers
+	req, err := http.NewRequest("GET", providerURL, nil)
+	if err != nil {
+		return
+	}
 
+	req.Header.Set("User-Agent", Settings.UserAgent)
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Encoding", "gzip,deflate")
+
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return
 	}
 	defer resp.Body.Close()
-
-	resp.Header.Set("User-Agent", Settings.UserAgent)
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("%d: %s %s", resp.StatusCode, providerURL, http.StatusText(resp.StatusCode))

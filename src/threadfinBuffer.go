@@ -6,12 +6,20 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
-func StartThreadfinBuffer(stream *Stream) error {
-	stopChan := make(chan struct{})
+type ThreadfinBuffer struct{
+	StreamBuffer
+}
+
+func (sb *ThreadfinBuffer) StartBuffer(stream *Stream) error {
+	if err := sb.StreamBuffer.StartBuffer(stream); err != nil {
+		return err
+	}
+
 	ShowInfo(fmt.Sprintf("Streaming:Buffer:%s", "Threadfin"))
 	ShowInfo("Streaming URL:" + stream.URL)
 
@@ -55,7 +63,7 @@ func StartThreadfinBuffer(stream *Stream) error {
 
 		for {
 			select {
-			case <-stopChan:
+			case <-sb.StopChan:
 				resp.Body.Close()
 				time.Sleep(200 * time.Millisecond) // Let the buffer stop before going on
 				return
@@ -64,8 +72,15 @@ func StartThreadfinBuffer(stream *Stream) error {
 			}
 		}
 	}()
-	stream.Buffer.StopChan = stopChan
 	return nil
+}
+
+func (sb *ThreadfinBuffer) CloseBuffer() {
+	if !sb.Closed {
+		sb.Closed = true
+		close(sb.CloseChan)
+		sb.RemoveBufferedFiles(filepath.Join(sb.Stream.Folder, "0.ts"))
+	}
 }
 
 func selectStreamFromMaster(resp io.ReadCloser) (string, string, error) {

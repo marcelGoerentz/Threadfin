@@ -133,6 +133,7 @@ func loadSettings() (settings SettingsStruct, err error) {
 	defaults["buffer.size.kb"] = 1024
 	defaults["buffer.timeout"] = 500
 	defaults["buffer.autoReconnect"] = false
+	defaults["buffer.terminationTimeout"] = 5
 	defaults["cache.images"] = false
 	defaults["epgSource"] = "PMS"
 	defaults["ffmpeg.options"] = System.FFmpeg.DefaultOptions

@@ -373,6 +373,10 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		}
 
 	default:
+		w.Header().Set("Content-Type", "video/mp2t")
+		w.Header().Set("Cache-Control", "max-age=3600")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Keep-Alive", "timeout=10, max=100")
 		streamManager.ServeStream(streamInfo, w, r)
 	}
 }
@@ -627,7 +631,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 			var previousBindingIPs = Settings.BindingIPs
 			var previousUseHttps = Settings.UseHttps
 			response.Settings, err = updateServerSettings(request)
-			if err == nil {
+			if err == nil && response.Settings != nil {
 
 				response.OpenMenu = strconv.Itoa(indexOfString("settings", System.WEB.Menu))
 
@@ -817,7 +821,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			response.Status = false
 			response.Error = err.Error()
-			response.Settings = Settings
+			response.Settings = &Settings
 		}
 
 		response = setDefaultResponseData(response, true)
@@ -1342,7 +1346,7 @@ func setDefaultResponseData(response ResponseStruct, data bool) (defaults Respon
 
 		}
 
-		defaults.Settings = Settings
+		defaults.Settings = &Settings
 
 		defaults.Data.Playlist.M3U.Groups.Text = Data.Playlist.M3U.Groups.Text
 		defaults.Data.Playlist.M3U.Groups.Value = Data.Playlist.M3U.Groups.Value

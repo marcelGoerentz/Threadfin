@@ -15,7 +15,7 @@ import (
 )
 
 // Einstellungen ändern (WebUI)
-func updateServerSettings(request RequestStruct) (settings SettingsStruct, err error) {
+func updateServerSettings(request RequestStruct) (settings *SettingsStruct, err error) {
 
 	oldSettings, err := jsonToMap(mapToJSON(Settings))
 	if err !=  nil {
@@ -27,6 +27,11 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 		ShowError(err, 0 ) //TODO: Define error code
 		return
 	}
+
+	if len(newSettings) == 0 {
+		return nil, nil
+	}
+
 	var reloadData = false
 	var cacheImages = false
 	var createXEPGFiles = false
@@ -57,7 +62,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 					_, err := time.Parse("1504", v.(string))
 					if err != nil {
 						ShowError(err, 1012)
-						return Settings, err
+						return &Settings, err
 					}
 
 					newUpdateTimes = append(newUpdateTimes, v.(string))
@@ -219,7 +224,7 @@ func updateServerSettings(request RequestStruct) (settings SettingsStruct, err e
 	err = saveSettings(Settings)
 	if err == nil {
 
-		settings = Settings
+		settings = &Settings
 
 		if reloadData {
 
@@ -447,7 +452,7 @@ func deleteLocalProviderFiles(dataID, fileType string) {
 }
 
 // Filtereinstellungen speichern (WebUI)
-func saveFilter(request RequestStruct) (settings SettingsStruct, err error) {
+func saveFilter(request RequestStruct) (settings *SettingsStruct, err error) {
 
 	var filterMap = make(map[int64]interface{})
 	var newData = make(map[int64]interface{})
@@ -522,7 +527,7 @@ func saveFilter(request RequestStruct) (settings SettingsStruct, err error) {
 		return
 	}
 
-	settings = Settings
+	settings = &Settings
 
 	err = buildDatabaseDVR()
 	if err != nil {
