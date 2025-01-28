@@ -261,7 +261,7 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 	stream.Clients[clientID] = client
 
 	// Start a goroutine to handle writing to the client
-    go stream.handleClientWrites(client)
+    go stream.handleClientWrites(client, clientID)
 
 	// Make sure Broadcast is running only once
 	if len(stream.Clients) == 1 {

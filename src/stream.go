@@ -164,7 +164,10 @@ func (s *Stream) Broadcast() {
 			
 			s.mu.Lock()
 			for clientID, client := range s.Clients {
-				client.buffer.Write(buffer[:n])
+				_, err := client.buffer.Write(buffer[:n])
+				if err != nil {
+					s.ReportError(err, 0, clientID, false)
+				}
 				select {
                 case client.flushChannel <- struct{}{}:
 					<-client.doneChannel
@@ -178,11 +181,19 @@ func (s *Stream) Broadcast() {
     }
 }
 
-func (s *Stream) handleClientWrites(client *Client) {
+func (s *Stream) handleClientWrites(client *Client, clientID string) {
     for {
         select {
         case <-client.flushChannel:
-            client.buffer.WriteTo(client.w)
+			if client.buffer == nil || client.w == nil {
+				s.ReportError(fmt.Errorf("client or writer is nil"),0 ,clientID, false)
+				return
+			}
+            _, err := client.buffer.WriteTo(client.w)
+			if err != nil {
+				s.ReportError(err, 0, clientID, false)
+				return
+			}
             if flusher, ok := client.w.(http.Flusher); ok {
                 flusher.Flush()
             }
