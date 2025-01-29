@@ -300,6 +300,8 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Steaming URL could not be found in any playlist"
 	case 1204:
 		errMsg = "Streaming was stopped by third party transcoder (FFmpeg)"
+	case 1205:
+		errMsg = "Streaming URL could not be parst"
 
 	// Warnings
 	case 2000:

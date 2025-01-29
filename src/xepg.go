@@ -1244,7 +1244,7 @@ func cleanupXEPG() {
 		sourceIDs = append(sourceIDs, source)
 	}
 
-	ShowInfo("XEPG: Cleanup database")
+	ShowInfo("XEPG:Cleanup database")
 	Data.XEPG.XEPGCount = 0
 
 	for id, dxc := range Data.XEPG.Channels {

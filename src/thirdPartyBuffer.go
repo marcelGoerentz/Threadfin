@@ -88,7 +88,7 @@ func (sb *ThirdPartyBuffer) SetBufferConfig() {
 //   - error: An error object if an error occurs, otherwise nil.
 func (sb *ThirdPartyBuffer) RunBufferCommand(stream *Stream) error {
 	sb.Stream = stream
-	args := PrepareBufferArguments(sb.Options, stream.URL)
+	args := sb.PrepareBufferArguments()
 
 	cmd := exec.Command(sb.Path, args...)
 	debug := fmt.Sprintf("%s:%s %s", strings.ToUpper(Settings.Buffer), sb.Path, args)
@@ -112,16 +112,30 @@ func (sb *ThirdPartyBuffer) RunBufferCommand(stream *Stream) error {
 }
 
 // PrepareBufferArguments replaces the [URL] placeholder in the buffer options with the actual stream URL
-func PrepareBufferArguments(options, streamURL string) []string {
+func (sb *ThirdPartyBuffer) PrepareBufferArguments() []string {
 	args := []string{}
-	u, err := url.Parse(streamURL)
+	u, err := url.Parse(sb.Stream.URL)
 	if err != nil {
 		return []string{}
 	}
-	for i, a := range strings.Split(options, " ") {
-		a = strings.Replace(a, "[URL]", streamURL, 1)
+	if u.Path == "" {
+		return []string{}
+	}	
+	for i, a := range strings.Split(sb.Options, " ") {
+		a = strings.Replace(a, "[URL]", sb.Stream.URL, 1)
 		if i == 0 && len(Settings.UserAgent) != 0 && Settings.Buffer == "ffmpeg" && u.Scheme != "rtp" {
-			args = append(args, "-user_agent", Settings.UserAgent)
+			if sb.Stream.HTTP_HEADER != nil {
+				var builder strings.Builder
+				for key, val := range sb.Stream.HTTP_HEADER {
+					builder.WriteString(key)
+					builder.WriteString(": ")
+					builder.WriteString(val)
+					builder.WriteString("\r\n")
+				}
+				args = append(args, "-headers", builder.String())
+			} else {
+				args = append(args, "-user_agent", Settings.UserAgent)
+			}
 		}
 		args = append(args, a)
 	}
