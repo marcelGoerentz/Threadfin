@@ -122,7 +122,7 @@ services:
       - ./data/conf:/home/threadfin/conf
       - ./data/temp:/tmp/threadfin:rw
     restart: unless-stopped
-networks:{}
+networks: {}
 ```
 
 * Docker compose example with gluetun (VPN)
