@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -345,20 +346,41 @@ func setDeviceID() {
 }
 
 // Provider Streaming-URL zu Threadfin Streaming-URL konvertieren
-func createStreamingURL(playlistID, channelNumber, channelName, url string, backup_url_1 string, backup_url_2 string, backup_url_3 string) (streamingURL string, err error) {
+func createStreamingURL(playlistID, channelNumber, channelName, url_string string, backup_url_1 string, backup_url_2 string, backup_url_3 string) (streamingURL string, err error) {
 
-	var streamInfo StreamInfo
+	var streamInfo = &StreamInfo{}
 
 	if len(Data.Cache.StreamingURLS) == 0 {
-		Data.Cache.StreamingURLS = make(map[string]StreamInfo)
+		Data.Cache.StreamingURLS = make(map[string]*StreamInfo)
 	}
 
-	var urlID = getMD5(fmt.Sprintf("%s-%s", playlistID, url))
+	var urlID = getMD5(fmt.Sprintf("%s-%s", playlistID, url_string))
 
 	if s, ok := Data.Cache.StreamingURLS[urlID]; ok {
 		streamInfo = s
 	} else {
-		streamInfo.URL = url
+		streamInfo.HTTP_HEADER = make(map[string]string)
+		u, err := url.Parse(url_string)
+		if err != nil {
+			return "", err
+		}
+		if u.Path == "" {
+			return "", fmt.Errorf("no path in the url")
+		}
+		splittedPath := strings.Split(u.Path, "|")
+		if len(splittedPath) > 1 {
+			headers := strings.Split(splittedPath[1], "&")
+			for _, value := range headers {
+				pair := strings.Split(value, "=")
+				if len(pair) < 2 {
+					break
+				}
+				streamInfo.HTTP_HEADER[pair[0]] = pair[1]
+			}
+			streamInfo.URL = strings.Join([]string{u.Scheme + "://", u.Host, splittedPath[0]}, "")
+		} else {
+			streamInfo.URL = url_string
+		}
 		streamInfo.BackupChannel1URL = backup_url_1
 		streamInfo.BackupChannel2URL = backup_url_2
 		streamInfo.BackupChannel3URL = backup_url_3
@@ -375,7 +397,7 @@ func createStreamingURL(playlistID, channelNumber, channelName, url string, back
 	return
 }
 
-func getStreamInfo(urlID string) (streamInfo StreamInfo, err error) {
+func getStreamInfo(urlID string) (streamInfo *StreamInfo, err error) {
 
 	if len(Data.Cache.StreamingURLS) == 0 {
 

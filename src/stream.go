@@ -15,8 +15,8 @@ import (
 
 // Stream repräsentiert einen einzelnen Stream
 type Stream struct {
+	*StreamInfo
 	mu        sync.Mutex
-	Name      string
 	Clients   map[string]*Client
 	Buffer    BufferInterface
 	ErrorChan chan ErrorInfo
@@ -24,10 +24,6 @@ type Stream struct {
 	Cancel    context.CancelFunc
 
 	Folder            string
-	URL               string
-	BackupChannel1URL string
-	BackupChannel2URL string
-	BackupChannel3URL string
 	UseBackup         bool
 	BackupNumber      int
 	DoAutoReconnect   bool
@@ -82,15 +78,11 @@ func CreateStream(streamInfo *StreamInfo, fileSystem avfs.VFS, errorChan chan Er
 	}
 	
 	stream := &Stream{
-		Name:              streamInfo.Name,
+		StreamInfo: streamInfo,
 		Buffer:            buffer,
 		ErrorChan:         errorChan,
 		Ctx:               ctx,
 		Cancel:            cancel,
-		URL:               streamInfo.URL,
-		BackupChannel1URL: streamInfo.BackupChannel1URL,
-		BackupChannel2URL: streamInfo.BackupChannel2URL,
-		BackupChannel3URL: streamInfo.BackupChannel3URL,
 		Folder:            folder,
 		Clients:           make(map[string]*Client),
 		BackupNumber:      0,
@@ -118,7 +110,9 @@ func CreateTunerLimitReachedStream() *Stream {
 	stream := &Stream{
 		Clients: make(map[string]*Client),
 		Buffer: buffer,
-		Name: "Tuner limit reached",
+		StreamInfo: &StreamInfo{
+			Name: "Tuner limit reached",
+		},
 		Ctx: ctx,
 		Cancel: cancel,
 		DoAutoReconnect: false,
@@ -164,7 +158,10 @@ func (s *Stream) Broadcast() {
 			
 			s.mu.Lock()
 			for clientID, client := range s.Clients {
-				client.buffer.Write(buffer[:n])
+				_, err := client.buffer.Write(buffer[:n])
+				if err != nil {
+					s.ReportError(err, 0, clientID, false)
+				}
 				select {
                 case client.flushChannel <- struct{}{}:
 					<-client.doneChannel
@@ -178,11 +175,19 @@ func (s *Stream) Broadcast() {
     }
 }
 
-func (s *Stream) handleClientWrites(client *Client) {
+func (s *Stream) handleClientWrites(client *Client, clientID string) {
     for {
         select {
         case <-client.flushChannel:
-            client.buffer.WriteTo(client.w)
+			if client.buffer == nil || client.w == nil {
+				s.ReportError(fmt.Errorf("client or writer is nil"),0 ,clientID, false)
+				return
+			}
+            _, err := client.buffer.WriteTo(client.w)
+			if err != nil {
+				s.ReportError(err, 0, clientID, false)
+				return
+			}
             if flusher, ok := client.w.(http.Flusher); ok {
                 flusher.Flush()
             }
@@ -216,7 +221,12 @@ func (s *Stream) StopStream(streamID string) {
 }
 
 func (s *Stream) RemoveClientFromStream(streamID, clientID string) {
-	s.Buffer.(*StreamBuffer).PipeWriter.Close()
+	var pipeWriter *io.PipeWriter
+	switch buffer := s.Buffer.(type) {
+	case *ThirdPartyBuffer:
+		pipeWriter = buffer.PipeWriter
+	}
+	pipeWriter.Close()
 	if client, exists := s.Clients[clientID]; exists {
 		CloseClientConnection(client.w)
 		delete(s.Clients, clientID)

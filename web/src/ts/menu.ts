@@ -85,86 +85,88 @@ class Content {
   interactionID: string = "content-interaction"
 
   createHeadline(value): any {
-    var element = document.createElement("H3")
-    element.innerHTML = value
-    return element
+    let element = document.createElement("H3");
+    element.innerHTML = value;
+    return element;
   }
 
   createHR(): any {
-    var element = document.createElement("HR")
-    return element
+    return document.createElement("HR");
   }
 
   createBR(): any {
-    var element = document.createElement("BR")
-    return element
+    return  document.createElement("BR");
   }
 
   createInteraction(): any {
-    var element = document.createElement("DIV")
-    element.setAttribute("id", this.interactionID)
-    return element
+    let element = document.createElement("DIV");
+    element.setAttribute("id", this.interactionID);
+    return element;
   }
 
   createDIV(): any {
-    var element = document.createElement("DIV")
-    element.id = this.DivID
-    return element
+    let element = document.createElement("DIV");
+    element.id = this.DivID;
+    return element;
   }
 
   createTABLE(): any {
-    var element = document.createElement("TABLE")
-    element.setAttribute('class', 'contentTable')
-    element.id = this.TableID
-    return element
+    let element = document.createElement("TABLE");
+    element.setAttribute('class', 'contentTable');
+    element.id = this.TableID;
+    return element;
   }
 
   createTableRow(): any {
-    var element = document.createElement("TR")
-    element.className = this.headerClass
-    return element
+    let element = document.createElement("TR");
+    element.className = this.headerClass;
+    return element;
   }
 
   createInactiveTABLE(): any {
-    var element = document.createElement("TABLE")
-    element.id = this.InactiveTableID
-    return element
+    let element = document.createElement("TABLE");
+    element.id = this.InactiveTableID;
+    return element;
   }
 
   createInactiveTableRow(): any {
-    var element = document.createElement("TR")
-    element.className = this.headerClassInactive
-    return element
+    let element = document.createElement("TR");
+    element.className = this.headerClassInactive;
+    return element;
   }
 
   createTableContent(menuKey: string): string[] {
 
-    var data = new Object()
-    var rows = new Array()
+    let data = {};
+    let rows = [];
+    let keys = [];
+    let fileTypes: string[];
+    let cell: Cell;
+    let tr: HTMLElement;
 
     switch (menuKey) {
       case "playlist":
-        var fileTypes = new Array("m3u", "hdhr")
+        fileTypes = ["m3u", "hdhr"];
 
         fileTypes.forEach(fileType => {
 
-          data = SERVER["settings"]["files"][fileType]
+          data = SERVER["settings"]["files"][fileType];
 
-          var keys = getObjKeys(data)
+          let keys = getObjKeys(data);
 
           keys.forEach(key => {
-            var tr = document.createElement("TR")
-            tr.id = key
+            tr = document.createElement("TR");
+            tr.id = key;
 
             tr.setAttribute('onclick', 'javascript: openPopUp("' + fileType + '", this)')
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["name"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             if (SERVER["settings"]["buffer"] != "-") {
@@ -175,43 +177,43 @@ class Content {
 
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["last.update"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["provider.availability"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["type"].toUpperCase();
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["compatibility"]["streams"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["compatibility"]["group.title"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["compatibility"]["tvg.id"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["compatibility"]["stream.id"]
@@ -226,20 +228,20 @@ class Content {
       case "filter":
         delete SERVER["settings"]["filter"][-1]
         data = SERVER["settings"]["filter"]
-        var keys = getObjKeys(data)
+        keys = getObjKeys(data)
         keys.forEach(key => {
-          var tr = document.createElement("TR")
+          tr = document.createElement("TR")
           tr.id = key
 
           tr.setAttribute('onclick', 'javascript: openPopUp("' + data[key]["type"] + '", this)')
 
-          var cell: Cell = new Cell()
+          cell = new Cell()
           cell.child = true
           cell.childType = "P"
           cell.value = data[key]["name"]
           tr.appendChild(cell.createCell())
 
-          var cell: Cell = new Cell()
+          cell = new Cell()
           cell.child = true
           cell.childType = "P"
           switch (data[key]["type"]) {
@@ -257,7 +259,7 @@ class Content {
 
           tr.appendChild(cell.createCell())
 
-          var cell: Cell = new Cell()
+          cell = new Cell()
           cell.child = true
           cell.childType = "P"
           cell.value = data[key]["filter"]
@@ -269,45 +271,45 @@ class Content {
         break
 
       case "xmltv":
-        var fileTypes = new Array("xmltv")
+        fileTypes = new Array("xmltv")
 
         fileTypes.forEach(fileType => {
 
           data = SERVER["settings"]["files"][fileType]
 
-          var keys = getObjKeys(data)
+          let keys = getObjKeys(data)
 
           keys.forEach(key => {
-            var tr = document.createElement("TR")
+            tr = document.createElement("TR")
 
             tr.id = key
             tr.setAttribute('onclick', 'javascript: openPopUp("' + fileType + '", this)')
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["name"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["last.update"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["provider.availability"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["compatibility"]["xmltv.channels"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["compatibility"]["xmltv.programs"]
@@ -320,31 +322,31 @@ class Content {
         break
 
       case "users":
-        var fileTypes = new Array("users")
+        fileTypes = new Array("users")
 
         fileTypes.forEach(fileType => {
           data = SERVER[fileType]
 
-          var keys = getObjKeys(data)
+          keys = getObjKeys(data)
 
           keys.forEach(key => {
-            var tr = document.createElement("TR")
+            tr = document.createElement("TR")
             tr.id = key
             tr.setAttribute('onclick', 'javascript: openPopUp("' + fileType + '", this)')
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = data[key]["data"]["username"]
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             cell.value = "******"
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             if (data[key]["data"]["authentication.web"] == true) {
@@ -354,7 +356,7 @@ class Content {
             }
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             if (data[key]["data"]["authentication.pms"] == true) {
@@ -364,7 +366,7 @@ class Content {
             }
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             if (data[key]["data"]["authentication.m3u"] == true) {
@@ -374,7 +376,7 @@ class Content {
             }
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             if (data[key]["data"]["authentication.xml"] == true) {
@@ -384,7 +386,7 @@ class Content {
             }
             tr.appendChild(cell.createCell())
 
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "P"
             if (data[key]["data"]["authentication.api"] == true) {
@@ -407,22 +409,22 @@ class Content {
         console.log("MAPPING")
         data = SERVER["xepg"]["epgMapping"]
 
-        var keys = getObjKeys(data)
+        keys = getObjKeys(data)
         keys.forEach(key => {
           if (data[key]["x-active"]) {
-            var tr = document.createElement("TR")
+            tr = document.createElement("TR")
             tr.id = key
             tr.className = "activeEPG"
 
             // Bulk
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "BULK"
             cell.value = false
             tr.appendChild(cell.createCell())
 
             // Kanalnummer
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "INPUTCHANNEL"
             cell.value = data[key]["x-channelID"]
@@ -430,7 +432,7 @@ class Content {
             tr.appendChild(cell.createCell())
 
             // Logo
-            var cell: Cell = new Cell()
+            cell = new Cell()
             cell.child = true
             cell.childType = "IMG"
             cell.imageURL = data[key]["tvg-logo"]
@@ -538,8 +540,8 @@ class Content {
 
   createInactiveTableContent(menuKey: string): string[] {
 
-    var data = new Object()
-    var rows = new Array()
+    let data = {}
+    let rows = []
 
     switch (menuKey) {
       case "mapping":
@@ -1119,8 +1121,8 @@ async function setCheckboxes() {
     });
 
     const checkbox_container = document.getElementById("checkbox_container");
-    const saveButton = createButton(content, "buttonUpdate", "{{.button.update}}", 'javsrcipt: updateBindingIPs()');
-    const cancelButton = createButton(content, "buttonCancel", "{{.button.cancel}}");
+    const saveButton = createButton("buttonUpdate", "{{.button.update}}", updateBindingIPs);
+    const cancelButton = createButton("buttonCancel", "{{.button.cancel}}");
     checkbox_container.appendChild(saveButton);
     checkbox_container.appendChild(cancelButton);
     
@@ -1186,7 +1188,7 @@ function createLayout() {
   changeVersion.onclick = () => {
     changeVersion.value = "{{.serverInfo.changeVersion.changing}}"
     const server: Server = new Server("changeVersion")
-    server.request(new Object())
+    server.request({})
     setTimeout(() => {
       location.reload()
     }, 20000);

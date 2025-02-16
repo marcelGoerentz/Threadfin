@@ -12,20 +12,20 @@ async function getNewestReleaseFromGithub() {
                 prerelease: release.prerelease,
             }));
 
-            let currentVersion
+            let currentVersion: number[]
             try{
                  currentVersion = parseVersion(SERVER.clientInfo.version);
             } catch (error: any) {
                 console.log("Unable to parse current version info!")
                 return
             }
-            var latestAvailableVersion: Release;
+            let latestAvailableVersion: Release;
             if (SERVER.clientInfo.beta) {
                 latestAvailableVersion = releases.find(release => release.prerelease == true);
             } else {
                 latestAvailableVersion = releases.find(release => release.prerelease == false);
             }
-            let latestReleaseVersion
+            let latestReleaseVersion: number[];
             try {
              latestReleaseVersion = parseVersion(latestAvailableVersion.tag_name);
             } catch (error: any) {
@@ -34,12 +34,12 @@ async function getNewestReleaseFromGithub() {
             }
 
             if (isNewerVersion(latestReleaseVersion, currentVersion)) {
-                const notification_container = document.getElementById('notification_containter') as HTMLElement;
+                const notification_container = document.getElementById('notification_container') as HTMLElement;
                 const notificationTitle = document.getElementById('notification_title') as HTMLElement;
-                const notificaitonText = document.getElementById('notification_text') as HTMLElement;
+                const notificationText = document.getElementById('notification_text') as HTMLElement;
 
                 notificationTitle.innerHTML = '{{.notification.update.title}}';
-                notificaitonText.innerHTML = '{{.notification.update.content}}';
+                notificationText.innerHTML = '{{.notification.update.content}}';
 
                 const closeButton = document.getElementById('closeNotification') as HTMLButtonElement;
                 const updateButton = document.getElementById('updateNowButton') as HTMLButtonElement;
@@ -50,7 +50,7 @@ async function getNewestReleaseFromGithub() {
                 updateButton.onclick = () => {
                     updateButton.value = '{{.button.updating}}';
                     const server: Server = new Server("updateThreadfin")
-                    server.request(new Object())
+                    server.request({})
                     setTimeout(() => {
                         location.reload()
                     }, 20000);
@@ -88,15 +88,11 @@ function isNewerVersion(latest: number[], current: number[]): boolean {
 }
 
 async function getReleases(): Promise<any> {
-    try {
-        const response = await fetch('https://api.github.com/repos/marcelGoerentz/Threadfin/releases');
-        if (!response.ok) {
-            throw new Error(`Error fetching releases. Status: ${response.status}`);
-        }
-        const releases = await response.json();
-        return releases;
-    } catch (error) {
-        console.error('Error fetching releases:', error);
+    const response = await fetch('https://api.github.com/repos/marcelGoerentz/Threadfin/releases');
+    if (response.ok) {
+        return await response.json();
+    } else {
+        console.error(`Error fetching releases: Status: ${response.status}`);
         return null;
     }
 }
