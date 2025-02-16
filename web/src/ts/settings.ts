@@ -10,13 +10,13 @@ class SettingsCategory {
   }
 
   createSettingsCheckbox(settingsKey: string, title: string): HTMLElement {
-    var setting = document.createElement('TR');
-    var data = SERVER['settings'][settingsKey];
-    var tdLeft = document.createElement('TD');
+    const setting = document.createElement('TR');
+    const data = SERVER['settings'][settingsKey];
+    const tdLeft = document.createElement('TD');
     tdLeft.innerHTML = title + ':';
 
-    var tdRight = document.createElement('TD');
-    var input = this.Content.createCheckbox(settingsKey);
+    const tdRight = document.createElement('TD');
+    const input = this.Content.createCheckbox(settingsKey);
     input.checked = data;
     input.setAttribute('onchange', 'javascript: this.className = "changed"');
     tdRight.appendChild(input);
@@ -27,13 +27,13 @@ class SettingsCategory {
   }
 
   createTextInput(settingsKey: string, title: string, placeholder: string, setID: boolean = false): HTMLElement {
-    var data = SERVER['settings'][settingsKey];
-    var setting = document.createElement('TR');
-    var tdLeft = document.createElement('TD');
+    let data = SERVER['settings'][settingsKey];
+    let setting = document.createElement('TR');
+    let tdLeft = document.createElement('TD');
     tdLeft.innerHTML = title + ':';
 
-    var tdRight = document.createElement('TD');
-    var input = this.Content.createInput('text', settingsKey, data.toString());
+    let tdRight = document.createElement('TD');
+    let input = this.Content.createInput('text', settingsKey, data.toString());
     input.setAttribute('placeholder', placeholder);
     input.setAttribute('onchange', 'javascript: this.className = "changed"');
     if (setID) {
@@ -46,15 +46,15 @@ class SettingsCategory {
     return setting;
   }
 
-  createSelectInput(settingsKey ,title: string, text: any[], values: any[]): HTMLElement {
-    var data = SERVER['settings'][settingsKey];
-    var setting = document.createElement('TR');
-    var tdLeft = document.createElement('TD');
+  createSelectInput(settingsKey: string, title: string, text: any[], values: any[]): HTMLElement {
+    let data = SERVER['settings'][settingsKey];
+    let setting = document.createElement('TR');
+    let tdLeft = document.createElement('TD');
     tdLeft.innerHTML = title + ':';
 
-    var tdRight = document.createElement('TD');
+    let tdRight = document.createElement('TD');
 
-    var select = this.Content.createSelect(text, values, data, settingsKey);
+    let select = this.Content.createSelect(text, values, data, settingsKey);
     select.setAttribute('onchange', 'javascript: this.className = "changed"');
     tdRight.appendChild(select);
 
@@ -64,18 +64,23 @@ class SettingsCategory {
   }
 
   createCategoryHeadline(value: string): any {
-    var element = document.createElement('H4');
+    let element = document.createElement('H4');
     element.innerHTML = value;
     return element;
   }
 
   createHR(): any {
-    var element = document.createElement('HR');
-    return element;
+    return document.createElement('HR');
   }
 
   createSettings(settingsKey: string): any {
-    var setting: HTMLElement = document.createElement('TR');
+    let setting: HTMLElement = document.createElement('TR');
+    let title: string = "";
+    let text: string[] = [];
+    let values: any[] = [];
+    let tdLeft: HTMLElement;
+    let tdRight: HTMLElement;
+
 
     switch (settingsKey) {
 
@@ -237,70 +242,69 @@ class SettingsCategory {
 
       // Select
       case 'dummyChannel':
-        var title = '{{.settings.dummyChannel.title}}';
-        var text: any[] = ['PPV', '30 Minutes', '60 Minutes', '90 Minutes', '120 Minutes', '180 Minutes', '240 Minutes', '360 Minutes'];
-        var values: any[] = ['PPV', '30_Minutes', '60_Minutes', '90_Minutes', '120_Minutes', '180_Minutes', '240_Minutes', '360_Minutes'];
+        title = '{{.settings.dummyChannel.title}}';
+        text = ['PPV', '30 Minutes', '60 Minutes', '90 Minutes', '120 Minutes', '180 Minutes', '240 Minutes', '360 Minutes'];
+        values = ['PPV', '30_Minutes', '60_Minutes', '90_Minutes', '120_Minutes', '180_Minutes', '240_Minutes', '360_Minutes'];
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
       case 'tuner':
-        var title = '{{.settings.tuner.title}}';
-        var text = new Array();
-        var values = new Array();
+        title = '{{.settings.tuner.title}}';
+        text = [];
+        values = [];
 
-        for (var i = 1; i <= 100; i++) {
-          text.push(i);
-          values.push(i);
+        for (let i = 1; i <= 100; i++) {
+          text.push(i.toString());
+          values.push(i.toString());
         }
 
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
       case 'epgSource':
-        var title = '{{.settings.epgSource.title}}';
-        var text: any[] = ['PMS', 'XEPG'];
-        var values: any[] = ['PMS', 'XEPG'];
+        title = '{{.settings.epgSource.title}}';
+        text = ['PMS', 'XEPG'];
+        values = ['PMS', 'XEPG'];
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
       case 'backup.keep':
-        var title = '{{.settings.backupKeep.title}}';
-        var text: any[] = ['5', '10', '20', '30', '40', '50'];
-        var values: any[] = ['5', '10', '20', '30', '40', '50'];
+        title = '{{.settings.backupKeep.title}}';
+        text = ['5', '10', '20', '30', '40', '50'];
+        values = ['5', '10', '20', '30', '40', '50'];
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
       case 'buffer.size.kb':
-        var title = '{{.settings.bufferSize.title}}';
-        var text: any[] = ['0.5 MB', '1 MB', '2 MB', '3 MB', '4 MB', '5 MB', '6 MB', '7 MB', '8 MB'];
-        var values: any[] = ['512', '1024', '2048', '3072', '4096', '5120', '6144', '7168', '8192'];
+        title = '{{.settings.bufferSize.title}}';
+        text = ['0.5 MB', '1 MB', '2 MB', '3 MB', '4 MB', '5 MB', '6 MB', '7 MB', '8 MB'];
+        values = ['512', '1024', '2048', '3072', '4096', '5120', '6144', '7168', '8192'];
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
       case 'buffer':
-        var title = '{{.settings.streamBuffering.title}}';
-        var text: any[] = ['{{.settings.streamBuffering.info_false}}', 'FFmpeg: ({{.settings.streamBuffering.info_ffmpeg}})', 'VLC: ({{.settings.streamBuffering.info_vlc}})', 'Threadfin: ({{.settings.streamBuffering.info_threadfin}})'];
-        var values: any[] = ['-', 'ffmpeg', 'vlc', 'threadfin'];
+        title = '{{.settings.streamBuffering.title}}';
+        text= ['{{.settings.streamBuffering.info_false}}', 'FFmpeg: ({{.settings.streamBuffering.info_ffmpeg}})', 'VLC: ({{.settings.streamBuffering.info_vlc}})', 'Threadfin: ({{.settings.streamBuffering.info_threadfin}})'];
+        values = ['-', 'ffmpeg', 'vlc', 'threadfin'];
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
       case 'webclient.language':
-        var title = '{{.settings.webclient.language.title}}';
-        var text: any[] = ['English', 'Deutsch'];
-        var values: any[] = ['en', 'de'];
+        title = '{{.settings.webclient.language.title}}';
+        text = ['English', 'Deutsch'];
+        values = ['en', 'de'];
         setting = this.createSelectInput(settingsKey, title, text, values);
         break;
 
       // Button
       case 'uploadCustomImage':
         setting = document.createElement('TR');
-        var tdLeft = document.createElement('TD');
+        tdLeft = document.createElement('TD');
         tdLeft.innerHTML = '{{.settings.uploadCustomImage.title}}' + ':';
 
-        var tdRight = document.createElement('TD');
-        var button = this.Content.createInput('button', 'upload', '{{.button.uploadCustomImage}}');
-
-        button.setAttribute('onclick', 'javascript: uploadCustomImage();');
+        tdRight = document.createElement('TD');
+        let button = this.Content.createInput('button', 'upload', '{{.button.uploadCustomImage}}');
+        button.onclick = uploadCustomImage;
         tdRight.appendChild(button)
         setting.appendChild(tdLeft);
         setting.appendChild(tdRight);
@@ -311,8 +315,8 @@ class SettingsCategory {
 
   createDescription(settingsKey: string): any {
 
-    var description = document.createElement('TR');
-    var text: string;
+    let description = document.createElement('TR');
+    let text: string;
     switch (settingsKey) {
 
       case 'authentication.web':
@@ -487,11 +491,11 @@ class SettingsCategory {
 
     }
 
-    var tdLeft = document.createElement('TD');
+    const tdLeft = document.createElement('TD');
     tdLeft.innerHTML = '';
 
-    var tdRight = document.createElement('TD');
-    var pre = document.createElement('PRE');
+    const tdRight = document.createElement('TD');
+    const pre = document.createElement('PRE');
     pre.innerHTML = text;
     tdRight.appendChild(pre);
 
@@ -511,37 +515,29 @@ class SettingsCategoryItem extends SettingsCategory {
   }
 
   createCategory(): void {
-    var doc = document.getElementById(this.DocumentID);
+    const doc = document.getElementById(this.DocumentID);
     doc.appendChild(this.createCategoryHeadline(this.headline));
 
     // Tabelle für die Kategorie erstellen
 
-    var table = document.createElement('TABLE');
+    const table = document.createElement('TABLE');
 
-    var keys = this.settingsKeys.split(',');
+    const keys = this.settingsKeys.split(',');
 
     keys.forEach(settingsKey => {
 
-      switch (settingsKey) {
+      if (settingsKey in ['authentication.pms', 'authentication.m3u', 'authentication.xml', 'authentication.api']) {
+        if (SERVER['settings']['authentication.web'] == false) {
+          return;
+        }
+      } else {
+        let item = this.createSettings(settingsKey);
+        let description = this.createDescription(settingsKey);
 
-        case 'authentication.pms':
-        case 'authentication.m3u':
-        case 'authentication.xml':
-        case 'authentication.api':
-          if (SERVER['settings']['authentication.web'] == false) {
-            break;
-          }
-
-        default:
-          var item = this.createSettings(settingsKey);
-          var description = this.createDescription(settingsKey);
-
-          table.appendChild(item);
-          table.appendChild(description);
-          break;
-
+        table.appendChild(item);
+        table.appendChild(description);
+        return;
       }
-
     });
 
     doc.appendChild(table);
@@ -562,16 +558,16 @@ function showSettings() {
 function saveSettings() {
   console.log('Save Settings');
 
-  var cmd = 'saveSettings';
-  var div = document.getElementById('content_settings');
-  var settings = div.getElementsByClassName('changed');
+  const cmd = 'saveSettings';
+  const div = document.getElementById('content_settings');
+  const settings = div.getElementsByClassName('changed');
 
-  var newSettings = new Object();
+  let newSettings = {};
 
   for (let i = 0; i < settings.length; i++) {
 
-    var name: string;
-    var value: any;
+    let name: string;
+    let value: any;
 
     switch (settings[i].tagName) {
       case 'INPUT':
@@ -607,10 +603,10 @@ function saveSettings() {
               case 'buffer.timeout':
               case 'buffer.terminationTimeout':
                 value = parseFloat(value);
+                break;
 
               case 'bindingIPs':
                 setTimeout(() => {
-                  let isLocalhost = false
                   let hostname = String(location.hostname);
                   const newValue = value as String
                   if (hostname ==='localhost') {
@@ -657,10 +653,10 @@ function saveSettings() {
 
   }
 
-  var data = new Object();
+  let data = {};
   data['settings'] = newSettings;
 
-  var server: Server = new Server(cmd);
+  let server: Server = new Server(cmd);
   server.request(data);
 }
 
@@ -669,7 +665,7 @@ function uploadCustomImage() {
     document.getElementById('upload').remove()
   }
 
-  var upload = document.createElement('INPUT');
+  const upload = document.createElement('INPUT');
   upload.setAttribute('type', 'file');
   upload.setAttribute('accept', '.jpg,.png')
   upload.setAttribute('class', 'notVisible');
@@ -685,25 +681,23 @@ function uploadCustomImage() {
 
   upload.onchange = function () {
 
-    var filename = (upload as HTMLInputElement).files[0].name;
-
-    var reader = new FileReader();
-    var file = (document.querySelector('input[type=file]') as HTMLInputElement).files[0];
+    const reader = new FileReader();
+    const file = (document.querySelector('input[type=file]') as HTMLInputElement).files[0];
 
     if (file) {
 
       reader.readAsDataURL(file);
       reader.onload = function () {
         console.log(reader.result);
-        var data = new Object();
-        var cmd = 'uploadCustomImage';
+        let data = {};
+        let cmd = 'uploadCustomImage';
         data['base64'] = reader.result;
         data['filename'] = file.name;
 
-        var server: Server = new Server(cmd);
+        const server: Server = new Server(cmd);
         server.request(data);
 
-        var updateLogo = (document.getElementById('update-icon') as HTMLInputElement);
+        const updateLogo = (document.getElementById('update-icon') as HTMLInputElement);
         updateLogo.checked = false;
         updateLogo.className = 'changed';
 

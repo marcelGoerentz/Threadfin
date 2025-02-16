@@ -2,8 +2,8 @@ var SERVER: Server
 var BULK_EDIT: Boolean = false
 var COLUMN_TO_SORT: number
 var INACTIVE_COLUMN_TO_SORT: number
-var SEARCH_MAPPING = new Object()
-var UNDO = new Object()
+var SEARCH_MAPPING = {}
+var UNDO = {}
 var SERVER_CONNECTION = false
 var WS_AVAILABLE = false
 declare var bootstrap: any;
@@ -42,7 +42,7 @@ var loadingModal = new bootstrap.Modal(document.getElementById("loading"), {
 })
 
 // Menü
-var menuItems = new Array()
+var menuItems = []
 menuItems.push(new MainMenuItem("playlist", "{{.mainMenu.item.playlist}}", "m3u.png", "{{.mainMenu.headline.playlist}}"))
 menuItems.push(new MainMenuItem("xmltv", "{{.mainMenu.item.xmltv}}", "xmltv.png", "{{.mainMenu.headline.xmltv}}"))
 menuItems.push(new MainMenuItem("filter", "{{.mainMenu.item.filter}}", "filter.png", "{{.mainMenu.headline.filter}}"))
@@ -53,7 +53,7 @@ menuItems.push(new MainMenuItem("log", "{{.mainMenu.item.log}}", "log.png", "{{.
 menuItems.push(new MainMenuItem("logout", "{{.mainMenu.item.logout}}", "logout.png", "{{.mainMenu.headline.logout}}"))
 
 // Kategorien für die Einstellungen
-var settingsCategory = new Array()
+var settingsCategory = []
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.general}}", "ThreadfinAutoUpdate,ssdp,tuner,epgSource,epgCategories,epgCategoriesColors,dummy,dummyChannel,ignoreFilters,api"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.customization}}", "uploadCustomImage"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.webclient}}", "webclient.language"))
@@ -63,7 +63,7 @@ settingsCategory.push(new SettingsCategoryItem("{{.settings.category.streaming}}
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.backup}}", "backup.path,backup.keep"))
 settingsCategory.push(new SettingsCategoryItem("{{.settings.category.authentication}}", "authentication.web,authentication.pms,authentication.m3u,authentication.xml,authentication.api"))
 
-var serverInformation: ServerInformationItem[] = new Array()
+var serverInformation: ServerInformationItem[] = []
 serverInformation.push(new ServerInformationItem("{{.serverInfo.header.serverInfo}}", "version,errors,warnings"))
 serverInformation.push(new ServerInformationItem("{{.serverInfo.header.streamInfo}}", "dvr,m3uUrl,xepgUrl,streams,xepg"))
 serverInformation.push(new ServerInformationItem("{{.serverInfo.header.changeVersion}}", "changeVersion"))
@@ -98,7 +98,7 @@ function changeButtonAction(element, buttonID, attribute) {
 }
 
 function getLocalData(dataType, id): object {
-  var data = new Object()
+  let data = {}
   switch (dataType) {
     case "m3u":
       data = SERVER["settings"]["files"][dataType][id]
@@ -147,9 +147,9 @@ function getLocalData(dataType, id): object {
 }
 
 function getObjKeys(obj) {
-  var keys = new Array();
+  let keys = [];
 
-  for (var i in obj) {
+  for (let i in obj) {
     if (obj.hasOwnProperty(i)) {
       keys.push(i);
     }
@@ -164,34 +164,34 @@ function getOwnObjProps(object: Object): string[] {
 
 function getAllSelectedChannels(): string[] {
 
-  var channels: string[] = new Array()
+  var channels: string[] = [];
 
   if (BULK_EDIT == false) {
-    return channels
+    return channels;
   }
 
-  var trs = document.getElementById("contentTable").getElementsByTagName("TR")
+  let trs = document.getElementById("contentTable").getElementsByTagName("TR");
 
-  for (var i = 1; i < trs.length; i++) {
+  for (let i = 1; i < trs.length; i++) {
 
     if ((trs[i] as HTMLElement).style.display != "none") {
 
       if ((trs[i].firstChild.firstChild as HTMLInputElement).checked == true) {
-        channels.push(trs[i].id)
+        channels.push(trs[i].id);
       }
 
     }
 
   }
 
-  var trs_inactive = document.getElementById("inactiveContentTable").getElementsByTagName("TR")
+  let trs_inactive = document.getElementById("inactiveContentTable").getElementsByTagName("TR")
 
-  for (var i = 1; i < trs_inactive.length; i++) {
+  for (let i = 1; i < trs_inactive.length; i++) {
 
     if ((trs_inactive[i] as HTMLElement).style.display != "none") {
 
       if ((trs_inactive[i].firstChild.firstChild as HTMLInputElement).checked == true) {
-        channels.push(trs_inactive[i].id)
+        channels.push(trs_inactive[i].id);
       }
 
     }

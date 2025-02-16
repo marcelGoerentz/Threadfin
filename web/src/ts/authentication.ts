@@ -1,17 +1,17 @@
 function login() {
-  var err:Boolean = false
-  var data = new Object()
-  var div:any = document.getElementById("content")
-  var form:any = document.getElementById("authentication")
+  let err:Boolean = false
+  let data = {}
+  let div:any = document.getElementById("content")
+  let form:any = document.getElementById("authentication")
 
-  var inputs:any = div.getElementsByTagName("INPUT")
+  let inputs:any = div.getElementsByTagName("INPUT")
 
   console.log(inputs)
 
-  for (var i = inputs.length - 1; i >= 0; i--) {
+  for (let i = inputs.length - 1; i >= 0; i--) {
     
-    var key:string = (inputs[i] as HTMLInputElement).name
-    var value:string = (inputs[i] as HTMLInputElement).value
+    let key:string = (inputs[i] as HTMLInputElement).name
+    let value:string = (inputs[i] as HTMLInputElement).value
 
     if (value.length == 0) {
       inputs[i].style.borderColor = "red"
@@ -23,7 +23,7 @@ function login() {
   }
 
   if (err == true) {
-    data = new Object()
+    data = {}
     return
   }
 
