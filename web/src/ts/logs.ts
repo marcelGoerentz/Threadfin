@@ -2,43 +2,43 @@ class Log {
 
   createLog(entry:string):any {
 
-    var element = document.createElement("PRE");
+    let element = document.createElement("PRE");
 
     if (entry.indexOf("WARNING") != -1) {
-      element.className = "warningMsg"
+      element.className = "warningMsg";
     }
 
     if (entry.indexOf("ERROR") != -1) {
-      element.className = "errorMsg"
+      element.className = "errorMsg";
     }
 
     if (entry.indexOf("DEBUG") != -1) {
-      element.className = "debugMsg"
+      element.className = "debugMsg";
     }
 
-    element.innerHTML = entry
+    element.innerHTML = entry;
 
-    return element
+    return element;
   }
 
 }
 
 function showLogs(bottom:boolean) {
 
-  var log = new Log()
+  let log = new Log();
 
-  var logs = SERVER["log"]["log"]
-  var div = document.getElementById("content_log")
+  let logs = SERVER["log"]["log"];
+  let div = document.getElementById("content_log");
 
   div.innerHTML = ""
 
-  var keys = getObjKeys(logs)
+  let keys = getObjKeys(logs);
 
   keys.forEach(logID => {
 
-    var entry = log.createLog(logs[logID])
+    let entry = log.createLog(logs[logID]);
 
-    div.append(entry)
+    div.append(entry);
   
   });
 
@@ -46,7 +46,7 @@ function showLogs(bottom:boolean) {
 
     if (bottom == true) {
   
-      var wrapper = document.getElementById("box-wrapper");
+      let wrapper = document.getElementById("box-wrapper");
       wrapper.scrollTop = wrapper.scrollHeight;
 
     }
@@ -57,9 +57,9 @@ function showLogs(bottom:boolean) {
 
 function resetLogs() {
 
-  var cmd = "resetLogs"
-  var data = new Object()
-  var server:Server = new Server(cmd)
+  let cmd = "resetLogs";
+  let data = {};
+  let server:Server = new Server(cmd);
   server.request(data)
 
 }

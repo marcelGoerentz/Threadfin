@@ -115,14 +115,14 @@ services:
     ports:
       - 34400:34400
     environment:
-      - PUID=1001
-      - PGID=1001
+      - PUID=1000
+      - PGID=1000
       - TZ=America/Los_Angeles
     volumes:
       - ./data/conf:/home/threadfin/conf
       - ./data/temp:/tmp/threadfin:rw
     restart: unless-stopped
-networks:{}
+networks: {}
 ```
 
 * Docker compose example with gluetun (VPN)

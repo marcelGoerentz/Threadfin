@@ -115,6 +115,7 @@ class ServerInformationGroup{
                 break;
             case 'changeVersion':
                 this.Body.appendChild(this.addButtonInput(item))
+                break;
             default:
                 console.log('Unknown item: ', item)
         }

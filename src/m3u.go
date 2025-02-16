@@ -237,6 +237,8 @@ func buildM3U(groups []string) (m3u string, err error) {
 		stream, err = createStreamingURL(channel.FileM3UID, channel.XChannelID, channel.XName, channel.URL, channel.BackupChannel1URL, channel.BackupChannel2URL, channel.BackupChannel3URL)
 		if err == nil {
 			m3u = m3u + parameter + stream + "\n"
+		} else {
+			ShowError(err, 1205)
 		}
 
 	}

@@ -257,18 +257,18 @@ func stream(w http.ResponseWriter, r *http.Request) {
 	if Settings.ForceHttpsToUpstream {
 		var u *url.URL
 		u, err = url.Parse(streamInfo.URL)
-		setProtocol(&streamInfo, u, err)
+		setProtocol(streamInfo, u, err)
 		if streamInfo.BackupChannel1URL != "" {
 			u, err = url.Parse(streamInfo.BackupChannel1URL)
-			setProtocol(&streamInfo, u, err)
+			setProtocol(streamInfo, u, err)
 		}
 		if streamInfo.BackupChannel1URL != "" {
 			u, err = url.Parse(streamInfo.BackupChannel2URL)
-			setProtocol(&streamInfo, u, err)
+			setProtocol(streamInfo, u, err)
 		}
 		if streamInfo.BackupChannel1URL != "" {
 			u, err = url.Parse(streamInfo.BackupChannel3URL)
-			setProtocol(&streamInfo, u, err)
+			setProtocol(streamInfo, u, err)
 		}
 	}
 
@@ -657,7 +657,7 @@ func WS(w http.ResponseWriter, r *http.Request) {
 			// Reset cache for urls.json
 			var filename = getPlatformFile(System.Folder.Config + "urls.json")
 			saveMapToJSONFile(filename, make(map[string]StreamInfo))
-			Data.Cache.StreamingURLS = make(map[string]StreamInfo)
+			Data.Cache.StreamingURLS = make(map[string]*StreamInfo)
 
 			err = saveFiles(request, "m3u")
 			if err == nil {

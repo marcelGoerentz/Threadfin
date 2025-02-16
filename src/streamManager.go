@@ -232,7 +232,7 @@ func (sm *StreamManager) StopAllStreams() {
 /*
 ServeStream will ensure that the clients is getting the stream requested
 */
-func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWriter, r *http.Request) {
+func (sm *StreamManager) ServeStream(streamInfo *StreamInfo, w http.ResponseWriter, r *http.Request) {
 
 	if sm.LockAgainstNewStreams {
 		return
@@ -243,7 +243,7 @@ func (sm *StreamManager) ServeStream(streamInfo StreamInfo, w http.ResponseWrite
 		sm.FileSystem = InitBufferVFS(Settings.StoreBufferInRAM)
 	}
 
-	clientID, playlistID := sm.StartStream(&streamInfo)
+	clientID, playlistID := sm.StartStream(streamInfo)
 	if clientID == "" || playlistID == "" {
 		return
 	}

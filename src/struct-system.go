@@ -125,7 +125,7 @@ type DataStruct struct {
 		Images *imgcache.ImageCache
 		PMS    map[string]string
 
-		StreamingURLS map[string]StreamInfo
+		StreamingURLS map[string]*StreamInfo
 		XMLTV         map[string]XMLTV
 
 		Streams struct {
@@ -258,6 +258,7 @@ type StreamInfo struct {
 	BackupChannel2URL string `json:"backup_channel_2_url"`
 	BackupChannel3URL string `json:"backup_channel_3_url"`
 	URLid             string `json:"urlID"`
+	HTTP_HEADER		  map[string]string
 }
 
 // Notification : Notifikationen im Webinterface

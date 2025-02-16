@@ -1,14 +1,10 @@
 // Function to create the option Dialogue
 function showIPBindingDialogue() {
-  var myModal = new bootstrap.Modal(document.getElementById('popup'));
   const fragment = document.createDocumentFragment();
   const popupModalContent = document.getElementById('popupModalContent');
   fragment.appendChild(popupModalContent);
   editCustomPopUpContainer(fragment);
   addCustomPopUpContent(fragment);
-
-  const parent = document.getElementById('popup');
-  const child = parent.children[0].appendChild(fragment);
   showElement("popup", true);
 }
 
@@ -49,7 +45,6 @@ function editCustomPopUpContainer(fragment: DocumentFragment){
 }
 
 function addCustomPopUpContent(fragment: DocumentFragment) {
-  const content: PopupContent = new PopupContent();
 
   if ("clientInfo" in SERVER) {    
     const bindingIPsElement = document.getElementById('bindingIPs') as HTMLInputElement;
@@ -83,8 +78,8 @@ function addCustomPopUpContent(fragment: DocumentFragment) {
     checkbox_container.textContent = 'Select one or more IP(s). If none has been selected then Threadfin will bind to all of them!'; // This deletes all nodes and replace with text!
     checkbox_container.appendChild(optionTable); // Reappend the table
 
-    const saveButton = createButton(content, "buttonUpdate", "{{.button.update}}", 'javascript: updateBindingIPs()');
-    const cancelButton = createButton(content, "buttonCancel", "{{.button.cancel}}", 'javascript: resetPopup()');
+    const saveButton = createButton("buttonUpdate", "{{.button.update}}", updateBindingIPs);
+    const cancelButton = createButton("buttonCancel", "{{.button.cancel}}", resetPopup);
     checkbox_container.appendChild(saveButton);
     checkbox_container.appendChild(cancelButton);
     
@@ -94,8 +89,12 @@ function addCustomPopUpContent(fragment: DocumentFragment) {
   }
 }
 
-function createButton(content: PopupContent, id: string, text: string, onClick?: string): HTMLInputElement {
-  return createInput('button', id, text, {'onclick': onClick}) as HTMLInputElement
+function createButton(id: string, text: string, onClick?: () => void): HTMLInputElement {
+  const button = createInput('button', id, text) as HTMLInputElement;
+  if (onClick) {
+    button.onclick = onClick;
+  }
+  return button;
 }
 
 function createCheckbox(name: string, id: string = ''): HTMLInputElement {
@@ -128,7 +127,7 @@ function updateBindingIPs() {
   const checkboxTable = document.getElementById('optionTable');
   const checkboxList = checkboxTable.querySelectorAll('input[type="checkbox"]');
   // get checked boxes and create array
-  var bindingIPs: string[] = Array.from(checkboxList)
+  let bindingIPs: string[] = Array.from(checkboxList)
     .filter(checkbox => (checkbox as HTMLInputElement).checked)
     .map(checkbox => (checkbox as HTMLInputElement).name);
   
@@ -146,7 +145,7 @@ function updateBindingIPs() {
   resetPopup()
 }
 
-function createInput(type, name, value, attribute = {}) {
+function createInput(type: string, name: string, value: any, attribute = {}) {
   return createElementWithAttributes('input', { type, name, value, ...attribute });
 }
 

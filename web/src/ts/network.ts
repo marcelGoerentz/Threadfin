@@ -17,7 +17,7 @@ class Server {
     console.log(data);
     if (this.cmd != "updateLog") {
       // showElement("loading", true)
-      UNDO = new Object();
+      UNDO = {};
     }
 
     switch (window.location.protocol) {
@@ -29,10 +29,10 @@ class Server {
         break;
     }
 
-    var url = this.protocol + window.location.hostname + ":" + window.location.port + "/ws/" + "?Token=" + getCookie("Token");
+    let url = this.protocol + window.location.hostname + ":" + window.location.port + "/ws/" + "?Token=" + getCookie("Token");
 
     data["cmd"] = this.cmd;
-    var ws = new WebSocket(url);
+    let ws = new WebSocket(url);
     ws.onopen = function () {
 
       WS_AVAILABLE = true;
@@ -47,7 +47,7 @@ class Server {
 
     }
 
-    ws.onerror = function (e) {
+    ws.onerror = function () {
 
       console.log("No websocket connection to Threadfin could be established. Check your network configuration.");
       SERVER_CONNECTION = false;
@@ -65,7 +65,7 @@ class Server {
       showElement("loading", false);
 
       console.log("RESPONSE:");
-      var response = JSON.parse(e.data);
+      let response = JSON.parse(e.data);
 
       console.log(response);
 
@@ -74,12 +74,13 @@ class Server {
       }
       
       if (response.error) {
-        ;
+        console.log(response.error);
+        return;
       }
 
 
       if (response.hasOwnProperty("logoURL")) {
-        var div = (document.getElementById("channel-icon") as HTMLInputElement);
+        let div = (document.getElementById("channel-icon") as HTMLInputElement);
         div.value = response["logoURL"];
         div.className = "changed";
         return;
@@ -94,13 +95,12 @@ class Server {
           return;
 
         default:
-          SERVER: Server;
           SERVER = response;
           break;
       }
 
       if (response.hasOwnProperty("openMenu")) {
-        var menu = document.getElementById(response["openMenu"]);
+        let menu = document.getElementById(response["openMenu"]);
         menu.click();
         showElement("popup", false);
       }
@@ -132,8 +132,8 @@ class Server {
 
 }
 
-function getCookie(name) {
-  var value = "; " + document.cookie;
-  var parts = value.split("; " + name + "=");
+function getCookie(name: string) {
+  let value = "; " + document.cookie;
+  let parts = value.split("; " + name + "=");
   if (parts.length == 2) return parts.pop().split(";").shift();
 }

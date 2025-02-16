@@ -15,8 +15,8 @@ import (
 
 // Stream repräsentiert einen einzelnen Stream
 type Stream struct {
+	*StreamInfo
 	mu        sync.Mutex
-	Name      string
 	Clients   map[string]*Client
 	Buffer    BufferInterface
 	ErrorChan chan ErrorInfo
@@ -24,10 +24,6 @@ type Stream struct {
 	Cancel    context.CancelFunc
 
 	Folder            string
-	URL               string
-	BackupChannel1URL string
-	BackupChannel2URL string
-	BackupChannel3URL string
 	UseBackup         bool
 	BackupNumber      int
 	DoAutoReconnect   bool
@@ -82,15 +78,11 @@ func CreateStream(streamInfo *StreamInfo, fileSystem avfs.VFS, errorChan chan Er
 	}
 	
 	stream := &Stream{
-		Name:              streamInfo.Name,
+		StreamInfo: streamInfo,
 		Buffer:            buffer,
 		ErrorChan:         errorChan,
 		Ctx:               ctx,
 		Cancel:            cancel,
-		URL:               streamInfo.URL,
-		BackupChannel1URL: streamInfo.BackupChannel1URL,
-		BackupChannel2URL: streamInfo.BackupChannel2URL,
-		BackupChannel3URL: streamInfo.BackupChannel3URL,
 		Folder:            folder,
 		Clients:           make(map[string]*Client),
 		BackupNumber:      0,
@@ -118,7 +110,9 @@ func CreateTunerLimitReachedStream() *Stream {
 	stream := &Stream{
 		Clients: make(map[string]*Client),
 		Buffer: buffer,
-		Name: "Tuner limit reached",
+		StreamInfo: &StreamInfo{
+			Name: "Tuner limit reached",
+		},
 		Ctx: ctx,
 		Cancel: cancel,
 		DoAutoReconnect: false,
@@ -227,7 +221,12 @@ func (s *Stream) StopStream(streamID string) {
 }
 
 func (s *Stream) RemoveClientFromStream(streamID, clientID string) {
-	s.Buffer.(*StreamBuffer).PipeWriter.Close()
+	var pipeWriter *io.PipeWriter
+	switch buffer := s.Buffer.(type) {
+	case *ThirdPartyBuffer:
+		pipeWriter = buffer.PipeWriter
+	}
+	pipeWriter.Close()
 	if client, exists := s.Clients[clientID]; exists {
 		CloseClientConnection(client.w)
 		delete(s.Clients, clientID)
