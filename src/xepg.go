@@ -257,7 +257,7 @@ func createXEPGMapping() {
 
 					channel["id"] = c.ID
 					channel["display-name"] = friendlyDisplayName(*c)
-					channel["icon"] = Data.Cache.Images.GetImageURL(c.Icon.Src)
+					channel["icon"] = Data.Cache.Images.GetImageURL(c.Icon.Source)
 					channel["active"] = c.Active
 
 					xmltvMap[c.ID] = channel
@@ -825,7 +825,7 @@ func createXMLTVFile() (err error) {
 					// Kanäle
 					var channel Channel
 					channel.ID = xepgChannel.XChannelID
-					channel.Icon = Icon{Src: Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)}
+					channel.Icon = Icon{Source: Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)}
 					channel.DisplayName = append(channel.DisplayName, DisplayName{Value: xepgChannel.XName})
 					channel.Active = xepgChannel.XActive
 					channel.Live = true
@@ -872,7 +872,12 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 		}
 	}
 
-	for _, xmltvProgram := range xmltv.Program {
+	programCounter := len(xmltv.Program) - 1
+	lastStop := ""
+
+	for i := 0; i < programCounter - 1; i++ {
+		xmltvProgram := xmltv.Program[i]
+		
 		if xmltvProgram.Channel == channelID {
 			var program = &Program{}
 
@@ -880,6 +885,33 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			program.Channel = xepgChannel.XChannelID
 			program.Start = xmltvProgram.Start
 			program.Stop = xmltvProgram.Stop
+
+			if lastStop != "" {
+				currentProgramStart, err := parseTime(program.Start)
+				if err != nil {
+					ShowError(err, 0) // TODO: Add error code
+				}
+				lastProgramStop, err := parseTime(lastStop)
+				if err != nil {
+					ShowError(err, 0) // TODO: Add error code
+				}
+
+				if currentProgramStart.After(lastProgramStop) {
+					var dummyProgram = &Program{
+						Channel: xepgChannel.XChannelID,
+						Start:   formatTime(lastProgramStop),
+						Stop:    formatTime(currentProgramStart),
+						Title:   []*Title{
+							{
+								Value: "Dummy Program",
+							},
+						},
+					}
+					xepgXML.Program = append(xepgXML.Program, dummyProgram)
+				}
+			}
+			
+			lastStop = program.Stop
 
 			// Title
 			if len(xmltvProgram.Title) > 0 {
@@ -950,6 +982,9 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			// Premiere
 			program.Premiere = xmltvProgram.Premiere
 
+			// Program image URL
+			program.Image = xmltvProgram.Image
+
 			xepgXML.Program = append(xepgXML.Program, program)
 
 		}
@@ -957,6 +992,16 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 	}
 
 	return
+}
+
+func parseTime(timeStr string) (time.Time, error) {
+    layout := "20060102150405"
+    return time.Parse(layout, timeStr[:14])
+}
+
+func formatTime(t time.Time) string {
+    layout := "20060102150405"
+    return t.Format(layout) + " +0000"
 }
 
 func createLiveProgram(xepgChannel XEPGChannelStruct, channelId string) *Program {
@@ -1286,35 +1331,3 @@ func cleanupXEPG() {
 	}
 }
 
-// Streaming URL für die Channels App generieren
-func getStreamByChannelID(channelID string) (playlistID, streamURL string, err error) {
-
-	err = errors.New("channel not found")
-
-	for _, dxc := range Data.XEPG.Channels {
-
-		var xepgChannel XEPGChannelStruct
-		err := json.Unmarshal([]byte(mapToJSON(dxc)), &xepgChannel)
-
-		fmt.Println(xepgChannel.XChannelID)
-
-		if err == nil {
-
-			if xepgChannel.TvgName == "" {
-				xepgChannel.TvgName = xepgChannel.Name
-			}
-
-			if channelID == xepgChannel.XChannelID {
-
-				playlistID = xepgChannel.FileM3UID
-				streamURL = xepgChannel.URL
-
-				return playlistID, streamURL, nil
-			}
-
-		}
-
-	}
-
-	return
-}
