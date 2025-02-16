@@ -28,7 +28,9 @@ type DisplayName struct {
 
 // Icon : Senderlogo
 type Icon struct {
-	Src string `xml:"src,attr"`
+	Source string `xml:"src,attr"`
+	Width string `xml:"width,attr,omitempty"`
+	Height string `xml:"height,attr,omitempty"`
 }
 
 // Program : Programme
@@ -54,6 +56,7 @@ type Program struct {
 	New             *New             `xml:"new"`
 	Live            *Live            `xml:"live"`
 	Premiere        *Live            `xml:"premiere"`
+	Image			[]*Image		 `xml:"image"`
 }
 
 // Title : Programmtitel
@@ -112,10 +115,10 @@ type EpisodeNum struct {
 
 // Poster : Programmposter / Cover
 type Poster struct {
-	Height string `xml:"height,attr"`
+	Height string `xml:"height,attr,omitempty"`
 	Src    string `xml:"src,attr"`
 	Value  string `xml:",chardata"`
-	Width  string `xml:"width,attr"`
+	Width  string `xml:"width,attr,omitempty"`
 }
 
 // Credits : Credits
@@ -174,4 +177,12 @@ type New struct {
 // Live : Sendung als Liveübertragung deklarieren
 type Live struct {
 	Value string `xml:",chardata"`
+}
+
+type Image struct {
+	Type string `xml:"type,attr,omitempty"`
+	Source string `xml:"source,attr,omitempty"`
+	Orientation string `xml:"orient,attr,omitempty"`
+	System string `xml:"system,attr,omitempty"`
+	URL string `xml:",chardata"`
 }
