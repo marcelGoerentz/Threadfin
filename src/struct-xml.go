@@ -16,7 +16,8 @@ type XMLTV struct {
 type Channel struct {
 	ID          string        `xml:"id,attr"`
 	DisplayName []DisplayName `xml:"display-name"`
-	Icon        Icon          `xml:"icon"`
+	Icon        *Icon         `xml:"icon"`
+	URL         []*URL        `xml:"url"`
 	Live        bool          `xml:"live"`
 	Active      bool          `xml:"active"`
 }
@@ -26,7 +27,7 @@ type DisplayName struct {
 	Value string `xml:",chardata"`
 }
 
-// Icon : Senderlogo
+// Icon
 type Icon struct {
 	Source string `xml:"src,attr"`
 	Width string `xml:"width,attr,omitempty"`
@@ -45,18 +46,19 @@ type Program struct {
 	Category        []*Category      `xml:"category"`
 	Country         []*Country       `xml:"country"`
 	EpisodeNum      []*EpisodeNum    `xml:"episode-num"`
-	Poster          []Poster         `xml:"icon"`
-	Credits         Credits          `xml:"credits,omitempty"` //`xml:",innerxml,omitempty"`
-	Rating          []Rating         `xml:"rating"`
-	StarRating      []StarRating     `xml:"star-rating"`
+	Credits         *Credits         `xml:"credits,omitempty"` //`xml:",innerxml,omitempty"`
+	Rating          []*Rating        `xml:"rating"`
+	StarRating      []*StarRating    `xml:"star-rating"`
 	Language        []*Language      `xml:"language"`
-	Video           Video            `xml:"video"`
+	Video           *Video           `xml:"video"`
 	Date            string           `xml:"date"`
 	PreviouslyShown *PreviouslyShown `xml:"previously-shown"`
 	New             *New             `xml:"new"`
 	Live            *Live            `xml:"live"`
 	Premiere        *Live            `xml:"premiere"`
 	Image			[]*Image		 `xml:"image"`
+	Icon            *Icon	         `xml:"icon"`
+	URL				[]*URL           `xml:"url"`
 }
 
 // Title : Programmtitel
@@ -87,13 +89,14 @@ type Category struct {
 type Rating struct {
 	System string `xml:"system,attr"`
 	Value  string `xml:"value"`
-	Icon   []Icon `xml:"icon"`
+	Icon   *Icon `xml:"icon"`
 }
 
 // StarRating : Bewertung / Kritiken
 type StarRating struct {
 	Value  string `xml:"value"`
 	System string `xml:"system,attr"`
+	Icon   *Icon  `xml:"icon,omitempty"`
 }
 
 // Language : Sprachen
@@ -113,47 +116,76 @@ type EpisodeNum struct {
 	Value  string `xml:",chardata"`
 }
 
-// Poster : Programmposter / Cover
-type Poster struct {
-	Height string `xml:"height,attr,omitempty"`
-	Src    string `xml:"src,attr"`
-	Value  string `xml:",chardata"`
-	Width  string `xml:"width,attr,omitempty"`
+type URL struct {
+	System string `xml:"system,attr,omitempty"`
+	Value string  `xml:",chardata"`
 }
 
 // Credits : Credits
 type Credits struct {
-	Director  []Director  `xml:"director,omitempty"`
-	Actor     []Actor     `xml:"actor,omitempty"`
-	Writer    []Writer    `xml:"writer,omitempty"`
-	Presenter []Presenter `xml:"presenter,omitempty"`
-	Producer  []Producer  `xml:"producer,omitempty"`
+	Director    []*Director    `xml:"director,omitempty"`
+	Actor       []*Actor       `xml:"actor,omitempty"`
+	Writer      []*Writer      `xml:"writer,omitempty"`
+	Adapter     []*Adapter     `xml:"adapter,omitempty"`
+	Producer    []*Producer    `xml:"producer,omitempty"`
+	Composer    []*Composer    `xml:"composer,omitempty"`
+	Presenter   []*Presenter   `xml:"presenter,omitempty"`
+	Commentator []*Commentator `xml:"commentator,omitempty"`
+	Guest		[]*Guest       `xml:"guest,omitempty`
+}
+
+type Person struct {
+	Value string `xml:",chardata"`
 }
 
 // Director : Director
 type Director struct {
-	Value string `xml:",chardata"`
+	Person
+	Role  string `xml:"role,attr,omitempty"`
+	Guest string `xml:"guest,attr,omitempty"`
+	Image *Image `xml:"image,omitempty"`
+	URL   *URL   `xml:"url,omitempty"`
 }
 
 // Actor : Actor
 type Actor struct {
-	Value string `xml:",chardata"`
-	Role  string `xml:"role,attr,omitempty"`
+	Person
+	
 }
 
 // Writer : Writer
 type Writer struct {
-	Value string `xml:",chardata"`
+	Person
 }
 
 // Presenter : Presenter
 type Presenter struct {
-	Value string `xml:",chardata"`
+	Person
+}
+
+type Adapter struct {
+	Person
 }
 
 // Producer : Producer
 type Producer struct {
-	Value string `xml:",chardata"`
+	Person
+}
+
+type Composer struct {
+	Person
+}
+
+type Editor struct {
+	Person
+}
+
+type Commentator struct {
+	Person
+}
+
+type Guest struct {
+	Person
 }
 
 // Video : Video Metadaten

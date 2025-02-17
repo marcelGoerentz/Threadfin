@@ -142,7 +142,7 @@ func ShutDownWebserver(ws *WebServer) {
 	defer cancel()
 	err := ws.Server.Shutdown(ctx)
 	if err != nil {
-		ShowError(err, 0) // TODO: Add error code
+		ShowError(err, 7000)
 	}
 }
 
@@ -906,7 +906,7 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err !=  nil {
-		ShowError(err, 0 ) //TODO: Define error code
+		ShowError(err, 7001 )
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

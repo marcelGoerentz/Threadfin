@@ -373,7 +373,7 @@ func shutdownWebserver(webserver *src.WebServer) {
 		defer cancel()
 		err := webserver.Server.Shutdown(ctx)
 		if err != nil {
-			src.ShowError(err, 0) // TODO: Add error code
+			src.ShowError(err, 7000)
 		}
 	}
 }

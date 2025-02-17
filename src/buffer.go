@@ -364,7 +364,7 @@ func (sb *StreamBuffer) writeToPipe(file string) error {
 		default:
 			n, err := f.Read(buf)
 			if err != nil && err != io.EOF {
-				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+				sb.Stream.ReportError(err, 4020, "", true)
 				return err
 			} else if err == io.EOF {
 				return nil
@@ -375,7 +375,7 @@ func (sb *StreamBuffer) writeToPipe(file string) error {
 
 			_, err = sb.PipeWriter.Write(buf[:n])
 			if err != nil {
-				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
+				sb.Stream.ReportError(err, 4021, "", true)
 				return err
 			}
 		}
@@ -391,8 +391,7 @@ func (sb *StreamBuffer) writeBytesToPipe(data []byte) error {
 		default:
 			_, err := sb.PipeWriter.Write(data)
 			if err != nil {
-				sb.Stream.ReportError(err, 0, "", true) // TODO: Add error code
-				return err
+				sb.Stream.ReportError(err, 4022, "", true)
 			}
 			time.Sleep(800 * time.Millisecond)
 		}

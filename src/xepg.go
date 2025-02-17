@@ -825,7 +825,7 @@ func createXMLTVFile() (err error) {
 					// Kanäle
 					var channel Channel
 					channel.ID = xepgChannel.XChannelID
-					channel.Icon = Icon{Source: Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)}
+					channel.Icon = &Icon{Source: Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)}
 					channel.DisplayName = append(channel.DisplayName, DisplayName{Value: xepgChannel.XName})
 					channel.Active = xepgChannel.XActive
 					channel.Live = true
@@ -889,11 +889,11 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			if lastStop != "" {
 				currentProgramStart, err := parseTime(program.Start)
 				if err != nil {
-					ShowError(err, 0) // TODO: Add error code
+					ShowError(err, 2303)
 				}
 				lastProgramStop, err := parseTime(lastStop)
 				if err != nil {
-					ShowError(err, 0) // TODO: Add error code
+					ShowError(err, 2304) 
 				}
 
 				if currentProgramStart.After(lastProgramStop) {
@@ -955,8 +955,8 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			// Country (Länder)
 			program.Country = xmltvProgram.Country
 
-			// Program icon (Poster / Cover)
-			getPoster(program, xmltvProgram, xepgChannel)
+			// Program images (Poster / Cover)
+			getImages(program, xmltvProgram, xepgChannel)
 
 			// Language (Sprache)
 			program.Language = xmltvProgram.Language
@@ -965,7 +965,9 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			getEpisodeNum(program, xmltvProgram, xepgChannel)
 
 			// Video (Videoparameter)
-			getVideo(program, xmltvProgram, xepgChannel)
+			if xmltvProgram.Video != nil {
+				getVideo(program, xmltvProgram, xepgChannel)
+			}
 
 			// Date (Datum)
 			program.Date = xmltvProgram.Date
@@ -982,8 +984,18 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			// Premiere
 			program.Premiere = xmltvProgram.Premiere
 
-			// Program image URL
-			program.Image = xmltvProgram.Image
+			// Program icon
+			program.Icon = xmltvProgram.Icon
+
+			if program.Icon == nil {
+				for _, image := range program.Image {
+					if notInStringArray(image.Type, []string{"poster", "backdrop", "logo"}) {
+						program.Icon = &Icon{
+							Source: image.URL,
+						}
+					}
+				}
+			}
 
 			xepgXML.Program = append(xepgXML.Program, program)
 
@@ -992,6 +1004,15 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 	}
 
 	return
+}
+
+func notInStringArray(value string, arr []string) bool {
+    for _, v := range arr {
+        if v == value {
+            return false
+        }
+    }
+    return true
 }
 
 func parseTime(timeStr string) (time.Time, error) {
@@ -1103,7 +1124,6 @@ func createDummyProgram(xepgChannel XEPGChannelStruct) (dummyXMLTV XMLTV) {
 			var epgStopTime = epgStartTime.Add(time.Minute * time.Duration(dummyLength))
 
 			var epg Program
-			poster := Poster{}
 
 			epg.Channel = xepgChannel.XMapping
 			epg.Start = epgStartTime.Format("20060102150405") + offset
@@ -1117,8 +1137,12 @@ func createDummyProgram(xepgChannel XEPGChannelStruct) (dummyXMLTV XMLTV) {
 			}
 
 			if Settings.XepgReplaceMissingImages {
-				poster.Src = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
-				epg.Poster = append(epg.Poster, poster)
+				if imageList := epg.Image; len(imageList) == 0 {
+					image := &Image{}
+					image.Source = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
+					image.Type = "Logo"
+					epg.Image = append(epg.Image, image)
+				}
 			}
 
 			if xepgChannel.XCategory != "Movie" {
@@ -1160,21 +1184,20 @@ func getCategory(program *Program, xmltvProgram *Program, xepgChannel XEPGChanne
 }
 
 // Programm Poster Cover aus der XMLTV Datei laden
-func getPoster(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelStruct) {
+func getImages(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelStruct) {
 
-	//var imgc = Data.Cache.Images
-
-	for _, poster := range xmltvProgram.Poster {
-		poster.Src = Data.Cache.Images.GetImageURL(poster.Src)
-		program.Poster = append(program.Poster, poster)
+	for _, image := range xmltvProgram.Image {
+		image.Source = Data.Cache.Images.GetImageURL(image.Source)
+		program.Image = append(program.Image, image)
 	}
 
 	if Settings.XepgReplaceMissingImages {
 
-		if len(xmltvProgram.Poster) == 0 {
-			var poster Poster
-			poster.Src = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
-			program.Poster = append(program.Poster, poster)
+		if len(xmltvProgram.Image) == 0 {
+			var image = &Image{}
+			image.Type = "Logo"
+			image.Source = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
+			program.Image = append(program.Image, image)
 		}
 
 	}
@@ -1206,11 +1229,12 @@ func getEpisodeNum(program *Program, xmltvProgram *Program, xepgChannel XEPGChan
 // Videoparameter erstellen (createXMLTVFile)
 func getVideo(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelStruct) {
 
-	var video Video
-	video.Present = xmltvProgram.Video.Present
-	video.Colour = xmltvProgram.Video.Colour
-	video.Aspect = xmltvProgram.Video.Aspect
-	video.Quality = xmltvProgram.Video.Quality
+	video := &Video{
+		Present: xmltvProgram.Video.Present,
+		Colour: xmltvProgram.Video.Colour,
+		Aspect: xmltvProgram.Video.Aspect,
+		Quality: xmltvProgram.Video.Quality,
+	}
 
 	if len(xmltvProgram.Video.Quality) == 0 {
 
