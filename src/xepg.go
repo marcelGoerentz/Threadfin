@@ -156,53 +156,6 @@ func buildXEPG(background bool) {
 
 }
 
-/*
-// XEPG Daten aktualisieren
-func updateXEPG(background bool) {
-
-	if System.ScanInProgress == 1 {
-		return
-	}
-
-	System.ScanInProgress = 1
-
-	if Settings.EpgSource == "XEPG" {
-
-		switch background {
-
-		case false:
-
-			createXEPGDatabase()
-			mapping()
-			cleanupXEPG()
-
-			go func() {
-
-				createXMLTVFile()
-				createM3UFile()
-				showInfo("XEPG:" + "Ready to use")
-
-				System.ScanInProgress = 0
-
-			}()
-
-		case true:
-			System.ScanInProgress = 0
-
-		}
-
-	} else {
-
-		System.ScanInProgress = 0
-
-	}
-
-	// Cache löschen
-	//Data.Cache.XMLTV = nil //make(map[string]XMLTV)
-	//Data.Cache.XMLTV = make(map[string]XMLTV)
-}
-*/
-
 // Mapping Menü für die XMLTV Dateien erstellen
 func createXEPGMapping() {
 
@@ -257,7 +210,9 @@ func createXEPGMapping() {
 
 					channel["id"] = c.ID
 					channel["display-name"] = friendlyDisplayName(*c)
-					channel["icon"] = Data.Cache.Images.GetImageURL(c.Icon.Source)
+					if c.Icon != nil {
+						channel["icon"] = Data.Cache.Images.GetImageURL(c.Icon.Source)
+					}
 					channel["active"] = c.Active
 
 					xmltvMap[c.ID] = channel
@@ -987,13 +942,41 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 			// Program icon
 			program.Icon = xmltvProgram.Icon
 
-			if program.Icon == nil {
-				for _, image := range program.Image {
-					if notInStringArray(image.Type, []string{"poster", "backdrop", "logo"}) {
+			foundLogo := false
+			logoURL := ""
+			var index int
+			for i, image := range program.Image {
+				switch image.Type {
+				case "poster", "backdrop":
+					continue
+				case "logo":
+					foundLogo = true
+					logoURL = image.URL
+					index = i
+				case "":
+					if program.Icon == nil {
 						program.Icon = &Icon{
 							Source: image.URL,
 						}
+						if !foundLogo {
+							foundLogo = true
+							logoURL = image.URL
+							index = i
+						}
 					}
+				default:
+					ShowDebug(fmt.Sprintf("Type not definde for image! %s", image.Type), 1)
+				}
+			}
+			if foundLogo{
+				if program.Icon == nil {
+					program.Icon = &Icon{
+						Source: logoURL,
+					}
+				}
+				program.Image = append(program.Image[:index], program.Image[index+1:]...)
+				if len(program.Image) == 0 {
+					program.Image = nil
 				}
 			}
 
@@ -1004,15 +987,6 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 	}
 
 	return
-}
-
-func notInStringArray(value string, arr []string) bool {
-    for _, v := range arr {
-        if v == value {
-            return false
-        }
-    }
-    return true
 }
 
 func parseTime(timeStr string) (time.Time, error) {
@@ -1139,8 +1113,8 @@ func createDummyProgram(xepgChannel XEPGChannelStruct) (dummyXMLTV XMLTV) {
 			if Settings.XepgReplaceMissingImages {
 				if imageList := epg.Image; len(imageList) == 0 {
 					image := &Image{}
-					image.Source = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
-					image.Type = "Logo"
+					image.URL = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
+					image.Type = "logo"
 					epg.Image = append(epg.Image, image)
 				}
 			}
@@ -1187,7 +1161,7 @@ func getCategory(program *Program, xmltvProgram *Program, xepgChannel XEPGChanne
 func getImages(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelStruct) {
 
 	for _, image := range xmltvProgram.Image {
-		image.Source = Data.Cache.Images.GetImageURL(image.Source)
+		image.URL = Data.Cache.Images.GetImageURL(image.URL)
 		program.Image = append(program.Image, image)
 	}
 
@@ -1195,8 +1169,8 @@ func getImages(program *Program, xmltvProgram *Program, xepgChannel XEPGChannelS
 
 		if len(xmltvProgram.Image) == 0 {
 			var image = &Image{}
-			image.Type = "Logo"
-			image.Source = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
+			image.Type = "logo"
+			image.URL = Data.Cache.Images.GetImageURL(xepgChannel.TvgLogo)
 			program.Image = append(program.Image, image)
 		}
 

@@ -213,7 +213,6 @@ type Live struct {
 
 type Image struct {
 	Type string `xml:"type,attr,omitempty"`
-	Source string `xml:"source,attr,omitempty"`
 	Orientation string `xml:"orient,attr,omitempty"`
 	System string `xml:"system,attr,omitempty"`
 	URL string `xml:",chardata"`
