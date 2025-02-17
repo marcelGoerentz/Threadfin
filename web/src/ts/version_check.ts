@@ -64,7 +64,6 @@ async function getNewestReleaseFromGithub() {
 }
 
 function parseVersion(version: string): number[]  {
-    // TODO: Improve version parsing
     const regex = /^v?(\d+)\.(\d+)(?:\.(\d+))?(?:\.(\d+))?(?: \((\d+)(?:-(\w+))?\))?(?:-(\w+))?$/;
     const match = version.match(regex);
 

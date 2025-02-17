@@ -341,6 +341,10 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "XMLTV file no longer available, channel has been deactivated."
 	case 2302:
 		errMsg = "Channel ID in the XMLTV file has changed. Channel has been deactivated."
+	case 2303:
+		errMsg = "Error when parsing start program time"
+	case 2304:
+		errMsg = "Error when parsing stop program time"
 
 	// Benutzerauthentifizierung
 	case 3000:
@@ -389,6 +393,12 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Error while reading thirdparty stdErr"
 	case 4019:
 		errMsg = "Buffered file does not exist anymore"
+	case 4020:
+		errMsg = "Error when reading from buffer for the pipe"
+	case 4021:
+		errMsg = "Error when writing chunks to pipe"
+	case 4022:
+		errMsg = "Error when writing bytes to pipe"
 
 	// PID saving and deleting
 	case 4040:
@@ -431,6 +441,13 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "Threadfin update available"
 	case 6005:
 		errMsg = "Couldn't write last_beta_update to disk"
+
+	// Web server
+	case 7000:
+		errMsg = "Error on shutdown of web server"
+	case 7001:
+		errMsg = "Error when parsing language file for the web server"
+
 
 	default:
 		errMsg = fmt.Sprintf("Unknown error / warning (%d)", errCode)
