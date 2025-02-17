@@ -131,7 +131,7 @@ type Credits struct {
 	Composer    []*Composer    `xml:"composer,omitempty"`
 	Presenter   []*Presenter   `xml:"presenter,omitempty"`
 	Commentator []*Commentator `xml:"commentator,omitempty"`
-	Guest		[]*Guest       `xml:"guest,omitempty`
+	Guest		[]*Guest       `xml:"guest,omitempty"`
 }
 
 type Person struct {
