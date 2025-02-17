@@ -827,7 +827,7 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
         }
     }
 
-    var programs []Program
+    var programs []*Program
 
     for _, xmltvProgram := range xmltv.Program {
         if xmltvProgram.Channel == channelID {
@@ -840,7 +840,7 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 				filters = append(filters, f)
 			}
 
-            var program = Program{
+            var program = &Program{
                 Channel: xepgChannel.XChannelID,
                 Start:   xmltvProgram.Start,
                 Stop:    xmltvProgram.Stop,
@@ -873,12 +873,12 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
                 program.Title = xmltvProgram.Title
 			}
             
-            getCategory(&program, xmltvProgram, xepgChannel, filters)
-            getImages(&program, xmltvProgram, xepgChannel)
-            getEpisodeNum(&program, xmltvProgram, xepgChannel)
+            getCategory(program, xmltvProgram, xepgChannel, filters)
+            getImages(program, xmltvProgram, xepgChannel)
+            getEpisodeNum(program, xmltvProgram, xepgChannel)
             
             if xmltvProgram.Video != nil {
-                getVideo(&program, xmltvProgram, xepgChannel)
+                getVideo(program, xmltvProgram, xepgChannel)
             }
 
 			foundLogo := false
@@ -932,7 +932,7 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 
     // Add dummy programs for time gaps
     for i := 0; i < len(programs)-1; i++ {
-        xepgXML.Program = append(xepgXML.Program, &programs[i])
+        xepgXML.Program = append(xepgXML.Program, programs[i])
 
         stopTime, _ := time.Parse("20060102150405", programs[i].Stop)
         startTimeNext, _ := time.Parse("20060102150405", programs[i+1].Start)
@@ -949,8 +949,8 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
     }
 
 	// Add the last program to the XMLTV data
-    xepgXML.Program = append(xepgXML.Program, &programs[len(programs)-1])
-    return
+    xepgXML.Program = programs
+	return
 }
 
 func createLiveProgram(xepgChannel XEPGChannelStruct, channelId string) *Program {
