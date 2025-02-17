@@ -813,73 +813,24 @@ func createXMLTVFile() (err error) {
 // Programmdaten erstellen (createXMLTVFile)
 func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 
-	var xmltvFile = System.Folder.Data + xepgChannel.XmltvFile
-	var channelID = xepgChannel.XMapping
+    var xmltvFile = System.Folder.Data + xepgChannel.XmltvFile
+    var channelID = xepgChannel.XMapping
 
-	var xmltv XMLTV
+    var xmltv XMLTV
 
-	if xmltvFile == System.Folder.Data+"Threadfin Dummy" {
-		xmltv = createDummyProgram(xepgChannel)
-	} else {
-		err = getLocalXMLTV(xmltvFile, &xmltv)
-		if err != nil {
-			return
-		}
-	}
+    if xmltvFile == System.Folder.Data+"Threadfin Dummy" {
+        xmltv = createDummyProgram(xepgChannel)
+    } else {
+        err = getLocalXMLTV(xmltvFile, &xmltv)
+        if err != nil {
+            return
+        }
+    }
 
-	programCounter := len(xmltv.Program) - 1
-	lastStop := ""
+    var programs []Program
 
-	for i := 0; i < programCounter - 1; i++ {
-		xmltvProgram := xmltv.Program[i]
-		
-		if xmltvProgram.Channel == channelID {
-			var program = &Program{}
-
-			// Channel ID
-			program.Channel = xepgChannel.XChannelID
-			program.Start = xmltvProgram.Start
-			program.Stop = xmltvProgram.Stop
-
-			if lastStop != "" {
-				currentProgramStart, err := parseTime(program.Start)
-				if err != nil {
-					ShowError(err, 2303)
-				}
-				lastProgramStop, err := parseTime(lastStop)
-				if err != nil {
-					ShowError(err, 2304) 
-				}
-
-				if currentProgramStart.After(lastProgramStop) {
-					var dummyProgram = &Program{
-						Channel: xepgChannel.XChannelID,
-						Start:   formatTime(lastProgramStop),
-						Stop:    formatTime(currentProgramStart),
-						Title:   []*Title{
-							{
-								Value: "Dummy Program",
-							},
-						},
-					}
-					xepgXML.Program = append(xepgXML.Program, dummyProgram)
-				}
-			}
-			
-			lastStop = program.Stop
-
-			// Title
-			if len(xmltvProgram.Title) > 0 {
-				if !Settings.EnableNonAscii {
-					xmltvProgram.Title[0].Value = strings.TrimSpace(strings.Map(func(r rune) rune {
-						if r > unicode.MaxASCII {
-							return -1
-						}
-						return r
-					}, xmltvProgram.Title[0].Value))
-				}
-				program.Title = xmltvProgram.Title
-			}
+    for _, xmltvProgram := range xmltv.Program {
+        if xmltvProgram.Channel == channelID {
 
 			filters := []FilterStruct{}
 			for _, filter := range Settings.Filter {
@@ -889,58 +840,46 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 				filters = append(filters, f)
 			}
 
-			// Category (Kategorie)
-			getCategory(program, xmltvProgram, xepgChannel, filters)
+            var program = Program{
+                Channel: xepgChannel.XChannelID,
+                Start:   xmltvProgram.Start,
+                Stop:    xmltvProgram.Stop,
+                Title:   xmltvProgram.Title,
+                SubTitle: xmltvProgram.SubTitle,
+                Desc: xmltvProgram.Desc,
+                Credits: xmltvProgram.Credits,
+                Rating: xmltvProgram.Rating,
+                StarRating: xmltvProgram.StarRating,
+                Country: xmltvProgram.Country,
+                Language: xmltvProgram.Language,
+                Date: xmltvProgram.Date,
+                PreviouslyShown: xmltvProgram.PreviouslyShown,
+                New: xmltvProgram.New,
+                Live: xmltvProgram.Live,
+                Premiere: xmltvProgram.Premiere,
+                Icon: xmltvProgram.Icon,
+            }
 
-			// Sub-Title
-			program.SubTitle = xmltvProgram.SubTitle
-
-			// Description
-			program.Desc = xmltvProgram.Desc
-
-			// Credits : (Credits)
-			program.Credits = xmltvProgram.Credits
-
-			// Rating (Bewertung)
-			program.Rating = xmltvProgram.Rating
-
-			// StarRating (Bewertung / Kritiken)
-			program.StarRating = xmltvProgram.StarRating
-
-			// Country (Länder)
-			program.Country = xmltvProgram.Country
-
-			// Program images (Poster / Cover)
-			getImages(program, xmltvProgram, xepgChannel)
-
-			// Language (Sprache)
-			program.Language = xmltvProgram.Language
-
-			// Episodes numbers (Episodennummern)
-			getEpisodeNum(program, xmltvProgram, xepgChannel)
-
-			// Video (Videoparameter)
-			if xmltvProgram.Video != nil {
-				getVideo(program, xmltvProgram, xepgChannel)
+			// Handle non-ASCII characters in titles
+            if len(xmltvProgram.Title) > 0 {
+                if !Settings.EnableNonAscii {
+                    xmltvProgram.Title[0].Value = strings.TrimSpace(strings.Map(func(r rune) rune {
+                        if r > unicode.MaxASCII {
+                            return -1
+                        }
+                        return r
+                    }, xmltvProgram.Title[0].Value))
+                }
+                program.Title = xmltvProgram.Title
 			}
-
-			// Date (Datum)
-			program.Date = xmltvProgram.Date
-
-			// Previously shown (Wiederholung)
-			program.PreviouslyShown = xmltvProgram.PreviouslyShown
-
-			// New (Neu)
-			program.New = xmltvProgram.New
-
-			// Live
-			program.Live = xmltvProgram.Live
-
-			// Premiere
-			program.Premiere = xmltvProgram.Premiere
-
-			// Program icon
-			program.Icon = xmltvProgram.Icon
+            
+            getCategory(&program, xmltvProgram, xepgChannel, filters)
+            getImages(&program, xmltvProgram, xepgChannel)
+            getEpisodeNum(&program, xmltvProgram, xepgChannel)
+            
+            if xmltvProgram.Video != nil {
+                getVideo(&program, xmltvProgram, xepgChannel)
+            }
 
 			foundLogo := false
 			logoURL := ""
@@ -965,7 +904,7 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 						}
 					}
 				default:
-					ShowDebug(fmt.Sprintf("Type not definde for image! %s", image.Type), 1)
+					ShowDebug(fmt.Sprintf("Type not defined for image! %s", image.Type), 1)
 				}
 			}
 			if foundLogo{
@@ -980,23 +919,38 @@ func getProgramData(xepgChannel XEPGChannelStruct) (xepgXML XMLTV, err error) {
 				}
 			}
 
-			xepgXML.Program = append(xepgXML.Program, program)
+            programs = append(programs, program)
+        }
+    }
+    
+    // Sort programs by start time
+    sort.Slice(programs, func(i, j int) bool {
+        startTimeI, _ := time.Parse("20060102150405", programs[i].Start)
+        startTimeJ, _ := time.Parse("20060102150405", programs[j].Start)
+        return startTimeI.Before(startTimeJ)
+    })
 
-		}
+    // Add dummy programs for time gaps
+    for i := 0; i < len(programs)-1; i++ {
+        xepgXML.Program = append(xepgXML.Program, &programs[i])
 
-	}
+        stopTime, _ := time.Parse("20060102150405", programs[i].Stop)
+        startTimeNext, _ := time.Parse("20060102150405", programs[i+1].Start)
 
-	return
-}
+        if stopTime.Before(startTimeNext) {
+            dummyProgram := Program{
+                Channel: xepgChannel.XChannelID,
+                Start:   programs[i].Stop,
+                Stop:    programs[i+1].Start,
+                Title:   []*Title{{Value: "Dummy Program"}},
+            }
+            xepgXML.Program = append(xepgXML.Program, &dummyProgram)
+        }
+    }
 
-func parseTime(timeStr string) (time.Time, error) {
-    layout := "20060102150405"
-    return time.Parse(layout, timeStr[:14])
-}
-
-func formatTime(t time.Time) string {
-    layout := "20060102150405"
-    return t.Format(layout) + " +0000"
+	// Add the last program to the XMLTV data
+    xepgXML.Program = append(xepgXML.Program, &programs[len(programs)-1])
+    return
 }
 
 func createLiveProgram(xepgChannel XEPGChannelStruct, channelId string) *Program {

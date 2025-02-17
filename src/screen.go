@@ -341,10 +341,6 @@ func getErrMsg(errCode int) (errMsg string) {
 		errMsg = "XMLTV file no longer available, channel has been deactivated."
 	case 2302:
 		errMsg = "Channel ID in the XMLTV file has changed. Channel has been deactivated."
-	case 2303:
-		errMsg = "Error when parsing start program time"
-	case 2304:
-		errMsg = "Error when parsing stop program time"
 
 	// Benutzerauthentifizierung
 	case 3000:
