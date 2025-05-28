@@ -62,7 +62,7 @@ func (sb *ThirdPartyBuffer) SetBufferConfig() {
 	sb.BufferType = strings.ToUpper(Settings.Buffer)
 	switch sb.BufferType {
 	case "FFMPEG":
-		sb.Options = Settings.FFmpegOptions
+		sb.Options = Settings.FFmpegOptions + " pipe:1"
 		sb.Path = Settings.FFmpegPath
 	case "VLC":
 		sb.Options = Settings.VLCOptions
