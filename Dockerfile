@@ -24,7 +24,7 @@ RUN echo "Build ${BUILD_FLAG} version"
 
 # Second stage. Creating an image
 # -----------------------------------------------------------------------------
-FROM alpine:3.18
+FROM alpine:3.21
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -61,11 +61,15 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$THREADFIN
 WORKDIR ${THREADFIN_HOME}
 
 # Install needed dependencies and configure environment
-RUN apk update && apk upgrade && apk add ca-certificates curl ffmpeg vlc doas tzdata \
+RUN apk update && apk upgrade && apk add ca-certificates curl vlc doas tzdata jellyfin-ffmpeg\
+  && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/bin/ffmpeg \
+  && apk cache clean \
+  && apk info --installed | grep -v "required by" | xargs apk del --purge \
+  && rm -rf /var/cache/apk/* \
   && echo "permit persist :wheel" >> /etc/doas.d/doas.conf \
   && addgroup -S threadfin -g "${THREADFIN_GID}" \
   && adduser threadfin -G threadfin -u "${THREADFIN_UID}" -g "${THREADFIN_GID}" -s /bin/sh -D \
-  &&adduser threadfin wheel \
+  && adduser threadfin wheel \
   && echo "threadfin:threadfin" | chpasswd \
   && sed -i 's/geteuid/getppid/' /usr/bin/vlc \
   && mkdir -p ${THREADFIN_BIN} ${THREADFIN_CONF} ${THREADFIN_TEMP} ${THREADFIN_CACHE} \
