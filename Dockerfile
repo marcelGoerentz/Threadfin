@@ -61,7 +61,7 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$THREADFIN
 WORKDIR ${THREADFIN_HOME}
 
 # Install needed dependencies and configure environment
-RUN apk update && apk upgrade && apk add ca-certificates curl vlc doas tzdata jellyfin-ffmpeg\
+RUN apk update && apk upgrade && apk add ca-certificates curl vlc doas tzdata jellyfin-ffmpeg intel-media-driver\
   && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/bin/ffmpeg \
   && apk cache clean \
   && apk info --installed | grep -v "required by" | xargs apk del --purge \
