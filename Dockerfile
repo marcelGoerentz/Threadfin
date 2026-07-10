@@ -61,7 +61,7 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$THREADFIN
 WORKDIR ${THREADFIN_HOME}
 
 # Install needed dependencies and configure environment
-RUN apk update && apk upgrade && apk add ca-certificates curl vlc doas tzdata jellyfin-ffmpeg\
+RUN apk update && apk upgrade && apk add ca-certificates curl vlc doas su-exec tzdata jellyfin-ffmpeg\
   && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/bin/ffmpeg \
   && apk cache clean \
   && apk info --installed | grep -v "required by" | xargs apk del --purge \
@@ -76,15 +76,16 @@ RUN apk update && apk upgrade && apk add ca-certificates curl vlc doas tzdata je
   && chown -R threadfin:threadfin ${THREADFIN_BIN} ${THREADFIN_CONF} ${THREADFIN_TEMP} ${THREADFIN_CACHE} \
   && chmod -R 755 ${THREADFIN_HOME}
 
-# Set user
-USER threadfin
-
 # Copy built binary from builder image
 COPY --from=builder /src/threadfin ${THREADFIN_BIN}/
+
+# Copy entrypoint script that honors PUID/PGID and drops privileges
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Configure container volume mappings
 VOLUME ${THREADFIN_CONF} ${THREADFIN_TEMP}
 
 EXPOSE ${THREADFIN_PORT}
 
-ENTRYPOINT ["/bin/sh", "-c", "threadfin -port=${THREADFIN_PORT} -config=${THREADFIN_CONF} -debug=${THREADFIN_DEBUG}"]
+ENTRYPOINT ["docker-entrypoint.sh"]
