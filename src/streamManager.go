@@ -354,12 +354,19 @@ func GetStreamLimitContent() ([]byte, bool) {
 			if err != nil {
 				ShowError(err, 0)
 			}
+			// The directory content has changed, read it again
+			fileList, err = os.ReadDir(System.Folder.Video)
+			if err != nil {
+				ShowError(err, 0)
+			}
 		}
-		content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
-		if err != nil {
-			ShowError(err, 0)
-		} else {
-			contentOk = true
+		if len(fileList) > 0 {
+			content, err = os.ReadFile(System.Folder.Video + fileList[0].Name())
+			if err != nil {
+				ShowError(err, 0)
+			} else {
+				contentOk = true
+			}
 		}
 	}
 	if !contentOk {
